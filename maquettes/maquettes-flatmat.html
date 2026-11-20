@@ -1,0 +1,150 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>mCASTING — Maquettes détaillées (Flat Mat)</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{--rr:20}
+body{font:13px/1.4 -apple-system,"SF Pro Text",system-ui,sans-serif;background:#0b0b0d;color:#eee;-webkit-font-smoothing:antialiased}
+.top{padding:18px 28px 6px;display:flex;gap:14px;align-items:center;flex-wrap:wrap}
+.top h1{font-size:20px;font-weight:700}.top .sub{color:#999}
+.tabs,.screens{display:flex;gap:6px;padding:8px 28px;flex-wrap:wrap}
+.tabs button,.screens button{background:#222;color:#eee;border:0;padding:8px 16px;border-radius:999px;font:inherit;font-weight:500;cursor:pointer}
+.tabs button.on{background:#ffd21e;color:#222}.screens button.on{background:#555}
+.tools{display:flex;align-items:center;gap:14px;padding:4px 28px 12px;color:#aaa;flex-wrap:wrap}
+.tools input[type=range]{width:200px;accent-color:#ffd21e}
+.seg{display:inline-flex;background:#222;border-radius:999px;padding:3px}
+.seg button{border:0;background:none;color:#eee;font:inherit;padding:4px 14px;border-radius:999px;cursor:pointer}
+.seg button.on{background:#444}
+.tools output{color:#fff;font-weight:600;min-width:28px}
+.stage{padding:6px 28px 40px;overflow:auto}
+.win{width:1200px;height:740px;display:grid;grid-template-columns:190px 1fr;grid-template-rows:auto 1fr;overflow:hidden;position:relative;background:var(--bg);color:var(--t);border-radius:var(--rw);box-shadow:var(--sh);font-size:13px}
+.bar{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:var(--bd)}
+.lights{display:flex;gap:7px}.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.brand{font-weight:700;font-size:15px;margin-left:8px}.brand b{color:var(--m)}
+.right{margin-left:auto;display:flex;align-items:center;gap:10px;color:var(--t2);font-size:12px}
+.dot{width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 0 3px color-mix(in srgb,var(--ok) 25%,transparent)}
+.btn{background:var(--ctl);color:var(--t);border:0;padding:6px 12px;border-radius:var(--rc);font:inherit;font-weight:500;white-space:nowrap}
+.btn.pri{background:var(--acc);color:var(--onacc)}.btn.sm{padding:3px 9px;font-size:11.5px}
+.nav{padding:12px 10px;display:flex;flex-direction:column;gap:4px;border-right:var(--bd)}
+.nav div{padding:8px 11px;border-radius:var(--rc);color:var(--t2);display:flex;gap:9px;align-items:center}
+.nav div.on{background:var(--ctl);color:var(--t);font-weight:600}
+.nav .h{padding:10px 11px 2px}
+.h{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
+.main{padding:14px;display:flex;flex-direction:column;gap:10px;overflow:hidden;min-height:0}
+.cols{display:grid;gap:12px;flex:1;min-height:0}
+.pane{display:flex;flex-direction:column;gap:8px;min-height:0;overflow:hidden}
+.box{background:var(--card);border:var(--bd);border-radius:var(--rb);padding:11px;box-shadow:var(--shc)}
+.toolbar{display:flex;gap:8px;align-items:center}
+.search{flex:1;background:var(--ctl);border-radius:var(--rc);padding:7px 11px;color:var(--t2)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:4px 10px;border-radius:var(--rch);background:var(--ctl);color:var(--t);font-size:11.5px;display:inline-flex;gap:5px;align-items:center}
+.chip.on{background:var(--acc);color:var(--onacc);font-weight:600}
+.fl{display:flex;gap:8px;align-items:center;flex-wrap:wrap}.fl>span{color:var(--t2);font-size:11px;width:44px}
+.chr{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:var(--rb);background:var(--card);border:var(--bd);box-shadow:var(--shc)}
+.chr.on{outline:2px solid var(--acc)}
+.av{width:34px;height:34px;border-radius:var(--rc);display:grid;place-items:center;font-weight:700;color:#fff;font-size:13px;flex:none}
+.nm{font-weight:650;font-size:13px;display:flex;gap:6px;align-items:center}
+.sub{color:var(--t2);font-size:11.5px;margin-top:1px}
+.tag{font-size:10.5px;font-weight:600;padding:2px 7px;border-radius:var(--rch);background:var(--ctl);color:var(--t2)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 22%,transparent);color:var(--ok)}
+.tag.warn{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}
+.tag.acc{background:var(--acc);color:var(--onacc)}
+.vgrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;overflow:hidden;align-content:start}
+.v{background:var(--card);border:var(--bd);border-radius:var(--rb);padding:9px 10px;box-shadow:var(--shc);display:flex;flex-direction:column;gap:5px}
+.v.sel{outline:2px solid var(--ok)}.v.ab{outline:2px dashed var(--acc)}
+.v .top2{display:flex;justify-content:space-between;align-items:center;gap:6px}
+.play{width:26px;height:26px;border-radius:50%;background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-size:10px;flex:none}
+.wave{display:flex;align-items:center;gap:1.5px;height:22px;flex:1}.wave i{display:block;width:2.5px;border-radius:2px;background:var(--t2);opacity:.65}
+.wave.pl i{background:var(--acc);opacity:1}
+.ab2{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.row{display:flex;justify-content:space-between;align-items:center;padding:3px 0}.row span:first-child{color:var(--t2)}
+.bar2{height:6px;border-radius:var(--rch);background:var(--ctl);overflow:hidden;margin-top:5px}.bar2 i{display:block;height:100%;background:var(--acc)}
+.proj{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+.pc{background:var(--card);border:var(--bd);border-radius:var(--rb);padding:14px;box-shadow:var(--shc);display:flex;flex-direction:column;gap:8px}
+.pc.on{outline:2px solid var(--acc)}
+.pc h3{font-size:15px}.big{font-size:24px;font-weight:700;line-height:1}
+.mod{background:var(--card);border:var(--bd);border-radius:var(--rb);padding:11px 14px;display:grid;grid-template-columns:42px 1fr 170px 130px;gap:14px;align-items:center;box-shadow:var(--shc)}
+.mod.first{outline:2px solid var(--acc)}
+.foot{margin-top:auto;display:flex;gap:10px;color:var(--t2);font-size:12px;align-items:center}
+.m{color:var(--m)}
+.note{background:var(--ctl);border-radius:var(--rc);padding:7px 10px;color:var(--t2);font-size:11.5px}
+.legend{color:#999;padding:0 28px 10px;max-width:1200px}
+
+[data-d=mat]{--rw:12px;--rb:12px;--rc:8px;--rch:999px;--bg:#f4f1ec;--card:#fff;--ctl:#ebe6de;--t:#26231e;--t2:#7b756a;--acc:#26231e;--onacc:#f4f1ec;--m:#d9622b;--ok:#3f8f5a;--warn:#b7791f;--sh:0 18px 50px rgba(60,40,10,.18);--shc:none;--bd:1px solid #e3ddd2}
+[data-d=mat][data-th=sombre]{--bg:#131316;--card:#232327;--ctl:#2c2c31;--t:#f5f5f7;--t2:#98989f;--acc:#0a84ff;--onacc:#fff;--m:#f08a52;--ok:#30d158;--warn:#ff9f0a;--sh:0 18px 50px rgba(0,0,0,.5);--bd:1px solid #303035}
+[data-d=mat] .av{background:#26231e!important}[data-d=mat][data-th=sombre] .av{background:#2c2c31!important}
+
+.st{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:10px}.st .box .big{font-size:22px;font-weight:700}
+.set{display:flex;justify-content:space-between;align-items:center;padding:9px 0;border-bottom:var(--bd)}.set:last-child{border:0}
+.sw{width:34px;height:20px;border-radius:99px;background:var(--ctl);position:relative}.sw.on{background:var(--ok)}.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:#fff}.sw.on::after{left:16px}
+.code{font:11.5px/1.5 ui-monospace,Menlo,monospace;background:var(--ctl);border-radius:var(--rc);padding:10px;white-space:pre;color:var(--t)}
+.pop{width:300px;background:var(--card);border:var(--bd);border-radius:var(--rb);box-shadow:var(--sh);padding:8px}
+.pop div{padding:6px 8px;border-radius:var(--rc)}.pop .hl{background:var(--ctl)}
+.menubar{width:600px;height:28px;background:#d9d4ca;border-radius:6px 6px 0 0;display:flex;justify-content:flex-end;align-items:center;gap:12px;padding:0 12px;color:#222;font-size:12px;margin-bottom:6px}
+[data-th=sombre] .menubar{background:#2a2a2e;color:#eee}
+.ab{display:grid;place-items:center;text-align:center;gap:6px;padding:40px}
+.ab .logo{width:88px;height:88px;border-radius:20px;background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-size:40px;font-weight:700}
+.ab .logo b{color:var(--m)}
+</style></head><body>
+<div class="top"><h1><span style="color:#d9622b">m</span>CASTING — Maquettes détaillées · Flat Mat</h1><span class="sub">Design validé · 8 écrans</span></div>
+<nav class="screens" id="screens"><button data-s="cast" class="on">Casting</button><button data-s="proj">Projets</button><button data-s="lib">Bibliothèque</button><button data-s="gen">Génération</button><button data-s="mod">Modèles</button><button data-s="set">Réglages</button><button data-s="about">À propos</button><button data-s="bar">Barre de menus</button></nav>
+<div class="tools"><span class="seg" id="seg"><button data-th="sombre">Sombre</button><button data-th="clair" class="on">Clair</button></span></div>
+<div class="stage"><div id="win" class="win" data-d="mat" data-th="clair"></div></div><script>
+const $=s=>document.querySelector(s),win=$('#win');
+let D='mat',TH='clair',S='cast';
+const COL=['#7c6cff','#ff7a59','#2fb36a','#19a7ce','#e0558a','#b8860b','#8e6bd8'];
+const wave=(n,p,seed)=>'<div class="wave'+(p?' pl':'')+'">'+Array.from({length:n},(_,i)=>`<i style="height:${20+Math.abs(Math.sin(i*.7+seed)*Math.cos(i*.31+seed*2))*80}%"></i>`).join('')+'</div>';
+const chars=[['H','Héros','FR · 383 répliques','jeune aventurier sec et pince-sans-rire','ok','Ryan + consigne'],['A','L\'Aveugle','FR · 33','vieux grincheux confus','ok','Aiden + consigne'],['F','La Fermière','FR · 11','femme chaleureuse, forte voix','warn','à confirmer'],['G','Garde de la ville','FR · 7','garde fatigué, voix plate, un peu triste','',''],['C','Cavalier fantôme','FR · 5','voix creuse, lente, avec écho','',''],['N','Narrateur','FR · 120','voix off posée, chaude','ok','Chatterbox cloné']];
+const voices=[['Théodore','Homme · 40-50 · grave','rauque, bourru, fatigué','FR','0.92'],['Lucien','Homme · 25-35 · medium','sec, pince-sans-rire, nonchalant','FR','0.88'],['Gaspard','Homme · 60+ · grave','vieux grincheux, voix tremblante','FR','0.85'],['Margaux','Femme · 35-45 · medium','chaleureuse, forte, rieuse','FR','0.90'],['Ghost 03','Créature · spectre','creuse, lente, réverbérée','FR / EN','0.81'],['Marcus','Homme · 40-50 · grave','gruff, tired, flat monotone','EN','0.89']];
+function topbar(){return `<div class="bar"><div class="lights"><i></i><i></i><i></i></div><div class="brand"><b>m</b>CASTING</div><div class="right"><span><span class="dot"></span> Serveur MCP actif</span><span>Qwen3-TTS · prêt</span><span class="btn sm">⚙︎</span></div></div>`}
+function nav(a){const it=[['proj','▤ Projets'],['cast','◉ Casting'],['lib','♫ Bibliothèque de voix'],['mod','⬇ Modèles TTS']];return `<div class="nav"><div class="h">Navigation</div>${it.map(([k,t])=>`<div class="${k==a?'on':''}">${t}</div>`).join('')}<div class="h" style="margin-top:14px">Langue du projet</div><div class="chips" style="padding:0 6px"><span class="chip on">FR</span><span class="chip">EN</span></div><div class="foot" style="padding:6px"><span class="dot"></span>Calcul : libre</div></div>`}
+function cast(){
+return topbar()+nav('cast')+`<div class="main">
+<div class="toolbar"><div class="nm" style="font-size:16px">Jeu point &amp; click — wSHOWCASE</div><span class="tag">53 personnages</span><span class="tag ok">31 castés</span><span class="tag warn">22 à caster</span><span style="margin-left:auto" class="btn">Importer personnages</span><span class="btn pri">Écrire casting.json ▸ projet</span></div>
+<div class="cols" style="grid-template-columns:300px 1fr">
+<div class="pane"><div class="h">Personnages</div>
+${chars.map((c,i)=>`<div class="chr ${i==3?'on':''}"><div class="av" style="background:${COL[i]}">${c[0]}</div><div style="flex:1;min-width:0"><div class="nm">${c[1]} ${c[4]?`<span class="tag ${c[4]}">${c[5]}</span>`:'<span class="tag">sans voix</span>'}</div><div class="sub">${c[3]}</div></div></div>`).join('')}
+<div class="box" style="margin-top:auto"><div class="h">Garde de la ville · réplique d'essai</div><div class="sub" style="color:var(--t);font-size:12.5px">« Aïe… Oh. OH ! Mon genou ! Plus de flèche ! Je suis libre ! »</div><div class="chips" style="margin-top:6px"><span class="chip on">Fatigué</span><span class="chip">Joyeux</span><span class="chip">Colère</span><span class="chip">+ consigne…</span></div></div></div>
+<div class="pane"><div class="toolbar"><div class="search">⌕ Rechercher une voix (« bourru », « enfant », « dragon »…)</div><span class="btn">Tri : pertinence</span></div>
+<div class="box"><div class="fl"><span>Genre</span><div class="chips"><span class="chip on">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span><span class="chip">Animal</span><span class="chip">Créature</span></div></div>
+<div class="fl" style="margin-top:6px"><span>Âge</span><div class="chips"><span class="chip">Jeune</span><span class="chip on">Adulte</span><span class="chip on">Âgé</span></div><span style="margin-left:10px">Ton</span><div class="chips"><span class="chip on">Grave</span><span class="chip">Aigu</span><span class="chip">Chaleureux</span><span class="chip">Sec</span><span class="chip">Inquiétant</span></div></div>
+<div class="fl" style="margin-top:6px"><span>Langue</span><div class="chips"><span class="chip on">FR</span><span class="chip">EN</span></div><span class="tag" style="margin-left:auto">1 842 voix · 96 filtrées</span></div></div>
+<div class="vgrid">${voices.map((v,i)=>`<div class="v ${i==0?'sel':''} ${i==2?'ab':''}"><div class="top2"><div><div class="nm">${v[0]} ${i==0?'<span class="tag ok">choisie</span>':''}${i==2?'<span class="tag acc">B</span>':''}${i==0?'<span class="tag acc">A</span>':''}</div><div class="sub">${v[1]} · ${v[3]}</div></div><span class="tag">${v[4]}</span></div><div class="sub">${v[2]}</div><div style="display:flex;gap:8px;align-items:center"><div class="play">▶</div>${wave(34,i==0,i+1)}</div><div class="top2"><span class="btn sm">Réplique du perso</span><span class="btn sm ${i==0?'pri':''}">${i==0?'Choisie ✓':'Choisir'}</span></div></div>`).join('')}</div>
+<div class="box ab2"><div><div class="h">Comparaison A / B — même réplique, même consigne « fatigué »</div><div class="sub" style="color:var(--t)">A · Théodore</div><div style="display:flex;gap:8px;align-items:center;margin-top:4px"><div class="play">▶</div>${wave(40,1,3)}</div></div><div><div class="h">&nbsp;</div><div class="sub" style="color:var(--t)">B · Gaspard</div><div style="display:flex;gap:8px;align-items:center;margin-top:4px"><div class="play">▶</div>${wave(40,0,5)}</div></div></div>
+</div></div></div>`}
+function proj(){const P=[['Jeu point & click','wSHOWCASE','FR','53','31','casting.json écrit'],['Tutoriels vidéo (voix off)','Chaîne YouTube','FR + EN','2','2','à jour'],['Trailer mod Skyrim','Skyrim Tools','EN','7','0','vide'],['Jeu de plateau animé','mOCK','FR','12','4','en cours'],['Sketch animalier','Perso','FR','5','5','à jour']];
+return topbar()+nav('proj')+`<div class="main"><div class="toolbar"><div class="nm" style="font-size:16px">Projets</div><div class="search" style="max-width:300px">⌕ Filtrer</div><span class="btn pri" style="margin-left:auto">＋ Nouveau projet</span></div>
+<div class="proj">${P.map((p,i)=>`<div class="pc ${i==0?'on':''}"><div style="display:flex;justify-content:space-between"><h3>${p[0]}</h3><span class="tag">${p[2]}</span></div><div class="sub">${p[1]}</div><div style="display:flex;gap:18px"><div><div class="big">${p[3]}</div><div class="sub">personnages</div></div><div><div class="big m">${p[4]}</div><div class="sub">castés</div></div></div><div class="bar2"><i style="width:${Math.round(p[4]/p[3]*100)}%"></i></div><div class="sub">Dossier : …/${p[1]}/casting.json · <span class="tag ${p[5]=='vide'?'warn':'ok'}">${p[5]}</span></div></div>`).join('')}<div class="pc" style="border:2px dashed var(--ctl);align-items:center;justify-content:center;color:var(--t2);box-shadow:none;background:none">＋ Créer un projet<br><span class="sub">ou par un agent (MCP)</span></div></div>
+<div class="note">Un agent peut créer un projet, ajouter des personnages, chercher des voix et écrire le casting via le serveur MCP — journal des appels visible ici.</div></div>`}
+function mod(){const M=[['Q','Qwen3-TTS 1.7B 8 bits','CustomVoice · VoiceDesign · Base · FR EN + 8 langues · consigne d\'émotion','installé','ok','2,6 Go','Moteur de référence'],['Z','ZONOS3-Mini (Zyphra)','Multilingue dont FR · voix plus graves · clonage · 0,6–1,2 s/phrase','à installer','','1,8 Go',''],['C','Chatterbox multilingue fp16','Clonage · intonation par exaggeration / cfg_weight','installé','ok','3,1 Go',''],['K','Autre modèle à évaluer','Détecté par veille Hugging Face (mUGGINFACE)','à évaluer','warn','—','']];
+return topbar()+nav('mod')+`<div class="main"><div class="toolbar"><div class="nm" style="font-size:16px">Modèles TTS</div><span class="tag ok">1 moteur par défaut</span><span class="btn" style="margin-left:auto">Vérifier les fichiers</span></div>
+${M.map((m,i)=>`<div class="mod ${i==0?'first':''}"><div class="av" style="background:${COL[i]};width:42px;height:42px">${m[0]}</div><div><div class="nm">${m[1]} ${i==0?'<span class="tag acc">référence</span>':''}</div><div class="sub">${m[2]}</div></div><div><span class="tag ${m[4]}">${m[3]}</span> <span class="sub">${m[5]}</span><div class="bar2"><i style="width:${m[4]=='ok'?100:i==1?38:0}%"></i></div></div><div style="text-align:right">${m[4]=='ok'?'<span class="btn sm">Vérifier</span> <span class="btn sm">Essai</span>':i==1?'<span class="btn pri sm">Télécharger</span>':'<span class="btn sm">Évaluer</span>'}</div></div>`).join('')}
+<div class="note">Téléchargement depuis Hugging Face avec reprise, vérification par somme de contrôle, état affiché ici. Une seule génération lourde à la fois (file calcul-lourd).</div></div>`}
+function lib(){return topbar()+nav('lib')+`<div class="main"><div class="toolbar"><div class="nm" style="font-size:16px">Bibliothèque de voix</div><span class="tag">600 recettes · 1 200 échantillons</span><div class="search" style="max-width:320px">⌕ « dragon grave », « enfant espiègle »…</div><span class="btn pri" style="margin-left:auto">＋ Nouvelle recette</span></div>
+<div class="box"><div class="fl"><span>Genre</span><div class="chips"><span class="chip on">Tous</span><span class="chip">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span><span class="chip">Animal</span><span class="chip">Créature</span></div><span style="margin-left:14px;color:var(--t2);font-size:11px">Langue</span><div class="chips"><span class="chip on">FR</span><span class="chip on">EN</span></div><span style="margin-left:14px;color:var(--t2);font-size:11px">Usage</span><div class="chips"><span class="chip">Utilisée</span><span class="chip">Jamais utilisée</span></div></div></div>
+<div style="display:grid;grid-template-columns:1fr 330px;gap:12px;flex:1;min-height:0"><div class="vgrid" style="grid-template-columns:repeat(3,1fr)">${[...voices,...voices].slice(0,9).map((v,i)=>`<div class="v ${i==1?'sel':''}"><div class="nm">${v[0]}</div><div class="sub">${v[1]} · ${v[3]}</div><div style="display:flex;gap:8px;align-items:center"><div class="play">▶</div>${wave(26,i==1,i+2)}</div><div class="chips"><span class="tag">${v[2].split(',')[0]}</span><span class="tag">utilisée ×${i%4}</span></div></div>`).join('')}</div>
+<div class="box" style="display:flex;flex-direction:column;gap:8px"><div class="h">Fiche de la voix · Lucien</div><div class="sub">Recette VoiceDesign</div><div class="code" style="white-space:normal">Homme français d'environ 30 ans, voix médium légèrement nasale, débit posé, ton sec et pince-sans-rire, sans emphase.</div><div class="row"><span>Moteur</span><span>Qwen3 VoiceDesign</span></div><div class="row"><span>Échantillons</span><span>FR ✓ · EN ✓</span></div><div class="row"><span>Utilisée dans</span><span>wSHOWCASE (Héros)</span></div><div class="h" style="margin-top:6px">Tester avec une réplique</div><div class="search" style="min-height:48px">« Le prendre avec moi ? Il boite. »</div><div class="chips"><span class="chip on">Neutre</span><span class="chip">Fatigué</span><span class="chip">Joyeux</span><span class="chip">Colère</span></div><span class="btn pri" style="text-align:center">▶ Générer l'essai</span></div></div></div>`}
+function gen(){return topbar()+nav('lib')+`<div class="main"><div class="toolbar"><div class="nm" style="font-size:16px">Génération de la bibliothèque</div><span class="tag warn">en cours</span><span class="btn" style="margin-left:auto">Pause</span><span class="btn">Reprendre un lot</span></div>
+<div class="st"><div class="box"><div class="big">742 / 1 200</div><div class="sub">échantillons</div></div><div class="box"><div class="big">62 %</div><div class="sub">avancement</div></div><div class="box"><div class="big">1 h 05</div><div class="sub">restant (5,6 s/appel)</div></div><div class="box"><div class="big">94 Mo</div><div class="sub">audio généré</div></div></div>
+<div class="box"><div class="bar2" style="height:10px"><i style="width:62%"></i></div></div>
+<div class="cols" style="grid-template-columns:1fr 1fr"><div class="box"><div class="h">Par catégorie</div>${[['Hommes',150,150],['Femmes',150,132],['Enfants',60,60],['Animaux',120,48],['Créatures',120,0]].map(c=>`<div class="row"><span>${c[0]}</span><span>${c[2]} / ${c[1]}</span></div><div class="bar2"><i style="width:${c[2]/c[1]*100}%"></i></div>`).join('')}</div>
+<div class="box"><div class="h">Journal</div><div class="code" style="height:230px;overflow:hidden">22:41:07  fr-f-40-warm-132  FR ✓  5,4 s
+22:41:13  fr-f-40-warm-132  EN ✓  5,7 s
+22:41:18  fr-a-fox-nervous-001  FR ✓  5,2 s
+22:41:24  fr-a-fox-nervous-001  EN ✓  5,5 s
+file calcul-lourd : 1 tâche (mCASTING)
+Contrôle : durée, silence, clipping → OK</div><div class="note" style="margin-top:8px">Une seule génération lourde à la fois ; reprise automatique après arrêt.</div></div></div></div>`}
+function set(){return topbar()+nav('set')+`<div class="main"><div class="nm" style="font-size:16px">Réglages</div><div class="cols" style="grid-template-columns:1fr 1fr"><div class="pane"><div class="box"><div class="h">Général</div><div class="set"><span>Langue de l'interface</span><span class="btn sm">Automatique ▾</span></div><div class="set"><span>Afficher dans</span><span class="btn sm">Dock + barre de menus ▾</span></div><div class="set"><span>Dossier de la bibliothèque</span><span class="btn sm">…/mCASTING/voix</span></div></div>
+<div class="box"><div class="h">Mise à jour</div><div class="set"><span>Installer automatiquement</span><div class="sw on"></div></div><div class="set"><span>Version 1.0.0</span><span class="btn sm">Rechercher</span></div></div></div>
+<div class="pane"><div class="box"><div class="h">Serveur MCP</div><div class="set"><span>Activé</span><div class="sw on"></div></div><div class="set"><span>Port local</span><span class="tag">127.0.0.1:7421</span></div><div class="code">claude mcp add mcasting -- \\
+  ~/Applications/Applications\\ Personnelles/mCASTING.app/…/mcasting-mcp</div><div class="sub" style="margin-top:6px">Outils : list_projects, create_project, add_characters, search_voices, preview_voice, set_casting, write_casting</div></div>
+<div class="box"><div class="h">Journal des appels agent</div><div class="code">22:30  create_project  « Trailer Skyrim »
+22:31  add_characters  ×3
+22:33  search_voices  « grave, spectre »
+22:36  write_casting  → casting.json ✓</div></div></div></div></div>`}
+function about(){return topbar()+nav('set')+`<div class="main ab"><div class="logo"><b>m</b>C</div><div class="nm" style="font-size:20px"><b class="m">m</b>CASTING</div><div class="sub">Version 1.0.0 · DESKTOP MAC TOOLKIT</div><div class="sub" style="max-width:420px">Bibliothèque de voix et casting par projet, pilotable par un agent (MCP).</div><div class="chips"><span class="chip">GitHub</span><span class="chip">Notes de version</span></div></div>`}
+function bar(){return `<div style="padding:30px;background:var(--bg);border-radius:var(--rw);height:100%;grid-column:1/3"><div class="menubar"><span>Qwen3 ●</span><span style="color:#d9622b;font-weight:700">🎙</span><span>Wi-Fi</span><span>22:45</span></div><div class="pop"><div class="nm"><b class="m">m</b>CASTING</div><div class="hl">Projet actif : wSHOWCASE (31 / 53)</div><div>Ouvrir la fenêtre</div><div>Génération : 62 % — pause</div><div>Serveur MCP : actif</div><div>À propos de mCASTING</div><div>Quitter mCASTING</div></div><div class="sub" style="margin-top:14px;max-width:520px">Icône de barre de menus : silhouette micro en couleur (orange Flat Mat). Menu ouvert sous l'icône, sans <code>statusItem.menu</code> (règle multi-écrans).</div></div>`}
+
+function render(){win.dataset.d='mat';win.dataset.th=TH;win.innerHTML=({cast,proj,lib,gen,mod,set,about,bar})[S]();}
+$('#screens').onclick=e=>{if(e.target.dataset.s){S=e.target.dataset.s;[...$('#screens').children].forEach(b=>b.classList.toggle('on',b==e.target));render()}};
+$('#seg').onclick=e=>{if(e.target.dataset.th){TH=e.target.dataset.th;[...$('#seg').children].forEach(b=>b.classList.toggle('on',b==e.target));render()}};
+render();
+</script></body></html>

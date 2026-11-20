@@ -1,0 +1,50 @@
+# mCASTING
+
+Local AI voice casting for production projects: a library of ready-made voices, voice cloning, and a per-project casting you can hand to an agent.
+
+## About
+
+mCASTING is part of the **DESKTOP MAC TOOLKIT**. Made by Starbudweiser & Claude Code (Anthropic). MIT License. Provided as is, without warranty: only use voices you have the right to use. See *About mCASTING* in the app menu.
+
+## What it does
+
+- **Casting per project.** A project (a game, a video, a voice-over…) is a list of characters with a role, sample lines and a language (French or English). You listen to the library and pick each character's voice.
+- **Voice library.** ~600 voice recipes (men, women, children, animals, creatures) generated locally with Qwen3-TTS VoiceDesign, with a French and an English sample each. Filter by gender, age, tone, language; A/B comparison; emotion set per line.
+- **Voice cloning.** Import an audio file (WAV, MP3, M4A…) or a web link (YouTube and other sites, audio only), choose a 5–15 s excerpt, transcribe it and add the cloned voice to the library. You must have the right to use the voice.
+- **Agent-ready (MCP).** A bundled MCP server (`mcasting-mcp`, stdio) lets an agent create projects, add characters, search voices, preview a voice and write the final `casting.json` into your project folder.
+- **100% local.** Everything runs on your Mac (Apple Silicon, macOS 15+). The app installs its own isolated Python engine (uv + mlx-audio) and downloads the models you choose from Hugging Face. One heavy generation at a time.
+
+## `casting.json`
+
+```json
+{
+  "format": "mcasting/1",
+  "project": "My game",
+  "lang": "fr",
+  "characters": {
+    "<id>": { "name": "Hero", "role": "…", "voice_id": "man-adult-medium-1", "engine": "qwen3-voicedesign",
+              "recipe": "A French-speaking person…", "style": "tired, low energy", "sample": "/…/audio/lib/….m4a" }
+  }
+}
+```
+
+Cloned voices carry `engine: "qwen3-base"`, `ref_audio` and `ref_text` instead of a recipe.
+
+## MCP server
+
+*Settings → MCP server* shows the exact command, for example:
+
+```bash
+claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
+```
+
+Tools: `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`.
+
+## Build
+
+```bash
+./build_app.sh            # build, sign, install in ~/Applications/Applications Personnelles
+DEV=1 ./build_app.sh      # development edition (separate bundle id and data folder, not installed)
+```
+
+Languages: French, English, Spanish, Italian (follows the system language). Design: Flat Mat.
