@@ -30,6 +30,10 @@ let tools: [[String: Any]] = [
      "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "voice_id": "Voice id", "style": "Emotion/delivery"], required: ["project", "character", "voice_id"])],
     ["name": "preview_voice", "description": "Generate a preview of a voice for a line (slow: runs the local TTS). Returns the audio path.",
      "inputSchema": schema(["voice_id": "Voice id", "text": "Line to speak", "lang": "fr|en", "style": "Emotion"], required: ["voice_id", "text"])],
+    ["name": "get_import_guide", "description": "START HERE to bring an existing project into mCASTING: returns the import format (mcasting-project/1) and how to build it from the project's files. Works with any agent.", "inputSchema": schema([:])],
+    ["name": "import_project", "description": "Import (or update) an in-progress project: its characters, sample lines and current voices. Provide project_json (JSON text) OR path (absolute path of a .json file). mode: merge (default, never erases an existing casting) or replace. dry_run: true to preview only. Call get_import_guide first for the format.",
+     "inputSchema": schema(["project_json": "Project JSON text (format mcasting-project/1, or a bare array of characters)", "path": "Absolute path of a JSON file (alternative to project_json)", "name": "Project name (needed only if the JSON has none)", "mode": "merge|replace", "dry_run": "true to preview without saving"])],
+    ["name": "export_project", "description": "Export a project (characters, current voices, casting) as JSON in the same format as import_project.", "inputSchema": schema(["project": "Project name or id"], required: ["project"])],
     ["name": "write_casting", "description": "Write casting.json into the project's folder.", "inputSchema": schema(["project": "Project name or id"], required: ["project"])],
 ]
 
@@ -90,6 +94,20 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
     case "preview_voice":
         guard let v = DataStore.voices().first(where: { $0.id == s("voice_id") }) else { throw NSError(domain: "mcasting", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unknown voice"]) }
         return try LibraryGenerator.preview(voice: v, text: s("text"), lang: Lang(rawValue: s("lang")) ?? .fr, style: s("style")).path
+    case "get_import_guide": return ProjectImport.guide
+    case "import_project":
+        var data = Data(s("project_json").utf8)
+        if data.isEmpty, !s("path").isEmpty { data = try Data(contentsOf: URL(fileURLWithPath: s("path"))) }
+        guard !data.isEmpty else { throw NSError(domain: "mcasting", code: 22, userInfo: [NSLocalizedDescriptionKey: "Provide project_json or path. Call get_import_guide."]) }
+        let dry = (a["dry_run"] as? Bool) ?? ["true", "1", "yes"].contains(s("dry_run").lowercased())
+        let mode = ProjectImport.Mode(rawValue: s("mode")) ?? .merge
+        var report: ProjectImport.Report?
+        if dry { var tmp = DataStore.projects(); report = try ProjectImport.apply(data, projectName: s("name"), mode: mode, dryRun: true, to: &tmp) }
+        else { try DataStore.updateProjects { report = try ProjectImport.apply(data, projectName: s("name"), mode: mode, dryRun: false, to: &$0) } }
+        return json(report!)
+    case "export_project":
+        guard let p = DataStore.projects().first(where: { $0.id == s("project") || $0.name.lowercased() == s("project").lowercased() }) else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project"]) }
+        return String(decoding: ProjectImport.export(p, voices: DataStore.voices()), as: UTF8.self)
     case "write_casting":
         guard let p = DataStore.projects().first(where: { $0.id == s("project") || $0.name.lowercased() == s("project").lowercased() }) else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project"]) }
         return try CastingExport.write(p, voices: DataStore.voices()).path
@@ -102,12 +120,20 @@ while let line = readLine() {
     let id = m["id"], method = m["method"] as? String ?? ""
     switch method {
     case "initialize":
-        reply(id, result: ["protocolVersion": "2024-11-05", "capabilities": ["tools": [:]], "serverInfo": ["name": "mcasting", "version": "1.0.0"]])
+        reply(id, result: ["protocolVersion": "2024-11-05", "capabilities": ["tools": [:], "prompts": [:], "resources": [:]], "serverInfo": ["name": "mcasting", "version": "1.0.0"]])
     case "tools/list": reply(id, result: ["tools": tools])
     case "tools/call":
         let p = m["params"] as? [String: Any] ?? [:]
         do { reply(id, result: text(try call(p["name"] as? String ?? "", p["arguments"] as? [String: Any] ?? [:]))) }
         catch { var r = text(error.localizedDescription); r["isError"] = true; reply(id, result: r) }
+    case "prompts/list":
+        reply(id, result: ["prompts": [["name": "import_project", "description": "Import the current project (characters and lines) into mCASTING to cast its voices."]]])
+    case "prompts/get":
+        reply(id, result: ["description": "Import a project into mCASTING", "messages": [["role": "user", "content": ["type": "text", "text": "Import the project in the current folder into mCASTING so I can cast its voices. Follow this guide, build the JSON from the project's files, run import_project with dry_run first, then for real.\n\n" + ProjectImport.guide]]]])
+    case "resources/list":
+        reply(id, result: ["resources": [["uri": "mcasting://import-guide", "name": "Import guide", "mimeType": "text/plain"]]])
+    case "resources/read":
+        reply(id, result: ["contents": [["uri": "mcasting://import-guide", "mimeType": "text/plain", "text": ProjectImport.guide]]])
     case "ping": reply(id, result: [:])
     default: if id != nil { reply(id, error: "Method not found") }
     }

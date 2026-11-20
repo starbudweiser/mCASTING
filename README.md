@@ -38,7 +38,11 @@ Cloned voices carry `engine: "qwen3-base"`, `ref_audio` and `ref_text` instead o
 claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
 ```
 
-Tools: `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`.
+Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`.
+
+## Bring an existing project (any agent)
+
+Ask your agent: *"Import this project into mCASTING."* It calls `get_import_guide`, builds a small JSON (`mcasting-project/1`: characters, sample lines, current voices) from your project's files, previews it with `import_project` (`dry_run`), then imports it. Re-importing is safe: characters are matched by id then name, and a casting already done is never erased. You can also import a JSON file from the app (*Projects → Import a project…*). Format and tips: [docs/IMPORT.md](docs/IMPORT.md).
 
 ## Build
 

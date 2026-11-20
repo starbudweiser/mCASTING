@@ -26,6 +26,7 @@ struct ContentView: View {
         .ignoresSafeArea(.container, edges: .top)
         .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
         .alert(L.t("err.title"), isPresented: Binding(get: { s.error != nil }, set: { if !$0 { s.error = nil } })) { Button("OK") { s.error = nil } } message: { Text(s.error ?? "") }
+        .alert(L.t("info.title"), isPresented: Binding(get: { s.info != nil }, set: { if !$0 { s.info = nil } })) { Button("OK") { s.info = nil } } message: { Text(s.info ?? "") }
     }
 }
 
@@ -127,7 +128,7 @@ struct CastingView: View {
         let o = NSOpenPanel(); o.canChooseDirectories = true; o.canChooseFiles = false; o.canCreateDirectories = true
         if o.runModal() == .OK, let u = o.url { s.mutate { all in if let i = all.firstIndex(where: { $0.id == p.id }) { all[i].folder = u.path } } }
     }
-    func importFile() { let o = NSOpenPanel(); o.allowedContentTypes = [.json]; if o.runModal() == .OK, let u = o.url { s.importCharacters(from: u) } }
+    func importFile() { let o = NSOpenPanel(); o.allowedContentTypes = [.json]; if o.runModal() == .OK, let u = o.url { s.importProject(from: u, intoCurrent: true) } }
 }
 
 struct EmptyProject: View {
@@ -145,11 +146,9 @@ struct CharacterColumn: View {
         VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.title"))
             ScrollView(showsIndicators: false) {
-                VStack(spacing: 8) {
-                    ForEach(s.project?.characters ?? []) { c in row(c) }
-                    if let c = s.character { TrialBox(c: c) }
-                }
-            }
+                VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } }
+            }.frame(minHeight: 150)
+            if let c = s.character { ScrollView(showsIndicators: false) { TrialBox(c: c) }.frame(maxHeight: 330) }
             Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton())
         }
     }
@@ -179,6 +178,7 @@ struct TrialBox: View {
     static let emotions = [("emo.neutral", ""), ("emo.tired", "tired, low energy"), ("emo.joy", "joyful, bright"), ("emo.anger", "angry, sharp")]
     var body: some View {
         Card { VStack(alignment: .leading, spacing: 8) {
+            if let cur = c.current { CurrentVoiceView(cur: cur, count: c.lineCount) }
             Header(title: c.name + " · " + L.t("char.try"))
             TextField(L.t("char.role"), text: $role).flatField().onSubmit(save)
             Text(L.t("char.lines")).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
@@ -196,6 +196,23 @@ struct TrialBox: View {
     func load() { role = c.role; lines = c.lines.joined(separator: "\n"); style = c.style; custom = !Self.emotions.contains { $0.1 == c.style } }
     func save() { let r = role, l = lines.split(separator: "\n").map(String.init), st = style; s.update(character: c.id) { $0.role = r; $0.lines = l; $0.style = st } }
     func try_() { if let v = s.voices.first(where: { $0.id == c.voiceID }), let l = lines.split(separator: "\n").first { s.preview(voice: v, text: String(l), style: style) } }
+}
+
+/// Voix déjà utilisée par le projet (importée) : description et extraits à écouter, pour comparer avec la bibliothèque.
+struct CurrentVoiceView: View {
+    let cur: CurrentVoice; let count: Int?
+    @ObservedObject var s = AppState.shared
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            HStack { Header(title: L.t("char.current")); Spacer(minLength: 6); if let count { Tag(title: L.t("char.linecount", count)) } }
+            if let d = cur.description { Text(d).font(.system(size: 11.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true) }
+            ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { _, smp in
+                HStack(spacing: 8) { PlayButton(playing: s.playingPath == smp.file, enabled: FileManager.default.fileExists(atPath: smp.file)) { s.play(rel: smp.file) }
+                    Text(smp.text ?? URL(fileURLWithPath: smp.file).lastPathComponent).font(.system(size: 11.5)).lineLimit(2).foregroundStyle(Flat.text) }
+            }
+            Divider().overlay(Flat.line)
+        }
+    }
 }
 
 /// Colonne droite : recherche, filtres (`.box`), voix en deux colonnes, comparaison A / B.
@@ -323,6 +340,7 @@ struct ProjectsView: View {
                 HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.text2); TextField(L.t("proj.filter"), text: $filter).textFieldStyle(.plain) }
                     .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).frame(maxWidth: 300)
                 Spacer()
+                Button(L.t("btn.import")) { let o = NSOpenPanel(); o.allowedContentTypes = [.json]; if o.runModal() == .OK, let u = o.url { s.importProject(from: u) } }.buttonStyle(FlatButton())
                 Button("＋ " + L.t("proj.new")) { adding = true }.buttonStyle(FlatButton(primary: true))
             }
             ScrollView(showsIndicators: false) {

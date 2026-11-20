@@ -28,6 +28,7 @@ final class AppState: ObservableObject {
     @Published var progress: Double = 0
     @Published var busyFlag = false
     @Published var error: String?
+    @Published var info: String?
     private var cancelRequested = false
     private var player: AVAudioPlayer?
     @Published var playingPath: String?
@@ -53,6 +54,19 @@ final class AppState: ObservableObject {
     func mcpLog(_ n: Int = 6) -> String {
         guard let t = try? String(contentsOf: Paths.home.appendingPathComponent("mcp.log"), encoding: .utf8) else { return "" }
         return t.split(separator: "\n").suffix(n).joined(separator: "\n")
+    }
+    /// Importe un projet (format mcasting-project/1) ou, avec `intoCurrent`, des personnages dans le projet affiché.
+    func importProject(from url: URL, intoCurrent: Bool = false) {
+        guard let data = try? Data(contentsOf: url) else { error = "Cannot read " + url.lastPathComponent; return }
+        var rep: ProjectImport.Report?
+        do {
+            projects = try DataStore.updateProjects { rep = try ProjectImport.apply(data, projectName: intoCurrent ? self.project?.name : nil, to: &$0) }
+            stamp.0 = DataStore.modified(Paths.projects)
+        } catch { self.error = error.localizedDescription; return }
+        guard let rep else { return }
+        if let p = projects.first(where: { $0.name == rep.project }) { projectID = p.id; characterID = p.characters.first?.id }
+        info = L.t("imp.done", rep.created.count, rep.updated.count, rep.unchanged.count) + (rep.warnings.isEmpty ? "" : "\n" + L.t("imp.warn", rep.warnings.count))
+        screen = .casting
     }
     func importCharacters(from url: URL) {
         struct C: Decodable { var name: String; var role: String?; var lines: [String]? }

@@ -14,6 +14,12 @@ enum L {
     static let tables: [String: [String: String]] = ["fr": fr, "en": en, "es": es, "it": it]
 
     private static let fr: [String: String] = [
+        "imp.done": "Import terminé : %d créés, %d mis à jour, %d inchangés.",
+        "imp.warn": "%d avertissement(s) : extraits introuvables.",
+        "info.title": "Information",
+        "btn.import": "Importer un projet…",
+        "char.current": "Voix actuelle",
+        "char.linecount": "%d répliques",
         "proj.filter": "Filtrer",
         "emo.custom": "+ consigne…",
         "nav.title": "Navigation",
@@ -109,6 +115,12 @@ enum L {
         "upd.err.none": "Aucune version publiée.", "upd.err.download": "Téléchargement impossible.", "upd.err.signature": "Signature de la mise à jour invalide.", "upd.err.version": "La mise à jour n'est pas plus récente que la version installée.",
     ]
     private static let en: [String: String] = [
+        "imp.done": "Import complete: %d created, %d updated, %d unchanged.",
+        "imp.warn": "%d warning(s): samples not found.",
+        "info.title": "Information",
+        "btn.import": "Import a project…",
+        "char.current": "Current voice",
+        "char.linecount": "%d lines",
         "proj.filter": "Filter",
         "emo.custom": "+ custom…",
         "nav.title": "Navigation",
@@ -204,6 +216,12 @@ enum L {
         "upd.err.none": "No published release.", "upd.err.download": "Download failed.", "upd.err.signature": "Invalid update signature.", "upd.err.version": "The update is not newer than the installed version.",
     ]
     private static let es: [String: String] = [
+        "imp.done": "Importación completa: %d creados, %d actualizados, %d sin cambios.",
+        "imp.warn": "%d aviso(s): muestras no encontradas.",
+        "info.title": "Información",
+        "btn.import": "Importar un proyecto…",
+        "char.current": "Voz actual",
+        "char.linecount": "%d frases",
         "proj.filter": "Filtrar",
         "emo.custom": "+ indicación…",
         "nav.title": "Navegación",
@@ -299,6 +317,12 @@ enum L {
         "upd.err.none": "Ninguna versión publicada.", "upd.err.download": "Descarga imposible.", "upd.err.signature": "Firma de la actualización no válida.", "upd.err.version": "La actualización no es más reciente que la versión instalada.",
     ]
     private static let it: [String: String] = [
+        "imp.done": "Importazione completata: %d creati, %d aggiornati, %d invariati.",
+        "imp.warn": "%d avviso/i: campioni non trovati.",
+        "info.title": "Informazione",
+        "btn.import": "Importa un progetto…",
+        "char.current": "Voce attuale",
+        "char.linecount": "%d battute",
         "proj.filter": "Filtra",
         "emo.custom": "+ indicazione…",
         "nav.title": "Navigazione",

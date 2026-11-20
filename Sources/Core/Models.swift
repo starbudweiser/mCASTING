@@ -32,15 +32,30 @@ public struct Voice: Codable, Identifiable, Hashable {
     }
 }
 
+/// Voix déjà utilisée par un projet en cours (information + extraits à écouter pour comparer avec la bibliothèque).
+public struct CurrentVoice: Codable, Hashable {
+    public struct Sample: Codable, Hashable { public var file: String; public var text: String? }
+    public var description: String?
+    public var engine: String?
+    public var samples: [Sample]
+    public init(description: String? = nil, engine: String? = nil, samples: [Sample] = []) { self.description = description; self.engine = engine; self.samples = samples }
+}
+
 public struct Character: Codable, Identifiable, Hashable {
     public var id: String
+    public var key: String?         // identifiant stable côté projet source (sert à fusionner les imports successifs)
     public var name: String
     public var role: String
-    public var lines: [String]      // répliques d'exemple
+    public var lines: [String]      // répliques d'exemple (langue du projet)
+    public var lineCount: Int?      // nombre total de répliques du personnage dans le projet source
+    public var notes: String?
+    public var current: CurrentVoice?
     public var voiceID: String?
     public var style: String        // consigne d'émotion par défaut
-    public init(id: String = UUID().uuidString, name: String, role: String = "", lines: [String] = [], voiceID: String? = nil, style: String = "") {
-        self.id = id; self.name = name; self.role = role; self.lines = lines; self.voiceID = voiceID; self.style = style
+    public init(id: String = UUID().uuidString, key: String? = nil, name: String, role: String = "", lines: [String] = [], lineCount: Int? = nil,
+                notes: String? = nil, current: CurrentVoice? = nil, voiceID: String? = nil, style: String = "") {
+        self.id = id; self.key = key; self.name = name; self.role = role; self.lines = lines; self.lineCount = lineCount
+        self.notes = notes; self.current = current; self.voiceID = voiceID; self.style = style
     }
 }
 
