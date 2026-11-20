@@ -80,6 +80,7 @@ final class AppState: ObservableObject {
 
     func start() {
         Paths.prepare(); reload(force: true)
+        if CommandLine.arguments.contains("--demo-busy") { busyFlag = true; task = "library" }      // essais d'interface : calcul simulé
         if voices.isEmpty { voices = (try? LibraryGenerator.ensureCatalog()) ?? [] }
         timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in Task { @MainActor in AppState.shared.reload() } }
     }

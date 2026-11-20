@@ -73,11 +73,43 @@ struct NavPanel: View {
                 }
             }.padding(.horizontal, 6)
             Spacer()
-            HStack(spacing: 8) { Dot(color: s.busy ? Flat.warn : Flat.ok); Text(s.busy ? L.t("compute.busy") : L.t("compute.free")).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1) }.padding(6)
+            ComputeStatus()
         }.padding(.horizontal, 10).padding(.vertical, 12)
         .overlay(alignment: .trailing) { Rectangle().fill(Flat.line).frame(width: 1) }
     }
     func setLang(_ l: Lang) { guard let pid = s.projectID else { return }; s.mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].lang = l } } }
+}
+
+/// État du calcul, en bas de la navigation : texte centré sur une barre de progression en arrière-plan (indéterminée si le calcul n'a pas de pourcentage).
+struct ComputeStatus: View {
+    @ObservedObject var s = AppState.shared
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+    @State private var pulse = false
+    var fraction: Double? { s.busy && s.task == "library" && s.totalSamples > 0 ? Double(s.doneSamples) / Double(s.totalSamples) : nil }
+    var label: String {
+        guard s.busy else { return L.t("compute.free") }
+        if let f = fraction { return L.t("compute.busy") + " · " + "\(Int((f * 100).rounded())) %" }
+        return L.t("compute.busy")
+    }
+    var body: some View {
+        GeometryReader { g in
+            ZStack {
+                RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(Flat.ctl)
+                if s.busy {
+                    RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(Flat.warn.opacity(fraction == nil ? (pulse ? 0.45 : 0.2) : 0.42))
+                        .frame(width: fraction.map { max(g.size.width * $0, 8) } ?? g.size.width).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                HStack(spacing: 7) {
+                    if !s.busy { Dot(color: Flat.ok) }
+                    Text(label).font(.system(size: 12, weight: s.busy ? .medium : .regular)).foregroundStyle(s.busy ? Flat.text : Flat.text2).lineLimit(1).minimumScaleFactor(0.85)
+                }
+            }
+            .clipShape(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+        }
+        .frame(height: 34)
+        .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { pulse = true } } }
+        .animation(.easeOut(duration: 0.3), value: fraction)
+    }
 }
 
 /// Zone principale : marges 14, 10 entre blocs.
