@@ -146,7 +146,7 @@ struct CharacterColumn: View {
         VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.title"))
             ScrollView(showsIndicators: false) { VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } } }
-            Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton(green: true))
+            HStack { Spacer(minLength: 0); Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton(green: true)); Spacer(minLength: 0) }
         }
     }
     func row(_ c: Character) -> some View {
