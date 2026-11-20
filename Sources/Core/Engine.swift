@@ -134,7 +134,7 @@ public enum Engine {
             guard let wav = files.first else { throw EngineError.failed("No audio produced") }
             try FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? FileManager.default.removeItem(at: out)
-            try run(URL(fileURLWithPath: "/usr/bin/afconvert"), ["-f", "m4af", "-d", "aac", "-b", "96000", tmp.appendingPathComponent(wav).path, out.path])
+            try run(URL(fileURLWithPath: "/usr/bin/afconvert"), ["-f", "m4af", "-d", "aac", tmp.appendingPathComponent(wav).path, out.path])
             return Date().timeIntervalSince(t0)
         }
     }
