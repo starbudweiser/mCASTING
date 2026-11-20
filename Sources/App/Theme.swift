@@ -56,15 +56,16 @@ extension View {
 
 /// Bouton `.btn` de la maquette : fond contrôle, rayon 8, marges 6 × 12, graisse 500 ; `primary` = accent ; `small` = 3 × 9.
 struct FlatButton: ButtonStyle {
-    var primary = false, small = false, green = false
-    func makeBody(configuration c: Configuration) -> some View { Inner(c: c, primary: primary, small: small, green: green) }
+    var primary = false, small = false, green = false, wide = false
+    func makeBody(configuration c: Configuration) -> some View { Inner(c: c, primary: primary, small: small, green: green, wide: wide) }
     private struct Inner: View {
-        let c: Configuration; let primary: Bool, small: Bool, green: Bool
+        let c: Configuration; let primary: Bool, small: Bool, green: Bool, wide: Bool
         @State private var hover = false
         @Environment(\.isEnabled) private var enabled
         var body: some View {
-            c.label.font(.system(size: small ? 11.5 : 13, weight: .medium)).lineLimit(1).fixedSize()
-                .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : 6)
+            c.label.font(.system(size: small ? 11.5 : (wide ? 14 : 13), weight: wide ? .semibold : .medium)).lineLimit(1).fixedSize()
+                .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : (wide ? 12 : 6))
+                .frame(maxWidth: wide ? .infinity : nil)
                 .foregroundStyle(primary || green ? (green ? Color.white : Flat.onAcc) : Flat.text)
                 .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(green ? Flat.ok.opacity(hover ? 0.85 : 1) : primary ? Flat.acc.opacity(hover ? 0.85 : 1) : (hover || c.isPressed ? Flat.ctl.opacity(0.7) : Flat.ctl)))
                 .scaleEffect(c.isPressed ? 0.98 : 1).animation(.easeOut(duration: 0.1), value: c.isPressed)
