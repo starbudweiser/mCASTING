@@ -394,7 +394,7 @@ struct LibraryView: View {
                 Title(text: L.t("nav.library"))
                 Tag(title: L.t("lib.recipes", s.libVoices.count, s.doneSamples))
                 HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.text2); TextField(L.t("lib.search"), text: $s.fText).textFieldStyle(.plain) }
-                    .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).frame(maxWidth: 320)
+                    .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).frame(maxWidth: 440)
                 Spacer()
                 Button(L.t("gen.title")) { s.screen = .generation }.buttonStyle(FlatButton(primary: s.remainingSamples > 0))
             }
@@ -414,9 +414,9 @@ struct LibraryView: View {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
                         ForEach(voices.prefix(150)) { v in VoiceCard(v: v, mode: .library, selected: sel?.id == v.id, onSelect: { selID = v.id }) }
-                    }
-                }
-                if let v = sel { Sheet(v: v, line: $line, emo: $emo, uses: used[v.id] ?? 0).frame(width: 330) }
+                    }.frame(maxWidth: .infinity)
+                }.frame(maxWidth: .infinity)
+                if let v = sel { ScrollView(showsIndicators: false) { Sheet(v: v, line: $line, emo: $emo, uses: used[v.id] ?? 0) }.frame(width: 340) }
             }
         }
     }
@@ -440,6 +440,8 @@ struct Sheet: View {
             Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: s.fLang ?? .fr) : line, style: emo) }
                 .buttonStyle(FlatButton(primary: true)).disabled(s.busy || !s.engineInstalled)
         } }
+        .onAppear { if line.isEmpty { line = Catalog.sample(for: v, lang: s.fLang ?? .fr) } }
+        .onChange(of: v.id) { _, _ in line = Catalog.sample(for: v, lang: s.fLang ?? .fr) }
     }
     func kv(_ k: String, _ val: String) -> some View { HStack(alignment: .top) { Text(k).foregroundStyle(Flat.text2); Spacer(minLength: 8); Text(val).multilineTextAlignment(.trailing) }.font(.system(size: 13)) }
 }
