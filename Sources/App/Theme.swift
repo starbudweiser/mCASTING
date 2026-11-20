@@ -20,6 +20,7 @@ enum Flat {
     static let acc = dyn(0x26231e, 0x0a84ff), onAcc = dyn(0xf4f1ec, 0xffffff)
     static let brand = dyn(0xd9622b, 0xf08a52)
     static let ok = dyn(0x3f8f5a, 0x30d158), warn = dyn(0xb7791f, 0xff9f0a)
+    static let go = dyn(0x3f8f5a, 0x2f7d52)              // vert des boutons de création (plus doux que le vert d'état)
     static let avatar = dyn(0x26231e, 0x2c2c31)
     static let rb: CGFloat = 12, rc: CGFloat = 8
 }
@@ -68,7 +69,7 @@ struct FlatButton: ButtonStyle {
                 .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : (wide ? 12 : 6))
                 .frame(maxWidth: wide ? .infinity : nil)
                 .foregroundStyle(primary || green ? (green ? Color.white : Flat.onAcc) : Flat.text)
-                .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(green ? Flat.ok.opacity(hover ? 0.85 : 1) : primary ? Flat.acc.opacity(hover ? 0.85 : 1) : (hover || c.isPressed ? Flat.ctl.opacity(0.7) : Flat.ctl)))
+                .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(green ? Flat.go.opacity(hover ? 0.85 : 1) : primary ? Flat.acc.opacity(hover ? 0.85 : 1) : (hover || c.isPressed ? Flat.ctl.opacity(0.7) : Flat.ctl)))
                 .scaleEffect(c.isPressed ? 0.98 : 1).animation(.easeOut(duration: 0.1), value: c.isPressed)
                 .opacity(enabled ? 1 : 0.4).onHover { hover = $0 }
         }
