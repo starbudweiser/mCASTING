@@ -20,6 +20,7 @@ final class AppState: ObservableObject {
     @Published var fAge: String? = nil
     @Published var fTone: String? = nil
     @Published var avg: Double = 5.6
+    @Published var castTab = 0
     @Published var projectLang: Lang = .fr
     // moteur / calcul
     @Published var engineInstalled = Engine.installed

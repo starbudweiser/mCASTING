@@ -108,8 +108,8 @@ struct CastingView: View {
                     Button(L.t("proj.write")) { s.writeCasting() }.buttonStyle(FlatButton(primary: true)).disabled(p.folder == nil).help(p.folder == nil ? L.t("proj.nofolder") : "")
                 }
                 HStack(alignment: .top, spacing: 12) {
-                    CharacterColumn(adding: $adding).frame(width: 300)
-                    VoicePane()
+                    CharacterColumn(adding: $adding).frame(width: 280)
+                    CastingRight()
                 }
             } else {
                 EmptyProject()
@@ -138,17 +138,14 @@ struct EmptyProject: View {
     }
 }
 
-/// Colonne gauche de 300 px : personnages (`.chr`) puis boîte de réplique d'essai.
+/// Colonne gauche : la liste des personnages, sur toute la hauteur, rien d'autre.
 struct CharacterColumn: View {
     @Binding var adding: Bool
     @ObservedObject var s = AppState.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.title"))
-            ScrollView(showsIndicators: false) {
-                VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } }
-            }.frame(minHeight: 150)
-            if let c = s.character { ScrollView(showsIndicators: false) { TrialBox(c: c) }.frame(maxHeight: 330) }
+            ScrollView(showsIndicators: false) { VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } } }
             Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton())
         }
     }
@@ -167,51 +164,150 @@ struct CharacterColumn: View {
     }
 }
 
-/// Boîte « réplique d'essai » : rôle, répliques d'exemple, consigne d'émotion (puces).
-struct TrialBox: View {
-    let c: Character
-    @ObservedObject var s = AppState.shared
-    @State private var role = ""
-    @State private var lines = ""
-    @State private var style = ""
-    @State private var custom = false
-    static let emotions = [("emo.neutral", ""), ("emo.tired", "tired, low energy"), ("emo.joy", "joyful, bright"), ("emo.anger", "angry, sharp")]
+enum TrialBox { static let emotions = [("emo.neutral", ""), ("emo.tired", "tired, low energy"), ("emo.joy", "joyful, bright"), ("emo.anger", "angry, sharp")] }
+
+/// Commutateur à deux états (capsule).
+struct Seg: View {
+    let items: [String]; @Binding var selection: Int
     var body: some View {
-        Card { VStack(alignment: .leading, spacing: 8) {
-            if let cur = c.current { CurrentVoiceView(cur: cur, count: c.lineCount) }
-            Header(title: c.name + " · " + L.t("char.try"))
-            TextField(L.t("char.role"), text: $role).flatField().onSubmit(save)
-            Text(L.t("char.lines")).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
-            TextEditor(text: $lines).font(.system(size: 12.5)).flatEditor(height: 58)
-            Flow {
-                ForEach(Self.emotions, id: \.0) { e in Button { style = e.1; custom = false; save() } label: { Chip(title: L.t(e.0), on: !custom && style == e.1) }.buttonStyle(.plain) }
-                Button { custom.toggle() } label: { Chip(title: L.t("emo.custom"), on: custom) }.buttonStyle(.plain)
+        HStack(spacing: 2) {
+            ForEach(items.indices, id: \.self) { i in
+                Button { selection = i } label: {
+                    Text(items[i]).font(.system(size: 12.5, weight: .medium)).lineLimit(1).fixedSize().padding(.horizontal, 14).padding(.vertical, 5)
+                        .foregroundStyle(selection == i ? Flat.onAcc : Flat.text).background(Capsule().fill(selection == i ? Flat.acc : .clear))
+                }.buttonStyle(.plain)
             }
-            if custom { TextField(L.t("char.style"), text: $style).flatField().onSubmit(save) }
-            HStack { Button(L.t("char.try")) { save(); try_() }.buttonStyle(FlatButton(primary: true)).disabled(c.voiceID == nil || s.busy || !s.engineInstalled)
-                Button("OK") { save() }.buttonStyle(FlatButton()) }
-        } }
-        .onAppear(perform: load).onChange(of: c.id) { _, _ in load() }
+        }.padding(3).background(Capsule().fill(Flat.ctl))
     }
-    func load() { role = c.role; lines = c.lines.joined(separator: "\n"); style = c.style; custom = !Self.emotions.contains { $0.1 == c.style } }
-    func save() { let r = role, l = lines.split(separator: "\n").map(String.init), st = style; s.update(character: c.id) { $0.role = r; $0.lines = l; $0.style = st } }
-    func try_() { if let v = s.voices.first(where: { $0.id == c.voiceID }), let l = lines.split(separator: "\n").first { s.preview(voice: v, text: String(l), style: style) } }
 }
 
-/// Voix déjà utilisée par le projet (importée) : description et extraits à écouter, pour comparer avec la bibliothèque.
-struct CurrentVoiceView: View {
-    let cur: CurrentVoice; let count: Int?
+/// Partie droite de l'écran Casting : un commutateur « Choisir une voix » / « Fiche du personnage ».
+struct CastingRight: View {
     @ObservedObject var s = AppState.shared
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack { Header(title: L.t("char.current")); Spacer(minLength: 6); if let count { Tag(title: L.t("char.linecount", count)) } }
-            if let d = cur.description { Text(d).font(.system(size: 11.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true) }
-            ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { _, smp in
-                HStack(spacing: 8) { PlayButton(playing: s.playingPath == smp.file, enabled: FileManager.default.fileExists(atPath: smp.file)) { s.play(rel: smp.file) }
-                    Text(smp.text ?? URL(fileURLWithPath: smp.file).lastPathComponent).font(.system(size: 11.5)).lineLimit(2).foregroundStyle(Flat.text) }
+        VStack(alignment: .leading, spacing: 10) {
+            Seg(items: [L.t("char.tab.voices"), L.t("char.tab.sheet")], selection: $s.castTab)
+            if let c = s.character {
+                if s.castTab == 0 { CharacterStrip(c: c); VoicePane() } else { CharacterSheet(c: c).id(c.id) }
+            } else { Text(L.t("char.none")).foregroundStyle(Flat.text2); Spacer() }
+        }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+    }
+}
+
+/// Bandeau du personnage affiché pendant le choix d'une voix : qui, voix actuelle, interprétation.
+struct CharacterStrip: View {
+    let c: Character
+    @ObservedObject var s = AppState.shared
+    var body: some View {
+        Card(pad: 12) { VStack(alignment: .leading, spacing: 10) {
+            HStack(alignment: .top, spacing: 12) {
+                Avatar(letter: String(c.name.prefix(1)), size: 40)
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(c.name).font(.system(size: 15, weight: .semibold)).rowName(c.name)
+                    Text(c.role.isEmpty ? "—" : c.role).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                }
+                Spacer(minLength: 8)
+                if let cur = c.current, !cur.samples.isEmpty {
+                    VStack(alignment: .trailing, spacing: 4) {
+                        Header(title: L.t("char.current"))
+                        HStack(spacing: 6) { ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { _, smp in
+                            PlayButton(playing: s.playingPath == smp.file, enabled: FileManager.default.fileExists(atPath: smp.file)) { s.play(rel: smp.file) }.help(smp.text ?? "") } }
+                    }
+                }
             }
             Divider().overlay(Flat.line)
+            HStack(alignment: .top, spacing: 10) {
+                Header(title: L.t("char.interp")).padding(.top, 6).fixedSize()
+                EmotionPicker(c: c)
+            }
+        } }
+    }
+}
+
+/// Choix de l'interprétation (consigne d'émotion) : puces prêtes + consigne libre.
+struct EmotionPicker: View {
+    let c: Character
+    @ObservedObject var s = AppState.shared
+    @State private var custom = false
+    @State private var text = ""
+    var known: Bool { TrialBox.emotions.contains { $0.1 == c.style } }
+    var body: some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Flow {
+                ForEach(TrialBox.emotions, id: \.0) { e in Button { custom = false; set(e.1) } label: { Chip(title: L.t(e.0), on: !custom && c.style == e.1) }.buttonStyle(.plain) }
+                Button { custom.toggle() } label: { Chip(title: L.t("emo.custom"), on: custom || !known) }.buttonStyle(.plain)
+            }
+            if custom || !known { TextField(L.t("char.style"), text: $text).flatField().onChange(of: text) { _, v in set(v) } }
+        }.onAppear { text = c.style; custom = !known }
+    }
+    func set(_ v: String) { s.update(character: c.id) { $0.style = v } }
+}
+
+/// Fiche complète du personnage : identité, voix actuelle, répliques à essayer, interprétation (deux colonnes, rien de tronqué).
+struct CharacterSheet: View {
+    let c: Character
+    @ObservedObject var s = AppState.shared
+    @State private var name = ""
+    @State private var role = ""
+    @State private var notes = ""
+    @State private var editing = false
+    @State private var linesText = ""
+    var voice: Voice? { s.voices.first { $0.id == c.voiceID } }
+    var body: some View {
+        ScrollView(showsIndicators: false) {
+            HStack(alignment: .top, spacing: 12) {
+                VStack(spacing: 10) { identity; interpretation; if let cur = c.current { current(cur) } }.frame(maxWidth: .infinity)
+                VStack(spacing: 10) { lines }.frame(maxWidth: .infinity)
+            }
         }
+        .onAppear { name = c.name; role = c.role; notes = c.notes ?? ""; linesText = c.lines.joined(separator: "\n") }
+    }
+    var identity: some View {
+        Card(pad: 14) { VStack(alignment: .leading, spacing: 8) {
+            Header(title: L.t("char.identity"))
+            TextField(L.t("char.name"), text: $name).flatField().onChange(of: name) { _, v in s.update(character: c.id) { $0.name = v } }
+            Text(L.t("char.role")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+            TextEditor(text: $role).font(.system(size: 13)).flatEditor(height: 74).onChange(of: role) { _, v in s.update(character: c.id) { $0.role = v } }
+            Text(L.t("char.notes")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+            TextEditor(text: $notes).font(.system(size: 13)).flatEditor(height: 74).onChange(of: notes) { _, v in s.update(character: c.id) { $0.notes = v.isEmpty ? nil : v } }
+        } }
+    }
+    func current(_ cur: CurrentVoice) -> some View {
+        Card(pad: 14) { VStack(alignment: .leading, spacing: 10) {
+            HStack { Header(title: L.t("char.current")); Spacer(minLength: 6); if let n = c.lineCount { Tag(title: L.t("char.linecount", n)) } }
+            if let d = cur.description { Text(d).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true) }
+            ForEach(Array(cur.samples.enumerated()), id: \.offset) { _, smp in
+                HStack(alignment: .top, spacing: 10) {
+                    PlayButton(playing: s.playingPath == smp.file, enabled: FileManager.default.fileExists(atPath: smp.file)) { s.play(rel: smp.file) }
+                    Text(smp.text ?? URL(fileURLWithPath: smp.file).lastPathComponent).font(.system(size: 13)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                }
+            }
+        } }
+    }
+    var lines: some View {
+        Card(pad: 14) { VStack(alignment: .leading, spacing: 8) {
+            HStack { Header(title: L.t("char.lines.title")); Tag(title: "\(c.lines.count)"); Spacer(minLength: 6)
+                Button(editing ? L.t("char.lines.done") : L.t("char.lines.edit")) { editing.toggle(); if !editing { linesText = c.lines.joined(separator: "\n") } }.buttonStyle(FlatButton(small: true)) }
+            if editing {
+                Text(L.t("char.lines")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+                TextEditor(text: $linesText).font(.system(size: 13)).flatEditor(height: 240)
+                    .onChange(of: linesText) { _, v in let l = v.split(separator: "\n").map(String.init); s.update(character: c.id) { $0.lines = l } }
+            } else if c.lines.isEmpty {
+                Text(L.t("char.nolines")).font(.system(size: 13)).foregroundStyle(Flat.text2)
+            } else {
+                ForEach(Array(c.lines.enumerated()), id: \.offset) { i, l in
+                    HStack(alignment: .top, spacing: 10) {
+                        Text(l).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
+                        Button(L.t("char.lines.try")) { if let v = voice { s.preview(voice: v, text: l, style: c.style) } }.buttonStyle(FlatButton(small: true))
+                            .disabled(voice == nil || s.busy || !s.engineInstalled).help(voice == nil ? L.t("char.pickvoice") : "")
+                    }
+                    if i < c.lines.count - 1 { Divider().overlay(Flat.line) }
+                }
+            }
+        } }
+    }
+    var interpretation: some View {
+        Card(pad: 14) { VStack(alignment: .leading, spacing: 8) { Header(title: L.t("char.interp")); EmotionPicker(c: c) } }
     }
 }
 
