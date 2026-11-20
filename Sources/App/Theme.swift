@@ -36,8 +36,9 @@ struct Card<C: View>: View {
 }
 extension View {
     /// Ligne / tuile de la maquette (`.chr`, `.v`, `.pc`) : marges réglables, contour optionnel (plein ou pointillé).
-    func tile(pad: EdgeInsets = EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10), outline: Color? = nil, dashed: Bool = false) -> some View {
-        padding(pad).background(Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+    func tile(pad: EdgeInsets = EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10), outline: Color? = nil, dashed: Bool = false, selected: Bool = false) -> some View {
+        padding(pad)
+            .background { ZStack { RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(Flat.card); RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(selected ? Flat.acc.opacity(0.24) : .clear) } }
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(outline ?? .clear, style: StrokeStyle(lineWidth: 2, dash: dashed ? [5, 4] : [])))
     }

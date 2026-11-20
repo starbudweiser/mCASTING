@@ -159,7 +159,7 @@ struct CharacterColumn: View {
                     Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(c.role)
                 }
                 Spacer(minLength: 0)
-            }.tile(outline: s.characterID == c.id ? Flat.acc : nil)
+            }.tile(selected: s.characterID == c.id)
         }.buttonStyle(.plain)
     }
 }
@@ -396,7 +396,7 @@ struct VoiceCard: View {
                 }
             }
         }
-        .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: selected ? Flat.acc : (chosen ? Flat.ok : (isB ? Flat.acc : nil)), dashed: isB && !chosen)
+        .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: chosen ? Flat.ok : (isB ? Flat.acc : nil), dashed: isB && !chosen, selected: selected)
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
     }
     func tryLine() { if let l = s.character?.lines.first { s.preview(voice: v, text: l, style: s.character?.style ?? "") } }
@@ -480,7 +480,7 @@ struct ProjectsView: View {
                 }
                 Bar2(value: Double(p.castCount) / Double(max(p.characters.count, 1)))
                 HStack(spacing: 6) { Text(p.folder.map { "…/" + URL(fileURLWithPath: $0).lastPathComponent + "/casting.json" } ?? "casting.json").font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(p.folder ?? ""); Tag(title: st.0, color: st.1) }
-            }.tile(pad: EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14), outline: s.projectID == p.id ? Flat.acc : nil)
+            }.tile(pad: EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14), selected: s.projectID == p.id)
         }.buttonStyle(.plain)
     }
 }
