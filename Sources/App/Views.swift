@@ -39,7 +39,7 @@ struct TopBar: View {
             Spacer()
             HStack(spacing: 8) { Dot(color: Flat.ok); Text(L.t("bar.mcp")) }.font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1).fixedSize()
             Text("Qwen3-TTS · " + (s.engineInstalled ? L.t("mod.installed") : L.t("mod.notinstalled"))).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1).fixedSize()
-            Button { s.screen = .settings } label: { Image(systemName: "gearshape") }.buttonStyle(FlatButton(small: true)).help(L.t("nav.settings"))
+            Button { s.screen = .settings } label: { HStack(spacing: 5) { Image(systemName: "gearshape"); Text(L.t("nav.settings")) } }.buttonStyle(FlatButton(small: true))
         }.frame(height: 52).padding(.trailing, 18)
         .overlay(alignment: .bottom) { Rectangle().fill(Flat.line).frame(height: 1) }
     }
@@ -103,7 +103,7 @@ struct CastingView: View {
                     Tag(title: L.t("cast.n", p.characters.count)); Tag(title: L.t("cast.done", p.castCount), color: Flat.ok)
                     if p.characters.count > p.castCount { Tag(title: L.t("cast.left", p.characters.count - p.castCount), color: Flat.warn) }
                     Spacer(minLength: 8)
-                    Button { pickFolder(p) } label: { Image(systemName: "folder") }.buttonStyle(FlatButton()).help(p.folder ?? L.t("proj.folder"))
+                    Button { pickFolder(p) } label: { HStack(spacing: 6) { Image(systemName: "folder"); Text(L.t("proj.folder.short")) } }.buttonStyle(FlatButton()).help(p.folder ?? L.t("proj.folder"))
                     Button(L.t("cast.import")) { importFile() }.buttonStyle(FlatButton())
                     Button(L.t("proj.write")) { s.writeCasting() }.buttonStyle(FlatButton(primary: true)).disabled(p.folder == nil).help(p.folder == nil ? L.t("proj.nofolder") : "")
                 }
@@ -134,7 +134,7 @@ struct CastingView: View {
 struct EmptyProject: View {
     @ObservedObject var s = AppState.shared
     var body: some View {
-        VStack(spacing: 10) { Text(L.t("proj.empty")).foregroundStyle(Flat.text2); Button("＋ " + L.t("proj.new")) { s.screen = .projects }.buttonStyle(FlatButton(primary: true)) }.frame(maxWidth: .infinity, maxHeight: .infinity)
+        VStack(spacing: 10) { Text(L.t("proj.empty")).foregroundStyle(Flat.text2); Button("＋ " + L.t("proj.new")) { s.screen = .projects }.buttonStyle(FlatButton(green: true)) }.frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 }
 
@@ -146,7 +146,7 @@ struct CharacterColumn: View {
         VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.title"))
             ScrollView(showsIndicators: false) { VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } } }
-            Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton())
+            Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton(green: true))
         }
     }
     func row(_ c: Character) -> some View {
@@ -210,8 +210,9 @@ struct CharacterStrip: View {
                 if let cur = c.current, !cur.samples.isEmpty {
                     VStack(alignment: .trailing, spacing: 4) {
                         Header(title: L.t("char.current"))
-                        HStack(spacing: 6) { ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { _, smp in
-                            PlayButton(playing: s.playingPath == smp.file, enabled: FileManager.default.fileExists(atPath: smp.file)) { s.play(rel: smp.file) }.help(smp.text ?? "") } }
+                        HStack(spacing: 6) { ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { i, smp in
+                            Button { s.play(rel: smp.file) } label: { HStack(spacing: 5) { Image(systemName: s.playingPath == smp.file ? "stop.fill" : "play.fill").font(.system(size: 10)); Text(L.t("char.extract", i + 1)) } }
+                                .buttonStyle(FlatButton(primary: true, small: true)).disabled(!FileManager.default.fileExists(atPath: smp.file)).help(smp.text ?? "") } }
                     }
                 }
             }
@@ -389,7 +390,7 @@ struct VoiceCard: View {
             if mode == .casting {
                 HStack(spacing: 6) {
                     Button(L.t("v.line")) { tryLine() }.buttonStyle(FlatButton(small: true)).disabled(s.busy || !s.engineInstalled || s.character?.lines.first == nil)
-                    Button { s.abVoiceID = v.id } label: { Image(systemName: "arrow.left.arrow.right") }.buttonStyle(FlatButton(small: true)).help(L.t("lib.ab"))
+                    Button(L.t("lib.ab")) { s.abVoiceID = v.id }.buttonStyle(FlatButton(small: true))
                     Spacer(minLength: 0)
                     Button(chosen ? L.t("lib.chosen") : L.t("lib.choose")) { s.choose(voice: v.id) }.buttonStyle(FlatButton(primary: chosen, small: true)).disabled(s.characterID == nil)
                 }
@@ -437,7 +438,7 @@ struct ProjectsView: View {
                     .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).frame(maxWidth: 300)
                 Spacer()
                 Button(L.t("btn.import")) { let o = NSOpenPanel(); o.allowedContentTypes = [.json]; if o.runModal() == .OK, let u = o.url { s.importProject(from: u) } }.buttonStyle(FlatButton())
-                Button("＋ " + L.t("proj.new")) { adding = true }.buttonStyle(FlatButton(primary: true))
+                Button("＋ " + L.t("proj.new")) { adding = true }.buttonStyle(FlatButton(green: true))
             }
             ScrollView(showsIndicators: false) {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {

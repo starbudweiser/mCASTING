@@ -14,6 +14,8 @@ enum L {
     static let tables: [String: [String: String]] = ["fr": fr, "en": en, "es": es, "it": it]
 
     private static let fr: [String: String] = [
+        "char.extract": "Extrait %d",
+        "proj.folder.short": "Dossier",
         "char.tab.voices": "Choisir une voix",
         "char.tab.sheet": "Fiche du personnage",
         "char.identity": "Identité",
@@ -38,7 +40,7 @@ enum L {
         "compute.free": "Calcul : libre",
         "compute.busy": "Calcul en cours",
         "bar.mcp": "Serveur MCP prêt",
-        "cast.import": "Importer personnages",
+        "cast.import": "Importer…",
         "cast.n": "%d personnages",
         "cast.done": "%d castés",
         "cast.left": "%d à caster",
@@ -107,7 +109,7 @@ enum L {
         "char.title": "Personnages", "char.add": "Ajouter un personnage", "char.name": "Nom du personnage", "char.role": "Rôle / description", "char.lines": "Répliques d'exemple (une par ligne)",
         "char.novoice": "sans voix", "char.style": "Consigne d'émotion", "char.try": "Essayer la réplique", "char.none": "Ajoutez des personnages au projet.",
         "lib.title": "Bibliothèque de voix", "lib.search": "Rechercher (« bourru », « dragon », « enfant »…)", "lib.count": "%d voix", "lib.choose": "Choisir", "lib.chosen": "Choisie ✓",
-        "lib.ab": "Comparer (B)", "lib.empty": "Aucun échantillon : générez la bibliothèque.", "lib.gen": "Générer la bibliothèque", "lib.gen.left": "%d échantillons à générer",
+        "lib.ab": "Comparer", "lib.empty": "Aucun échantillon : générez la bibliothèque.", "lib.gen": "Générer la bibliothèque", "lib.gen.left": "%d échantillons à générer",
         "lib.all": "Tous", "g.man": "Homme", "g.woman": "Femme", "g.child": "Enfant", "g.animal": "Animal", "g.creature": "Créature",
         "clone.sub": "Clonez une voix depuis un fichier audio ou un lien web, puis ajoutez-la à la bibliothèque.", "clone.file": "Choisir un fichier audio…", "clone.link": "Lien web (YouTube…)", "clone.fetch": "Analyser le lien",
         "clone.start": "Début (s)", "clone.length": "Durée (s)", "clone.transcript": "Transcription exacte de l'extrait", "clone.auto": "Transcrire automatiquement", "clone.name": "Nom de la voix",
@@ -126,6 +128,8 @@ enum L {
         "upd.err.none": "Aucune version publiée.", "upd.err.download": "Téléchargement impossible.", "upd.err.signature": "Signature de la mise à jour invalide.", "upd.err.version": "La mise à jour n'est pas plus récente que la version installée.",
     ]
     private static let en: [String: String] = [
+        "char.extract": "Sample %d",
+        "proj.folder.short": "Folder",
         "char.tab.voices": "Choose a voice",
         "char.tab.sheet": "Character sheet",
         "char.identity": "Identity",
@@ -150,7 +154,7 @@ enum L {
         "compute.free": "Compute: idle",
         "compute.busy": "Compute: running",
         "bar.mcp": "MCP server ready",
-        "cast.import": "Import characters",
+        "cast.import": "Import…",
         "cast.n": "%d characters",
         "cast.done": "%d cast",
         "cast.left": "%d to cast",
@@ -219,7 +223,7 @@ enum L {
         "char.title": "Characters", "char.add": "Add a character", "char.name": "Character name", "char.role": "Role / description", "char.lines": "Sample lines (one per line)",
         "char.novoice": "no voice", "char.style": "Emotion direction", "char.try": "Try the line", "char.none": "Add characters to the project.",
         "lib.title": "Voice library", "lib.search": "Search (“gruff”, “dragon”, “child”…)", "lib.count": "%d voices", "lib.choose": "Choose", "lib.chosen": "Chosen ✓",
-        "lib.ab": "Compare (B)", "lib.empty": "No samples yet: generate the library.", "lib.gen": "Generate the library", "lib.gen.left": "%d samples to generate",
+        "lib.ab": "Compare", "lib.empty": "No samples yet: generate the library.", "lib.gen": "Generate the library", "lib.gen.left": "%d samples to generate",
         "lib.all": "All", "g.man": "Man", "g.woman": "Woman", "g.child": "Child", "g.animal": "Animal", "g.creature": "Creature",
         "clone.sub": "Clone a voice from an audio file or a web link, then add it to the library.", "clone.file": "Choose an audio file…", "clone.link": "Web link (YouTube…)", "clone.fetch": "Analyze link",
         "clone.start": "Start (s)", "clone.length": "Length (s)", "clone.transcript": "Exact transcript of the clip", "clone.auto": "Transcribe automatically", "clone.name": "Voice name",
@@ -238,6 +242,8 @@ enum L {
         "upd.err.none": "No published release.", "upd.err.download": "Download failed.", "upd.err.signature": "Invalid update signature.", "upd.err.version": "The update is not newer than the installed version.",
     ]
     private static let es: [String: String] = [
+        "char.extract": "Muestra %d",
+        "proj.folder.short": "Carpeta",
         "char.tab.voices": "Elegir una voz",
         "char.tab.sheet": "Ficha del personaje",
         "char.identity": "Identidad",
@@ -262,7 +268,7 @@ enum L {
         "compute.free": "Cálculo: libre",
         "compute.busy": "Cálculo en curso",
         "bar.mcp": "Servidor MCP listo",
-        "cast.import": "Importar personajes",
+        "cast.import": "Importar…",
         "cast.n": "%d personajes",
         "cast.done": "%d asignados",
         "cast.left": "%d por asignar",
@@ -331,7 +337,7 @@ enum L {
         "char.title": "Personajes", "char.add": "Añadir un personaje", "char.name": "Nombre del personaje", "char.role": "Papel / descripción", "char.lines": "Frases de ejemplo (una por línea)",
         "char.novoice": "sin voz", "char.style": "Indicación de emoción", "char.try": "Probar la frase", "char.none": "Añade personajes al proyecto.",
         "lib.title": "Biblioteca de voces", "lib.search": "Buscar («ronca», «dragón», «niño»…)", "lib.count": "%d voces", "lib.choose": "Elegir", "lib.chosen": "Elegida ✓",
-        "lib.ab": "Comparar (B)", "lib.empty": "Aún no hay muestras: genera la biblioteca.", "lib.gen": "Generar la biblioteca", "lib.gen.left": "%d muestras por generar",
+        "lib.ab": "Comparar", "lib.empty": "Aún no hay muestras: genera la biblioteca.", "lib.gen": "Generar la biblioteca", "lib.gen.left": "%d muestras por generar",
         "lib.all": "Todas", "g.man": "Hombre", "g.woman": "Mujer", "g.child": "Niño", "g.animal": "Animal", "g.creature": "Criatura",
         "clone.sub": "Clona una voz desde un archivo de audio o un enlace web y añádela a la biblioteca.", "clone.file": "Elegir un archivo de audio…", "clone.link": "Enlace web (YouTube…)", "clone.fetch": "Analizar el enlace",
         "clone.start": "Inicio (s)", "clone.length": "Duración (s)", "clone.transcript": "Transcripción exacta del fragmento", "clone.auto": "Transcribir automáticamente", "clone.name": "Nombre de la voz",
@@ -350,6 +356,8 @@ enum L {
         "upd.err.none": "Ninguna versión publicada.", "upd.err.download": "Descarga imposible.", "upd.err.signature": "Firma de la actualización no válida.", "upd.err.version": "La actualización no es más reciente que la versión instalada.",
     ]
     private static let it: [String: String] = [
+        "char.extract": "Estratto %d",
+        "proj.folder.short": "Cartella",
         "char.tab.voices": "Scegli una voce",
         "char.tab.sheet": "Scheda del personaggio",
         "char.identity": "Identità",
@@ -374,7 +382,7 @@ enum L {
         "compute.free": "Calcolo: libero",
         "compute.busy": "Calcolo in corso",
         "bar.mcp": "Server MCP pronto",
-        "cast.import": "Importa personaggi",
+        "cast.import": "Importa…",
         "cast.n": "%d personaggi",
         "cast.done": "%d assegnati",
         "cast.left": "%d da assegnare",
@@ -443,7 +451,7 @@ enum L {
         "char.title": "Personaggi", "char.add": "Aggiungi un personaggio", "char.name": "Nome del personaggio", "char.role": "Ruolo / descrizione", "char.lines": "Battute di esempio (una per riga)",
         "char.novoice": "senza voce", "char.style": "Indicazione emotiva", "char.try": "Prova la battuta", "char.none": "Aggiungi personaggi al progetto.",
         "lib.title": "Libreria di voci", "lib.search": "Cerca («roca», «drago», «bambino»…)", "lib.count": "%d voci", "lib.choose": "Scegli", "lib.chosen": "Scelta ✓",
-        "lib.ab": "Confronta (B)", "lib.empty": "Nessun campione: genera la libreria.", "lib.gen": "Genera la libreria", "lib.gen.left": "%d campioni da generare",
+        "lib.ab": "Confronta", "lib.empty": "Nessun campione: genera la libreria.", "lib.gen": "Genera la libreria", "lib.gen.left": "%d campioni da generare",
         "lib.all": "Tutte", "g.man": "Uomo", "g.woman": "Donna", "g.child": "Bambino", "g.animal": "Animale", "g.creature": "Creatura",
         "clone.sub": "Clona una voce da un file audio o da un link web, poi aggiungila alla libreria.", "clone.file": "Scegli un file audio…", "clone.link": "Link web (YouTube…)", "clone.fetch": "Analizza il link",
         "clone.start": "Inizio (s)", "clone.length": "Durata (s)", "clone.transcript": "Trascrizione esatta dell'estratto", "clone.auto": "Trascrivi automaticamente", "clone.name": "Nome della voce",
