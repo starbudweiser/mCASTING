@@ -311,7 +311,7 @@ struct CharacterStrip: View {
                 Avatar(letter: String(c.name.prefix(1)), size: 40)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(c.name).font(.system(size: 15, weight: .semibold)).rowName(c.name)
-                    Text(c.role.isEmpty ? "—" : c.role).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
+                    Text(c.role.isEmpty ? "—" : c.role).font(.system(size: 12)).foregroundStyle(Flat.sub).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
                 Spacer(minLength: 0)
             }
@@ -325,7 +325,7 @@ struct CharacterStrip: View {
                     Spacer(minLength: 0)
                 }
             }
-            Divider().overlay(Flat.line)
+            Divider().overlay(Flat.sep)
             VStack(alignment: .leading, spacing: 5) {
                 Header(title: L.t("char.interp"))
                 EmotionPicker(c: c).opacity(s.expressive ? 1 : 0.45)
@@ -336,7 +336,7 @@ struct CharacterStrip: View {
                     Button { s.expressive = false } label: { Chip(title: L.t("rep.faithful"), on: !s.expressive) }.buttonStyle(.plain)
                     Button { s.expressive = true } label: { Chip(title: L.t("rep.expressive"), on: s.expressive) }.buttonStyle(.plain)
                 }
-                Text(L.t(s.expressive ? "rep.hint.e" : "rep.hint.f")).font(.system(size: 11)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                Text(L.t(s.expressive ? "rep.hint.e" : "rep.hint.f")).font(.system(size: 11)).foregroundStyle(Flat.sub).fixedSize(horizontal: false, vertical: true)
             }
         } }
     }
@@ -384,9 +384,9 @@ struct CharacterSheet: View {
         Card(pad: 14, tint: Flat.sky) { VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.identity"))
             TextField(L.t("char.name"), text: $name).flatField().onChange(of: name) { _, v in s.update(character: c.id) { $0.name = v } }
-            Text(L.t("char.role")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+            Text(L.t("char.role")).font(.system(size: 12)).foregroundStyle(Flat.sub)
             TextEditor(text: $role).font(.system(size: 13)).flatEditor(height: 74).onChange(of: role) { _, v in s.update(character: c.id) { $0.role = v } }
-            Text(L.t("char.notes")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+            Text(L.t("char.notes")).font(.system(size: 12)).foregroundStyle(Flat.sub)
             TextEditor(text: $notes).font(.system(size: 13)).flatEditor(height: 74).onChange(of: notes) { _, v in s.update(character: c.id) { $0.notes = v.isEmpty ? nil : v } }
         } }
     }
@@ -397,7 +397,7 @@ struct CharacterSheet: View {
             ForEach(Array(cur.samples.enumerated()), id: \.offset) { _, smp in
                 HStack(alignment: .top, spacing: 10) {
                     PlayButton(playing: s.playingPath == smp.file, enabled: FileManager.default.fileExists(atPath: smp.file)) { s.play(rel: smp.file) }
-                    Text(smp.text ?? URL(fileURLWithPath: smp.file).lastPathComponent).font(.system(size: 13)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                    Text(smp.text ?? URL(fileURLWithPath: smp.file).lastPathComponent).font(.system(size: 13)).foregroundStyle(Flat.sub).fixedSize(horizontal: false, vertical: true)
                 }
             }
         } }
@@ -407,11 +407,11 @@ struct CharacterSheet: View {
             HStack { Header(title: L.t("char.lines.title")); Tag(title: "\(c.lines.count)"); Spacer(minLength: 6)
                 Button(editing ? L.t("char.lines.done") : L.t("char.lines.edit")) { editing.toggle(); if !editing { linesText = c.lines.joined(separator: "\n") } }.buttonStyle(FlatButton(small: true)) }
             if editing {
-                Text(L.t("char.lines")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+                Text(L.t("char.lines")).font(.system(size: 12)).foregroundStyle(Flat.sub)
                 TextEditor(text: $linesText).font(.system(size: 13)).flatEditor(height: 240)
                     .onChange(of: linesText) { _, v in let l = v.split(separator: "\n").map(String.init); s.update(character: c.id) { $0.lines = l } }
             } else if c.lines.isEmpty {
-                Text(L.t("char.nolines")).font(.system(size: 13)).foregroundStyle(Flat.text2)
+                Text(L.t("char.nolines")).font(.system(size: 13)).foregroundStyle(Flat.sub)
             } else {
                 ForEach(Array((c.lines(in: s.project?.lang ?? .fr) ?? c.lines).enumerated()), id: \.offset) { i, l in
                     HStack(alignment: .top, spacing: 10) {
@@ -419,7 +419,7 @@ struct CharacterSheet: View {
                         Button(L.t("char.lines.try")) { if let v = voice { s.preview(voice: v, text: s.spokenLine(c, i, voice: v), style: c.style, fx: CreatureFX.find(c.fx, for: c)) } }.buttonStyle(FlatButton(small: true))
                             .disabled(voice == nil || s.busy || !s.engineInstalled).help(voice == nil ? L.t("char.pickvoice") : "")
                     }
-                    if i < (c.lines(in: s.project?.lang ?? .fr) ?? c.lines).count - 1 { Divider().overlay(Flat.line) }
+                    if i < (c.lines(in: s.project?.lang ?? .fr) ?? c.lines).count - 1 { Divider().overlay(Flat.sep) }
                 }
             }
         } }
@@ -468,8 +468,8 @@ struct FilterBox: View {
     var body: some View {
         Card(pad: 12, stretch: stretch, tint: Flat.prune) { VStack(alignment: .leading, spacing: 8) {
             if search {
-                HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.text2); TextField(L.t("lib.search.short"), text: $s.fText).textFieldStyle(.plain) }
-                    .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+                HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.sub); TextField(L.t("lib.search.short"), text: $s.fText).textFieldStyle(.plain) }
+                    .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.field, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).overlay(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).strokeBorder(Flat.fieldEdge, lineWidth: 1))
             }
             row(L.t("f.gender")) {
                 chip(L.t("lib.all"), s.fGender == nil) { s.fGender = nil }
@@ -491,7 +491,7 @@ struct FilterBox: View {
             HStack { Spacer(minLength: 0); Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count)) }
         } }
     }
-    func label(_ t: String) -> some View { Text(t).font(.system(size: 11)).foregroundStyle(Flat.text2).frame(width: 44, alignment: .leading) }
+    func label(_ t: String) -> some View { Text(t).font(.system(size: 11)).foregroundStyle(Flat.sub).frame(width: 44, alignment: .leading) }
     func chip(_ t: String, _ on: Bool, _ a: @escaping () -> Void) -> some View { Button(action: a) { Chip(title: t, on: on) }.buttonStyle(.plain) }
     func row<C: View>(_ t: String, @ViewBuilder _ c: () -> C) -> some View { HStack(alignment: .top, spacing: 8) { label(t).padding(.top, 5); Flow(spacing: 6) { c() }; Spacer(minLength: 0) } }
 }

@@ -1,0 +1,78 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Contrastes des panneaux</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;background:#0d0d0f;color:#f5f5f7;font:13px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:20px 16px}
+h1{font-size:17px;margin:0 0 4px}p.sub{color:#98989f;margin:0 0 16px;max-width:900px;line-height:1.45}
+.seg{display:inline-flex;background:#232327;border-radius:9px;padding:3px;margin:0 10px 16px 0}
+.seg button{border:0;background:none;color:#c8c8cc;font:inherit;padding:5px 12px;border-radius:7px;cursor:pointer}
+.seg button.on{background:#0a84ff;color:#fff;font-weight:600}
+.grid{display:grid;gap:16px;grid-template-columns:1fr}
+@media(min-width:1000px){.grid{grid-template-columns:1fr 1fr}}
+.screen{border-radius:14px;padding:14px;border:1px solid #2a2a2e}
+.screen>small{display:block;font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px;opacity:.6}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+@media(max-width:620px){.row{grid-template-columns:1fr}}
+.panel{border-radius:12px;padding:12px;min-width:0;border:1px solid var(--edge)}
+.who{display:flex;gap:12px;align-items:flex-start;margin-bottom:10px}
+.av{width:40px;height:40px;border-radius:9px;background:var(--av);color:var(--avt);display:grid;place-items:center;font-weight:700;flex:none}
+.who b{font-size:15px;color:var(--t1)}.who div div{color:var(--t2);font-size:12px;margin-top:3px}
+.h{font-size:11px;font-weight:600;letter-spacing:.44px;color:var(--th);text-transform:uppercase;margin:0 0 6px}
+.line{display:flex;align-items:center;gap:8px;margin-bottom:10px}.line .h{margin:0}
+.sep{height:1px;background:var(--sep);margin:2px 0 10px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.chip{background:var(--c);color:var(--ct);border-radius:999px;padding:4px 10px;font-size:11.5px}
+.chip.on{background:var(--con);color:var(--cont);font-weight:600}
+.btn{background:var(--b);color:var(--bt);border-radius:8px;padding:3px 9px;font-size:11.5px;font-weight:600}
+.search{background:var(--f);color:var(--ft);border-radius:8px;padding:7px 11px;margin-bottom:10px;border:1px solid var(--fe)}
+.lab{display:grid;grid-template-columns:62px 1fr;align-items:start;gap:4px}.lab span.l{color:var(--th);font-size:12px;padding-top:3px}
+.note{color:var(--t2);font-size:11px}
+.count{display:flex;justify-content:flex-end}.count span{background:var(--c);color:var(--t2);border-radius:999px;padding:2px 8px;font-size:11px;font-weight:600}
+.rules{margin-top:20px;max-width:1000px;background:#1a1a1d;border-radius:12px;padding:14px 16px;line-height:1.5}
+.rules h2{font-size:14px;margin:0 0 8px}.rules li{margin:3px 0;color:#d0d0d4}.rules code{background:#2c2c31;border-radius:4px;padding:1px 5px;font-size:12px}
+</style></head><body>
+<h1>Contrastes des éléments sur les panneaux colorés</h1>
+<p class="sub">Le défaut actuel : les puces, champs et boutons gardent les gris de l'appli, pensés pour un fond gris. Sur un fond coloré, ils paraissent sales, et le bleu des boutons se perd sur le panneau bleu. La proposition « ton sur ton » : chaque élément prend la couleur de son panneau, plus claire ou plus foncée, et la sélection devient l'élément le plus contrasté.</p>
+<div><div class="seg" id="mode"><button data-v="avant">Avant</button><button data-v="pro" class="on">Proposition</button></div></div>
+<div class="grid"><div class="screen" id="dark"></div><div class="screen" id="light"></div></div>
+<div class="rules"><h2>Règles de la proposition</h2><ul>
+<li><b>Thème clair</b> : pas de couleur, deux gris chauds, le plus foncé (#ccc8c0) pour le personnage, le plus clair (#e3e0da) pour la recherche.</li>
+<li><b>Fond du panneau en thème sombre</b> : la teinte choisie (bleu, prune…), sans contour gris ; un filet de la même teinte, un peu plus clair en sombre (blanc 6 %), un peu plus foncé en clair (noir 6 %).</li>
+<li><b>Puces et compteur au repos</b> : blanc 9 % sur la teinte en sombre, blanc 65 % en clair, au lieu du gris de l'appli.</li>
+<li><b>Sélection</b> (puce active, boutons Extrait) : blanc presque plein et texte foncé en sombre, encre foncée et texte clair en clair. C'est le seul élément très contrasté, donc on le voit tout de suite, quelle que soit la teinte du panneau.</li>
+<li><b>Champ de recherche</b> : creusé dans le panneau (noir 22 % en sombre, blanc 75 % en clair), avec un filet discret.</li>
+<li><b>Textes</b> : titre en blanc plein, description à 68 %, en-têtes de section à 55 % ; filet de séparation blanc 10 %.</li>
+<li><b>Avatar</b> : noir 28 % sur la teinte, au lieu d'un carré gris.</li>
+<li>Contrastes vérifiés pour le texte (4,5:1 minimum pour les textes courants, 3:1 pour les en-têtes en capitales).</li></ul></div>
+<script>
+const P={dark:{bg:"#131316",t1:"#f5f5f7",tints:["#1d3350","#3e2440"]},light:{bg:"#f4f1ec",t1:"#26231e",tints:["#ccc8c0","#e3e0da"]}};
+function vars(mode,dark){
+ if(mode==="avant") return dark?{edge:"#303035",t1:"#f5f5f7",t2:"#98989f",th:"#98989f",sep:"#303035",c:"#2c2c31",ct:"#f5f5f7",con:"#0a84ff",cont:"#fff",b:"#0a84ff",bt:"#fff",f:"#2c2c31",ft:"#98989f",fe:"transparent",av:"#2c2c31",avt:"#fff"}
+  :{edge:"#e3ddd2",t1:"#26231e",t2:"#7b756a",th:"#7b756a",sep:"#e3ddd2",c:"#ebe6de",ct:"#26231e",con:"#26231e",cont:"#f4f1ec",b:"#26231e",bt:"#f4f1ec",f:"#ebe6de",ft:"#7b756a",fe:"transparent",av:"#26231e",avt:"#fff"};
+ return dark?{edge:"rgba(255,255,255,.06)",t1:"#fff",t2:"rgba(255,255,255,.68)",th:"rgba(255,255,255,.55)",sep:"rgba(255,255,255,.10)",c:"rgba(255,255,255,.09)",ct:"rgba(255,255,255,.88)",con:"rgba(255,255,255,.94)",cont:"#15151a",b:"rgba(255,255,255,.94)",bt:"#15151a",f:"rgba(0,0,0,.22)",ft:"rgba(255,255,255,.55)",fe:"rgba(255,255,255,.06)",av:"rgba(0,0,0,.28)",avt:"#fff"}
+  :{edge:"rgba(0,0,0,.06)",t1:"#1d1b18",t2:"rgba(29,27,24,.66)",th:"rgba(29,27,24,.55)",sep:"rgba(0,0,0,.08)",c:"rgba(255,255,255,.65)",ct:"#26231e",con:"#26231e",cont:"#fff",b:"#26231e",bt:"#fff",f:"rgba(255,255,255,.75)",ft:"rgba(29,27,24,.5)",fe:"rgba(0,0,0,.06)",av:"rgba(0,0,0,.72)",avt:"#fff"};
+}
+function css(o){return Object.entries(o).map(([k,v])=>`--${k}:${v}`).join(";")}
+function screen(id,dark,mode){const p=P[dark?"dark":"light"],v=css(vars(mode,dark)),el=document.getElementById(id);
+ el.style.background=p.bg;el.style.color=p.t1;
+ el.innerHTML=`<small>Thème ${dark?"sombre":"clair"} · ${mode==="avant"?"avant":"proposition"}</small><div class="row">
+ <div class="panel" style="background:${p.tints[0]};${v}">
+  <div class="who"><span class="av">H</span><div><b>Héros</b><div>dry sarcastic young adventurer, deadpan humor, natural pace</div></div></div>
+  <div class="line"><span class="h">Voix actuelle</span><span class="btn">▶ Extrait 1</span><span class="btn">▶ Extrait 2</span></div>
+  <div class="sep"></div>
+  <div class="h">Interprétation</div><div class="chips"><span class="chip">Neutre</span><span class="chip">Fatigué</span><span class="chip on">Joyeux</span><span class="chip">Colère</span><span class="chip">+ consigne…</span></div>
+  <div class="h">Réplique</div><div class="chips"><span class="chip on">Fidèle</span><span class="chip">Expressive</span></div>
+  <div class="note">Timbre exact de l'échantillon, sans émotion.</div></div>
+ <div class="panel" style="background:${p.tints[1]};${v}">
+  <div class="search">⌕ Rechercher une voix…</div>
+  <div class="lab"><span class="l">Genre</span><div class="chips"><span class="chip on">Tous</span><span class="chip">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span><span class="chip">Animal</span><span class="chip">Créature</span></div>
+  <span class="l">Âge</span><div class="chips"><span class="chip">Jeune</span><span class="chip">Adulte</span><span class="chip">Âgé</span></div>
+  <span class="l">Ton</span><div class="chips"><span class="chip">Grave</span><span class="chip">Aigu</span><span class="chip">Chaleureux</span><span class="chip">Sec</span><span class="chip">Inquiétant</span></div>
+  <span class="l">Langue</span><div class="chips"><span class="chip">FR</span><span class="chip">EN</span><span class="chip">★ Favoris</span></div></div>
+  <div class="count"><span>600 voix · 600 filtrées</span></div></div></div>`}
+let mode="pro";
+function render(){screen("dark",true,mode);screen("light",false,mode);document.querySelectorAll("#mode button").forEach(b=>b.classList.toggle("on",b.dataset.v===mode))}
+document.querySelectorAll("#mode button").forEach(b=>b.onclick=()=>{mode=b.dataset.v;render()});
+render();
+</script></body></html>

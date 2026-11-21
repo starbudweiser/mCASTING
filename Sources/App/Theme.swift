@@ -5,6 +5,13 @@ import AppKit
 
 enum Flat {
     static func dyn(_ light: UInt32, _ dark: UInt32) -> Color { Color(nsColor: dynNS(light, dark)) }
+    /// Couleur à transparence (clair, sombre) : sert aux éléments « ton sur ton » posés sur un panneau coloré.
+    static func dynA(_ light: UInt32, _ la: CGFloat, _ dark: UInt32, _ da: CGFloat) -> Color {
+        Color(nsColor: NSColor(name: nil) { a in
+            let dk = a.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua, v = dk ? dark : light
+            return NSColor(srgbRed: CGFloat((v >> 16) & 255) / 255, green: CGFloat((v >> 8) & 255) / 255, blue: CGFloat(v & 255) / 255, alpha: dk ? da : la)
+        })
+    }
     static func dynNS(_ light: UInt32, _ dark: UInt32) -> NSColor {
         NSColor(name: nil) { a in
             let v = a.bestMatch(from: [.darkAqua, .aqua]) == .darkAqua ? dark : light
@@ -24,9 +31,38 @@ enum Flat {
     static let avatar = dyn(0x26231e, 0x2c2c31)
     static let rb: CGFloat = 12, rc: CGFloat = 8
     /// Fonds pastel des panneaux de l'écran Casting (thème clair : pastel ; thème sombre : même teinte, assombrie).
-    static let peach = dyn(0xfbe7dc, 0x45301f), sky = dyn(0xe0ecf8, 0x1d3350), mint = dyn(0xdff1e6, 0x1c3f2d),
-               lavender = dyn(0xebe5f7, 0x36285a), butter = dyn(0xf8f0d6, 0x423a1c), rose = dyn(0xf8e2e7, 0x472433),
-               prune = dyn(0xf1e2f2, 0x3e2440)
+    static let peach = dyn(0xfbe7dc, 0x45301f), sky = dyn(0xccc8c0, 0x1d3350), mint = dyn(0xe3e0da, 0x1c3f2d),
+               lavender = dyn(0xe3e0da, 0x36285a), butter = dyn(0xccc8c0, 0x423a1c), rose = dyn(0xf8e2e7, 0x472433),
+               prune = dyn(0xe3e0da, 0x3e2440)
+    /// Éléments posés sur un panneau coloré (« ton sur ton », maquettes/contrastes-panneaux.html) : ils prennent la teinte
+    /// du panneau, éclaircie ou creusée, et la sélection est le seul élément très contrasté.
+    static let tChip = dynA(0xffffff, 0.65, 0xffffff, 0.09), tChipText = dynA(0x26231e, 1, 0xffffff, 0.88)
+    static let tSel = dynA(0x26231e, 1, 0xffffff, 0.94), tSelText = dynA(0xffffff, 1, 0x15151a, 1)
+    static let tField = dynA(0xffffff, 0.75, 0x000000, 0.22), tFieldEdge = dynA(0x000000, 0.06, 0xffffff, 0.06)
+    static let tSub = dynA(0x1d1b18, 0.66, 0xffffff, 0.68), tHead = dynA(0x1d1b18, 0.55, 0xffffff, 0.55)
+    static let tSep = dynA(0x000000, 0.08, 0xffffff, 0.10), tEdge = dynA(0x000000, 0.06, 0xffffff, 0.06)
+    static let tAvatar = dynA(0x000000, 0.72, 0x000000, 0.28)
+    /// Couleurs qui suivent le panneau : neutres hors panneau coloré, « ton sur ton » dedans.
+    static let sub = Tone.sub, head = Tone.head, sep = Tone.sep, field = Tone.field, fieldEdge = Tone.fieldEdge, chip = Tone.chip
+}
+
+/// Vrai à l'intérieur d'un panneau coloré (Card avec `tint`).
+private struct OnTintKey: EnvironmentKey { static let defaultValue = false }
+extension EnvironmentValues { var onTint: Bool { get { self[OnTintKey.self] } set { self[OnTintKey.self] = newValue } } }
+
+enum Tone: ShapeStyle {
+    case sub, head, sep, field, fieldEdge, chip, avatar
+    func resolve(in e: EnvironmentValues) -> Color {
+        switch self {
+        case .sub: return e.onTint ? Flat.tSub : Flat.text2
+        case .head: return e.onTint ? Flat.tHead : Flat.text2
+        case .sep: return e.onTint ? Flat.tSep : Flat.line
+        case .field: return e.onTint ? Flat.tField : Flat.ctl
+        case .fieldEdge: return e.onTint ? Flat.tFieldEdge : .clear
+        case .chip: return e.onTint ? Flat.tChip : Flat.ctl
+        case .avatar: return e.onTint ? Flat.tAvatar : Flat.avatar
+        }
+    }
 }
 
 /// Boîte de la maquette : fond carte, filet 1 px, rayon 12, marge 11.
@@ -38,7 +74,8 @@ struct Card<C: View>: View {
     var body: some View {
         content.padding(pad).frame(maxWidth: .infinity, maxHeight: stretch ? .infinity : nil, alignment: .topLeading)
             .background(tint ?? Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
-            .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
+            .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(tint == nil ? Flat.line : Flat.tEdge, lineWidth: 1))
+            .environment(\.onTint, tint != nil)
     }
 }
 extension View {
@@ -52,11 +89,13 @@ extension View {
     /// Champ de la maquette (`.search`) : fond contrôle, rayon 8, marge 7 × 11.
     func flatField() -> some View {
         textFieldStyle(.plain).padding(.horizontal, 11).padding(.vertical, 7)
-            .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            .background(Flat.field, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).strokeBorder(Flat.fieldEdge, lineWidth: 1))
     }
     func flatEditor(height: CGFloat) -> some View {
         scrollContentBackground(.hidden).padding(6).frame(height: height)
-            .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            .background(Flat.field, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            .overlay(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).strokeBorder(Flat.fieldEdge, lineWidth: 1))
     }
     /// Nom d'une ligne : une seule ligne, troncature en fin, infobulle.
     func rowName(_ full: String) -> some View { lineLimit(1).truncationMode(.tail).layoutPriority(1).help(full) }
@@ -70,12 +109,15 @@ struct FlatButton: ButtonStyle {
         let c: Configuration; let primary: Bool, small: Bool, green: Bool, wide: Bool
         @State private var hover = false
         @Environment(\.isEnabled) private var enabled
+        @Environment(\.onTint) private var onTint
         var body: some View {
             c.label.font(.system(size: small ? 11.5 : (wide ? 14 : 13), weight: wide ? .semibold : .medium)).lineLimit(1).fixedSize()
                 .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : (wide ? 12 : 6))
                 .frame(maxWidth: wide ? .infinity : nil)
-                .foregroundStyle(primary || green ? (green ? Color.white : Flat.onAcc) : Flat.text)
-                .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(green ? Flat.go.opacity(hover ? 0.85 : 1) : primary ? Flat.acc.opacity(hover ? 0.85 : 1) : (hover || c.isPressed ? Flat.ctl.opacity(0.7) : Flat.ctl)))
+                .foregroundStyle(green ? Color.white : primary ? (onTint ? Flat.tSelText : Flat.onAcc) : (onTint ? Flat.tChipText : Flat.text))
+                .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(green ? Flat.go.opacity(hover ? 0.85 : 1)
+                    : primary ? (onTint ? Flat.tSel : Flat.acc).opacity(hover ? 0.85 : 1)
+                    : (onTint ? Flat.tChip : Flat.ctl).opacity(hover || c.isPressed ? 0.7 : 1)))
                 .scaleEffect(c.isPressed ? 0.98 : 1).animation(.easeOut(duration: 0.1), value: c.isPressed)
                 .opacity(enabled ? 1 : 0.4).onHover { hover = $0 }
         }
@@ -85,9 +127,11 @@ struct FlatButton: ButtonStyle {
 /// `.chip` : pastille 4 × 10, 11,5 px ; active = accent.
 struct Chip: View {
     let title: String; var on = false
+    @Environment(\.onTint) private var onTint
     var body: some View {
         Text(title).font(.system(size: 11.5, weight: on ? .semibold : .regular)).lineLimit(1).fixedSize().padding(.horizontal, 10).padding(.vertical, 4)
-            .foregroundStyle(on ? Flat.onAcc : Flat.text).background(Capsule().fill(on ? Flat.acc : Flat.ctl))
+            .foregroundStyle(on ? (onTint ? Flat.tSelText : Flat.onAcc) : (onTint ? Flat.tChipText : Flat.text))
+            .background(Capsule().fill(on ? (onTint ? Flat.tSel : Flat.acc) : (onTint ? Flat.tChip : Flat.ctl)))
     }
 }
 
@@ -97,14 +141,15 @@ struct Tag: View {
     var body: some View {
         let c = color ?? Flat.text2
         Text(title).font(.system(size: 11, weight: .semibold)).lineLimit(1).fixedSize().padding(.horizontal, 7).padding(.vertical, 2)
-            .foregroundStyle(solid ? Flat.onAcc : c).background(Capsule().fill(solid ? Flat.acc : (color == nil ? Flat.ctl : c.opacity(0.22))))
+            .foregroundStyle(solid ? AnyShapeStyle(Flat.onAcc) : color == nil ? AnyShapeStyle(Flat.sub) : AnyShapeStyle(c))
+            .background(Capsule().fill(solid ? AnyShapeStyle(Flat.acc) : color == nil ? AnyShapeStyle(Flat.chip) : AnyShapeStyle(c.opacity(0.22))))
     }
 }
 
 /// `.h` : 11 px / 600, capitales, interlettrage .04 em, secondaire.
 struct Header: View {
     let title: String
-    var body: some View { Text(title.uppercased()).font(.system(size: 11, weight: .semibold)).tracking(0.44).foregroundStyle(Flat.text2).lineLimit(1) }
+    var body: some View { Text(title.uppercased()).font(.system(size: 11, weight: .semibold)).tracking(0.44).foregroundStyle(Flat.head).lineLimit(1) }
 }
 
 /// Nom de l'appli avec son « m » orange (jamais dans un menu déroulant).
@@ -141,7 +186,7 @@ struct Avatar: View {
     let letter: String; var size: CGFloat = 34
     var body: some View {
         Text(letter.uppercased()).font(.system(size: 13, weight: .bold)).foregroundStyle(.white).frame(width: size, height: size)
-            .background(Flat.avatar, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            .background(Tone.avatar, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
     }
 }
 
