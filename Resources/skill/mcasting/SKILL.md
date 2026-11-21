@@ -43,6 +43,9 @@ until they say the casting is done.
   language** (`samples.<lang>` as reference audio) with that model. Cloning a sample into another language keeps the
   timbre but also its accent: use `timbre_ref_audio` / `timbre_ref_text` only when no sample exists in that language.
 - `ref_audio` / `ref_text` for cloned voices.
+- `engine: "server"`: a voice of a network voice server — POST `<server>/v1/audio/speech` with `model` = `remote_model`,
+  `voice` = `remote_voice`. `engine: "elevenlabs"`: an ElevenLabs voice (`remote_voice` = voice_id) — it costs credits:
+  tell the human the number of characters and get their go-ahead before generating.
 - `lines_alt`: the lines in the other languages.
 - `sfx`: a generated cry (no words) for creatures and animals, to play alone or mix under the voice.
 - `fx` / `fx_ffmpeg`: the voice effect chosen for a creature or animal. Apply `fx_ffmpeg` to every generated line

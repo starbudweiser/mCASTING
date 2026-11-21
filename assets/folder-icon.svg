@@ -1,0 +1,24 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+<!-- Icône de dossier d'appli, style « plat » validé par Stéphan le 19/11/2026 (modèle : TESSERaCT, mSPACES, mFRAMES).
+     Sans ombre portée, sans reflet, sans contour. Dossier bleu nuit + carré sombre uni de l'icône au centre.
+     Remplacer <g transform="translate(511.5 561) scale(0.64) translate(-512 -495)" fill="none" stroke="#e9773f" stroke-width="36" stroke-linecap="round">
+<rect x="407" y="202" width="210" height="330" rx="105" fill="#e9773f" stroke="none"/>
+<path d="M337 442 A175 175 0 0 0 687 442"/>
+<path d="M512 617 V686"/><path d="M422 686 H602"/>
+<circle cx="442" cy="771" r="18" fill="#e9773f" stroke="none" opacity="0.55"/>
+<circle cx="512" cy="771" r="18" fill="#e9773f" stroke="none" opacity="0.78"/>
+<circle cx="582" cy="771" r="18" fill="#e9773f" stroke="none"/>
+</g> par le motif de l'appli, dessiné en coordonnées 1024 et centré sur (511.5, 561),
+     tenant dans le carré (250..773 x 300..822) ; le motif seul, jamais l'icône d'appli avec ses effets. -->
+<path d="M104 124 H405 C430 124 450 150 480 160 C495 166 505 168 520 168 H905 Q960 168 960 223 V820 Q960 872 908 872 H116 Q64 872 64 820 V178 Q64 124 104 124 Z" fill="#27406c"/>
+<path d="M116 250 H908 Q960 250 960 302 V820 Q960 872 908 872 H116 Q64 872 64 820 V302 Q64 250 116 250 Z" fill="#2e4e82"/>
+<rect x="250" y="300" width="523" height="522" rx="135" fill="#212122"/>
+<g transform="translate(511.5 561) scale(0.64) translate(-512 -495)" fill="none" stroke="#e9773f" stroke-width="36" stroke-linecap="round">
+<rect x="407" y="202" width="210" height="330" rx="105" fill="#e9773f" stroke="none"/>
+<path d="M337 442 A175 175 0 0 0 687 442"/>
+<path d="M512 617 V686"/><path d="M422 686 H602"/>
+<circle cx="442" cy="771" r="18" fill="#e9773f" stroke="none" opacity="0.55"/>
+<circle cx="512" cy="771" r="18" fill="#e9773f" stroke="none" opacity="0.78"/>
+<circle cx="582" cy="771" r="18" fill="#e9773f" stroke="none"/>
+</g>
+</svg>

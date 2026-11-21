@@ -27,6 +27,16 @@ final class SetupModel: ObservableObject {
     @Published var importInfo = ""
     // 4 · Voix
     @Published var compare: Set<String> = []
+    @Published var voiceMode = "mac"
+    @Published var serverURL = ""
+    @Published var serverKey = ""
+    @Published var serverModels: [String] = []
+    @Published var serverModel = ""
+    @Published var serverStatus = ""
+    @Published var serverLibrary = false
+    @Published var elKey = ""
+    @Published var elStatus = ""
+    @Published var remoteBusy = false
     // 5 · Écoute
     @Published var results: [String: [URL]] = [:]
     @Published var times: [String: Double] = [:]
@@ -35,7 +45,14 @@ final class SetupModel: ObservableObject {
     @Published var status = ""
     @Published var chosen: String?
 
-    var steps: [Int] { quick ? [0, 1, 2] + (creatures.isEmpty ? [] : [5]) : [0, 1, 2, 3, 4] + (creatures.isEmpty ? [] : [5]) + [6] }
+    var steps: [Int] {
+        if quick { return [0, 1, 2] + (creatures.isEmpty ? [] : [5]) }
+        switch voiceMode {
+        case "server": return [0, 1, 2, 3] + (creatures.isEmpty ? [] : [5]) + [6]     // l'écoute comparée clone des extraits : elle reste sur ce Mac
+        case "cloud": return [0, 1, 2, 3] + (creatures.isEmpty ? [] : [5])            // pas de bibliothèque à créer : on caste dans les voix du service
+        default: return [0, 1, 2, 3, 4] + (creatures.isEmpty ? [] : [5]) + [6]
+        }
+    }
     var project: Project? { AppState.shared.projects.first { $0.id == projectID } }
     var creatures: [Character] { (project?.characters ?? []).filter { SetupModel.isCreature($0) } }
     var hw: Hardware { .current }
@@ -56,7 +73,60 @@ final class SetupModel: ObservableObject {
         quick = q; step = 0; name = ""; folder = nil; lang = .fr; projectID = nil; imported = nil; importInfo = ""
         results = [:]; times = [:]; chosen = st.actingModel; assistant = st.assistant ?? "cloud"
         compare = Set(st.compare.isEmpty ? [recommended] + (models.contains { $0.id == "fish-drama3" } ? ["fish-drama3"] : []) : st.compare)
+        voiceMode = st.voiceMode; serverURL = st.serverURL ?? ""; serverLibrary = st.serverLibrary; serverModels = []; serverStatus = ""; elStatus = ""
+        serverKey = ""; elKey = ""
         detect(); open = true
+    }
+
+    func saveVoiceMode() {
+        var st = SetupState.load(); st.voiceMode = voiceMode; st.serverURL = serverURL.isEmpty ? nil : serverURL; st.serverLibrary = serverLibrary; st.save()
+    }
+    func testServer() {
+        let u = serverURL, k = serverKey
+        if !k.isEmpty { Keychain.set("server", k) }
+        remoteBusy = true; serverStatus = L.t("su.v.testing")
+        DispatchQueue.global().async {
+            let r = Result { try VoiceServer.models(u) }
+            Task { @MainActor in
+                let m = SetupModel.shared; m.remoteBusy = false
+                switch r {
+                case .success(let ms):
+                    m.serverModels = ms.filter { !["whisper", "asr", "stt", "llm", "instruct"].contains(where: $0.lowercased().contains) }
+                    m.serverModel = m.serverModels.first { !$0.lowercased().contains("voicedesign") } ?? m.serverModels.first ?? ""
+                    m.serverStatus = L.t("su.v.connected", m.serverModels.count)
+                    if VoiceServer.designModel(in: ms) == nil { m.serverLibrary = false }
+                    m.saveVoiceMode()
+                case .failure(let e): m.serverModels = []; m.serverStatus = L.t("su.v.unreachable") + " · " + e.localizedDescription
+                }
+            }
+        }
+    }
+    func importServerVoices() {
+        let u = serverURL, model = serverModel
+        AppState.shared.run("server") { _ in
+            let n = try VoiceServer.importVoices(u, model: model) { i, t in Task { @MainActor in SetupModel.shared.serverStatus = L.t("su.v.importing", i, t) } }
+            Task { @MainActor in SetupModel.shared.serverStatus = L.t("su.v.imported", n); AppState.shared.reload(force: true) }
+        }
+    }
+    func checkElevenLabs() {
+        if !elKey.isEmpty { Keychain.set("elevenlabs", elKey); elKey = "" }
+        remoteBusy = true; elStatus = L.t("su.v.testing")
+        DispatchQueue.global().async {
+            let r = Result { try ElevenLabs.balance() }
+            Task { @MainActor in
+                let m = SetupModel.shared; m.remoteBusy = false
+                switch r {
+                case .success(let b): m.elStatus = L.t("su.v.el.balance", b.left, b.limit); m.saveVoiceMode()
+                case .failure(let e): m.elStatus = L.t("su.v.el.bad") + " · " + e.localizedDescription
+                }
+            }
+        }
+    }
+    func importElevenLabs() {
+        AppState.shared.run("elevenlabs") { _ in
+            let n = try ElevenLabs.importVoices { i, t in Task { @MainActor in SetupModel.shared.elStatus = L.t("su.v.importing", i, t) } }
+            Task { @MainActor in SetupModel.shared.elStatus = L.t("su.v.imported", n); AppState.shared.reload(force: true) }
+        }
     }
 
     func detect() {
@@ -103,7 +173,7 @@ final class SetupModel: ObservableObject {
     func next() {
         if step == 0 { saveProject() }
         if step == 1 { var st = SetupState.load(); st.assistant = assistant; st.save() }
-        if step == 3 { var st = SetupState.load(); st.compare = Array(compare); st.save() }
+        if step == 3 { saveVoiceMode(); var st = SetupState.load(); st.compare = Array(compare); st.save() }
         if step == 4, let c = chosen { var st = SetupState.load(); st.actingModel = c; st.save() }
         if index + 1 < steps.count { step = steps[index + 1] } else { finish(library: false) }
     }
@@ -291,12 +361,12 @@ struct SetupWizard: View {
     }
 
     var nextTitle: String {
-        switch m.step { case 3: return L.t("su.listen"); case 6: return L.t("su.lib.go")
+        switch m.step { case 3 where m.voiceMode == "mac": return L.t("su.listen"); case 6: return L.t("su.lib.go")
         default: return m.index == m.steps.count - 1 ? L.t("su.finish") : L.t("su.next") }
     }
     var skipTitle: String? { m.step == 2 && m.imported == nil ? L.t("su.dlg.skip") : (m.step == 5 ? L.t("su.skip") : nil) }
     var canNext: Bool {
-        switch m.step { case 3: return !m.compare.isEmpty; case 4: return !m.running && m.chosen != nil && !m.results.isEmpty; default: return true }
+        switch m.step { case 3: return m.voiceMode != "mac" || !m.compare.isEmpty; case 4: return !m.running && m.chosen != nil && !m.results.isEmpty; default: return true }
     }
 
     @ViewBuilder var page: some View {
@@ -443,7 +513,8 @@ struct SetupWizard: View {
         VStack(alignment: .leading, spacing: 16) {
             question(L.t("su.v.q"), L.t("su.v.l", m.hw.chip, Int(m.hw.memoryGB.rounded())))
             VStack(spacing: 10) {
-                choice(true, "laptopcomputer", L.t("su.v.mac"), L.t("su.v.mac.d"), action: {}) {
+                choice(m.voiceMode == "mac", "laptopcomputer", L.t("su.v.mac"), L.t("su.v.mac.d"), action: { m.voiceMode = "mac" }) {
+                    if m.voiceMode == "mac" {
                     VStack(spacing: 6) {
                         ForEach(m.models) { md in
                             Button { if m.compare.contains(md.id) { m.compare.remove(md.id) } else { m.compare.insert(md.id) } } label: {
@@ -459,9 +530,47 @@ struct SetupWizard: View {
                         }
                         Text(L.t("su.v.hint")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).frame(maxWidth: .infinity, alignment: .leading)
                     }.padding(.top, 10)
+                    }
                 }
-                choice(false, "desktopcomputer", L.t("su.v.server"), L.t("su.v.server.d"), enabled: false, action: {}) { Tag(title: L.t("su.soon")).padding(.top, 6) }
-                choice(false, "cloud", L.t("su.v.cloud"), L.t("su.v.cloud.d"), enabled: false, action: {}) { Tag(title: L.t("su.soon")).padding(.top, 6) }
+                choice(m.voiceMode == "server", "desktopcomputer", L.t("su.v.server"), L.t("su.v.server.d"), action: { m.voiceMode = "server" }) {
+                    if m.voiceMode == "server" {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                TextField("http://pc-studio.local:8000", text: $m.serverURL).flatField()
+                                SecureField(L.t("su.v.key.opt"), text: $m.serverKey).flatField().frame(width: 180)
+                                Button(L.t("su.v.test")) { m.testServer() }.buttonStyle(FlatButton(small: true)).disabled(m.serverURL.isEmpty || m.remoteBusy)
+                            }
+                            if !m.serverStatus.isEmpty { Text(m.serverStatus).font(.system(size: 11.5)).foregroundStyle(m.serverModels.isEmpty ? Flat.warn : Flat.ok) }
+                            if !m.serverModels.isEmpty {
+                                if VoiceServer.designModel(in: m.serverModels) != nil {
+                                    Button { m.serverLibrary.toggle(); m.saveVoiceMode() } label: { HStack(spacing: 8) { Image(systemName: m.serverLibrary ? "checkmark.square.fill" : "square").foregroundStyle(m.serverLibrary ? Flat.acc : Flat.text2); Text(L.t("su.v.srvlib")) } }.buttonStyle(.plain)
+                                }
+                                HStack(spacing: 8) {
+                                    Picker("", selection: $m.serverModel) { ForEach(m.serverModels, id: \.self) { Text($0).tag($0) } }.labelsHidden().frame(maxWidth: 320)
+                                    Button(L.t("su.v.importsrv")) { m.importServerVoices() }.buttonStyle(FlatButton(small: true)).disabled(s.busy || m.serverModel.isEmpty)
+                                }
+                                Text(L.t("su.v.srvnote")).font(.system(size: 11)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                            }
+                        }.padding(.top, 10)
+                    }
+                }
+                choice(m.voiceMode == "cloud", "cloud", L.t("su.v.cloud"), L.t("su.v.cloud.d"), action: { m.voiceMode = "cloud" }) {
+                    if m.voiceMode == "cloud" {
+                        VStack(alignment: .leading, spacing: 8) {
+                            HStack(spacing: 8) {
+                                Text("ElevenLabs").fontWeight(.semibold)
+                                SecureField(ElevenLabs.key == nil ? L.t("su.v.el.key") : L.t("su.v.el.keyok"), text: $m.elKey).flatField()
+                                Button(L.t("su.v.check")) { m.checkElevenLabs() }.buttonStyle(FlatButton(small: true)).disabled((m.elKey.isEmpty && ElevenLabs.key == nil) || m.remoteBusy)
+                            }
+                            if !m.elStatus.isEmpty { Text(m.elStatus).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
+                            HStack(spacing: 8) {
+                                Button(L.t("su.v.el.import")) { m.importElevenLabs() }.buttonStyle(FlatButton(small: true, green: true)).disabled(ElevenLabs.key == nil || s.busy)
+                                Text(L.t("su.v.el.free")).font(.system(size: 11)).foregroundStyle(Flat.text2)
+                            }
+                            Text(L.t("su.v.el.note")).font(.system(size: 11)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                        }.padding(.top, 10)
+                    }
+                }
             }.frame(maxWidth: .infinity)
         }
     }

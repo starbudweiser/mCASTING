@@ -234,7 +234,21 @@ final class AppState: ObservableObject {
         if !warnedNoAlt { warnedNoAlt = true; info = L.t("alt.missing") }
         return Catalog.sample(for: voice, lang: pl)
     }
+    /// Réplique ElevenLabs en attente de confirmation du coût.
+    @Published var pendingPaid: (voice: Voice, text: String, fx: VoiceFX?)?
+    func confirmPaid() {
+        guard let p = pendingPaid, let vid = p.voice.remoteVoice else { return }
+        pendingPaid = nil
+        run("elevenlabs") { _ in
+            var u = Paths.audio.appendingPathComponent("preview/el-\(UUID().uuidString).m4a")
+            try ElevenLabs.speak(voiceID: vid, text: p.text, to: u)
+            if let fx = p.fx { let o = u.deletingPathExtension().appendingPathExtension("fx.m4a"); try CreatureFX.render(fx, input: u, output: o); u = o }
+            let path = u.path
+            Task { @MainActor in AppState.shared.play(rel: path) }
+        }
+    }
     func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil, fx: VoiceFX? = nil) {
+        if voice.engine == "elevenlabs" { pendingPaid = (voice, text, fx); return }      // payant : coût confirmé d'abord
         let expr = expressive ?? self.expressive
         let lang = project?.lang ?? .fr
         run("preview") { log in

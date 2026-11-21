@@ -20,6 +20,9 @@ public enum LibraryGenerator {
     /// Génère tous les échantillons manquants ; `progress(fait, total, voix, durée)`. Annulable via `cancel()`.
     public static func run(progress: @escaping (Int, Int, String, TimeInterval) -> Void, cancel: @escaping () -> Bool) throws {
         guard let model = TTSModel.find("qwen3-voicedesign") else { return }
+        let st = SetupState.load()
+        // Bibliothèque fabriquée sur un serveur du réseau, si choisi et si ce serveur sait créer une voix d'après sa description.
+        let remote: (String, String)? = st.voiceMode == "server" && st.serverLibrary ? st.serverURL.flatMap { u in (try? VoiceServer.models(u)).flatMap(VoiceServer.designModel).map { (u, $0) } } : nil
         var voices = try ensureCatalog()
         let total = remaining(voices)
         var done = 0
@@ -27,8 +30,9 @@ public enum LibraryGenerator {
             for l in Lang.allCases where !hasSample(voices[i], l) {
                 if cancel() { return }
                 let rel = "lib/\(voices[i].id).\(l.rawValue).m4a"
-                let dur = try Engine.generate(model: model, text: Catalog.sample(for: voices[i], lang: l), lang: l,
-                                              instruct: voices[i].recipe, to: Paths.audio.appendingPathComponent(rel))
+                let out = Paths.audio.appendingPathComponent(rel), text = Catalog.sample(for: voices[i], lang: l)
+                let dur = try remote.map { try VoiceServer.speak($0.0, model: $0.1, text: text, lang: l, instruct: voices[i].recipe, to: out) }
+                    ?? Engine.generate(model: model, text: text, lang: l, instruct: voices[i].recipe, to: out)
                 voices[i].samples[l.rawValue] = rel
                 done += 1
                 progress(done, total, voices[i].name, dur)
@@ -43,6 +47,10 @@ public enum LibraryGenerator {
                                actingModel: String? = SetupState.load().actingModel) throws -> URL {
         let rel = "preview/\(UUID().uuidString).m4a"
         let out = Paths.audio.appendingPathComponent(rel)
+        if voice.engine == "server", let m = voice.remoteModel, let u = voice.source {      // voix toute prête d'un serveur du réseau
+            try VoiceServer.speak(u, model: m, text: text, lang: lang, voice: voice.remoteVoice, to: out); return out
+        }
+        if voice.engine == "elevenlabs" { throw EngineError.failed("ElevenLabs: confirm the cost first") }
         if let ref = voice.refAudio {      // voix clonée : modèle Base, extrait de référence
             guard let base = TTSModel.find("qwen3-base") else { throw EngineError.notInstalled }
             try Engine.generate(model: base, text: text, lang: lang, instruct: "", refAudio: Paths.audio.appendingPathComponent(ref), refText: voice.refText, to: out)

@@ -13,7 +13,10 @@ public enum CastingExport {
         public var acting_model: String?               // modèle qui dit les répliques en clonant l'échantillon (dépôt Hugging Face)
         public var sfx: String?                        // cri de créature généré (sans paroles), à mixer ou à jouer seul
         public var fx: String?                         // effet de voix choisi (créatures, animaux)
-        public var fx_ffmpeg: String?                  // filtre ffmpeg équivalent, à appliquer à chaque réplique générée
+        public var fx_ffmpeg: String?
+        public var remote_model: String?               // voix de serveur ou ElevenLabs : modèle
+        public var remote_voice: String?               // voix de serveur (nom) ou ElevenLabs (voice_id)
+        public var server: String?                     // adresse du serveur de voix                  // filtre ffmpeg équivalent, à appliquer à chaque réplique générée
     }
     public struct File: Codable {
         public var format = "mcasting/1"
@@ -36,7 +39,8 @@ public enum CastingExport {
                               lines_alt: c.altLines,
                               acting_model: SetupState.load().actingModel.flatMap { TTSModel.find($0)?.repo },
                               sfx: c.sfx.map { Paths.audio.appendingPathComponent($0).path },
-                              fx: c.fx, fx_ffmpeg: CreatureFX.find(c.fx, for: c)?.ffmpeg)
+                              fx: c.fx, fx_ffmpeg: CreatureFX.find(c.fx, for: c)?.ffmpeg,
+                              remote_model: v.remoteModel, remote_voice: v.remoteVoice, server: v.engine == "server" ? v.source : nil)
         }
         return File(project: p.name, lang: p.lang.rawValue, characters: out)
     }

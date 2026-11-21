@@ -12,6 +12,10 @@ struct ContentView: View {
         .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
         .alert(L.t("err.title"), isPresented: Binding(get: { s.error != nil }, set: { if !$0 { s.error = nil } })) { Button("OK") { s.error = nil } } message: { Text(s.error ?? "") }
         .alert(L.t("info.title"), isPresented: Binding(get: { s.info != nil }, set: { if !$0 { s.info = nil } })) { Button("OK") { s.info = nil } } message: { Text(s.info ?? "") }
+        .alert(L.t("el.confirm.q"), isPresented: Binding(get: { s.pendingPaid != nil }, set: { if !$0 { s.pendingPaid = nil } })) {
+            Button(L.t("btn.cancel"), role: .cancel) { s.pendingPaid = nil }
+            Button(L.t("el.confirm.go", ElevenLabs.cost(s.pendingPaid?.text ?? ""))) { s.confirmPaid() }
+        } message: { Text(L.t("el.confirm.msg", (s.pendingPaid?.text ?? "").count, ElevenLabs.cost(s.pendingPaid?.text ?? ""))) }
     }
     var main: some View {
         VStack(spacing: 0) {

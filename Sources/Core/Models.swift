@@ -22,7 +22,9 @@ public struct Voice: Codable, Identifiable, Hashable {
     public var custom: Bool
     public var refAudio: String?    // voix clonée : extrait de référence (relatif à audio/)
     public var refText: String?     // transcription exacte de l'extrait
-    public var source: String?      // origine : nom de fichier ou lien
+    public var source: String?      // origine : nom de fichier ou lien (adresse du serveur pour une voix de serveur)
+    public var remoteModel: String? // voix d'un serveur ou d'ElevenLabs : modèle à utiliser
+    public var remoteVoice: String? // nom de la voix sur le serveur, ou identifiant de voix ElevenLabs
     /// Langue de référence du timbre : le français d'abord (casting rédigé en français), sinon la première langue disponible.
     public var timbreLang: Lang { samples["fr"] != nil ? .fr : (samples.keys.compactMap { Lang(rawValue: $0) }.first ?? .fr) }
     public init(id: String, name: String, gender: Gender, age: String, pitch: String, tone: String, species: String? = nil,
