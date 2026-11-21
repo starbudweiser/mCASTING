@@ -567,6 +567,7 @@ struct ProjectsView: View {
     @State private var name = ""
     @State private var lang: Lang = .fr
     @State private var filter = ""
+    @State private var toDelete: Project?
     var shown: [Project] { filter.isEmpty ? s.projects : s.projects.filter { $0.name.lowercased().contains(filter.lowercased()) } }
     var body: some View {
         Page {
@@ -580,7 +581,12 @@ struct ProjectsView: View {
             }
             ScrollView(showsIndicators: false) {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
-                    ForEach(shown) { p in card(p) }
+                    ForEach(shown) { p in
+                        card(p).overlay(alignment: .topTrailing) {
+                            Button { toDelete = p } label: { Image(systemName: "trash").font(.system(size: 12)).foregroundStyle(Flat.text2).frame(width: 22, height: 22).contentShape(Rectangle()) }
+                                .buttonStyle(.plain).help(L.t("proj.delete")).accessibilityLabel(L.t("proj.delete")).padding(.top, 12).padding(.trailing, 10)
+                        }
+                    }
                     Button { SetupModel.shared.start(quick: SetupState.load().completed) } label: {
                         VStack(spacing: 4) { Text("＋ " + L.t("proj.new")); Text(L.t("proj.create.agent")).font(.system(size: 11.5)) }.foregroundStyle(Flat.text2)
                             .frame(maxWidth: .infinity, minHeight: 150)
@@ -591,6 +597,10 @@ struct ProjectsView: View {
             Text(L.t("proj.note")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).padding(.horizontal, 10).padding(.vertical, 7).frame(maxWidth: .infinity, alignment: .leading)
                 .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
         }
+        .alert(L.t("proj.delete.q", toDelete?.name ?? ""), isPresented: Binding(get: { toDelete != nil }, set: { if !$0 { toDelete = nil } })) {
+            Button(L.t("btn.cancel"), role: .cancel) { toDelete = nil }
+            Button(L.t("proj.delete"), role: .destructive) { if let p = toDelete { s.deleteProject(p.id) }; toDelete = nil }
+        } message: { Text(L.t("proj.delete.msg")) }
         .sheet(isPresented: $adding) {
             VStack(alignment: .leading, spacing: 12) {
                 Text(L.t("proj.new")).font(.system(size: 15, weight: .semibold))
@@ -610,7 +620,7 @@ struct ProjectsView: View {
         let st = state(p)
         return Button { s.projectID = p.id; s.characterID = p.characters.first?.id; s.screen = .casting } label: {
             VStack(alignment: .leading, spacing: 8) {
-                HStack { Text(p.name).font(.system(size: 15, weight: .semibold)).rowName(p.name); Spacer(minLength: 4); Tag(title: p.lang.rawValue.uppercased()) }
+                HStack { Text(p.name).font(.system(size: 15, weight: .semibold)).rowName(p.name); Spacer(minLength: 4); Tag(title: p.lang.rawValue.uppercased()).padding(.trailing, 22) }
                 Text(p.folder.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—").font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(p.folder ?? "")
                 HStack(spacing: 18) {
                     VStack(alignment: .leading) { Text("\(p.characters.count)").font(.system(size: 24, weight: .bold)); Text(L.t("proj.chars")).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }

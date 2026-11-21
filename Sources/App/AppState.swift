@@ -120,6 +120,11 @@ final class AppState: ObservableObject {
     func newProject(name: String, lang: Lang) {
         let p = Project(name: name, lang: lang); mutate { $0.append(p) }; projectID = p.id; screen = .casting
     }
+    /// Retire le projet de mCASTING (le dossier du projet et son casting.json ne sont pas touchés).
+    func deleteProject(_ id: String) {
+        mutate { $0.removeAll { $0.id == id } }
+        if projectID == id { projectID = projects.first?.id; characterID = project?.characters.first?.id }
+    }
     func addCharacter(name: String) {
         guard let pid = projectID else { return }
         let c = Character(name: name); mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].characters.append(c) } }

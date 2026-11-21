@@ -14,6 +14,9 @@ enum L {
     static let tables: [String: [String: String]] = ["fr": fr, "en": en, "es": es, "it": it]
 
     private static let fr: [String: String] = [
+        "proj.delete": "Supprimer le projet",
+        "proj.delete.q": "Supprimer « %@ » ?",
+        "proj.delete.msg": "Le projet et son casting disparaissent de mCASTING. Le dossier du projet et son fichier casting.json ne sont pas touchés. Action irréversible.",
         "su.title": "Premiers pas",
         "su.c.hint": "Vous pourrez changer chaque choix plus tard dans le casting. Les cris sont inclus dans casting.json.",
         "su.c.redo": "Générer une autre version",
@@ -233,6 +236,9 @@ enum L {
         "upd.err.none": "Aucune version publiée.", "upd.err.download": "Téléchargement impossible.", "upd.err.signature": "Signature de la mise à jour invalide.", "upd.err.version": "La mise à jour n'est pas plus récente que la version installée.",
     ]
     private static let en: [String: String] = [
+        "proj.delete": "Delete project",
+        "proj.delete.q": "Delete “%@”?",
+        "proj.delete.msg": "The project and its casting are removed from mCASTING. The project folder and its casting.json file are not touched. This cannot be undone.",
         "su.title": "Getting started",
         "su.c.hint": "You can change each choice later in the casting. Cries are included in casting.json.",
         "su.c.redo": "Generate another version",
@@ -452,6 +458,9 @@ enum L {
         "upd.err.none": "No published release.", "upd.err.download": "Download failed.", "upd.err.signature": "Invalid update signature.", "upd.err.version": "The update is not newer than the installed version.",
     ]
     private static let es: [String: String] = [
+        "proj.delete": "Eliminar el proyecto",
+        "proj.delete.q": "¿Eliminar «%@»?",
+        "proj.delete.msg": "El proyecto y su casting desaparecen de mCASTING. La carpeta del proyecto y su archivo casting.json no se tocan. Acción irreversible.",
         "su.title": "Primeros pasos",
         "su.c.hint": "Podrás cambiar cada elección más tarde en el casting. Los gritos se incluyen en casting.json.",
         "su.c.redo": "Generar otra versión",
@@ -671,6 +680,9 @@ enum L {
         "upd.err.none": "Ninguna versión publicada.", "upd.err.download": "Descarga imposible.", "upd.err.signature": "Firma de la actualización no válida.", "upd.err.version": "La actualización no es más reciente que la versión instalada.",
     ]
     private static let it: [String: String] = [
+        "proj.delete": "Elimina il progetto",
+        "proj.delete.q": "Eliminare «%@»?",
+        "proj.delete.msg": "Il progetto e il suo casting spariscono da mCASTING. La cartella del progetto e il suo file casting.json non vengono toccati. Azione irreversibile.",
         "su.title": "Primi passi",
         "su.c.hint": "Potrai cambiare ogni scelta più tardi nel casting. I versi sono inclusi in casting.json.",
         "su.c.redo": "Genera un'altra versione",
