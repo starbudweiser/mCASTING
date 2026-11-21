@@ -12,6 +12,7 @@ struct McastingApp: App {
             if s.busy { Text(L.t("menu.busy", s.task)) }
             Divider()
             Button(L.t("menu.open")) { delegate.showMain() }
+            Button(L.t("menu.setup")) { delegate.showMain(); SetupModel.shared.start(quick: false) }
             Divider()
             Button(L.t("menu.about")) { About.show() }
             Button(L.t("menu.quit")) { NSApp.terminate(nil) }.keyboardShortcut("q")

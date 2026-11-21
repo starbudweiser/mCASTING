@@ -1,0 +1,428 @@
+// mCASTING — guide « Premiers pas » (maquettes/guide.html) : une question par écran, choix recommandé déjà fait.
+import SwiftUI
+import UniformTypeIdentifiers
+
+@MainActor
+final class SetupModel: ObservableObject {
+    static let shared = SetupModel()
+    @Published var open = false
+    @Published var step = 0
+    @Published var quick = false                 // nouveau projet après une première configuration : on ne repose pas les choix du Mac
+    // 1 · Projet
+    @Published var name = ""
+    @Published var folder: String?
+    @Published var lang: Lang = .fr
+    @Published var projectID: String?
+    // 2 · Préparation
+    @Published var assistant = "cloud"
+    @Published var agents: [String] = []
+    @Published var ollama = false
+    // 3 · Dialogues
+    @Published var imported: String?
+    @Published var importInfo = ""
+    // 4 · Voix
+    @Published var compare: Set<String> = []
+    // 5 · Écoute
+    @Published var results: [String: [URL]] = [:]
+    @Published var times: [String: Double] = [:]
+    @Published var lines: [String] = []
+    @Published var running = false
+    @Published var status = ""
+    @Published var chosen: String?
+
+    var steps: [Int] { quick ? [0, 1, 2] + (creatures.isEmpty ? [] : [5]) : [0, 1, 2, 3, 4] + (creatures.isEmpty ? [] : [5]) + [6] }
+    var project: Project? { AppState.shared.projects.first { $0.id == projectID } }
+    var creatures: [Character] { (project?.characters ?? []).filter { SetupModel.isCreature($0) } }
+    var hw: Hardware { .current }
+    var models: [TTSModel] { TTSModel.acting.filter { hw.fit(ramGB: $0.ramGB) != .hidden } }
+    var recommended: String { hw.fit(ramGB: TTSModel.find("qwen3-base")!.ramGB) == .proposed ? "qwen3-base" : "omnivoice" }
+
+    static func isCreature(_ c: Character) -> Bool {
+        let t = (c.name + " " + c.role + " " + (c.notes ?? "")).lowercased()
+        return ["creature", "créature", "monster", "monstre", "dragon", "goblin", "gobelin", "troll", "ogre", "ghost", "fantôme", "spectre",
+                "demon", "démon", "robot", "animal", "cat ", "chat ", "dog", "chien", "wolf", "loup", "bird", "oiseau", "beast", "bête", "lutin", "géant", "giant"]
+            .contains { t.contains($0) }
+    }
+
+    func start(quick q: Bool) {
+        let st = SetupState.load()
+        quick = q; step = 0; name = ""; folder = nil; lang = .fr; projectID = nil; imported = nil; importInfo = ""
+        results = [:]; times = [:]; chosen = st.actingModel; assistant = st.assistant ?? "cloud"
+        compare = Set(st.compare.isEmpty ? [recommended] + (models.contains { $0.id == "fish-drama3" } ? ["fish-drama3"] : []) : st.compare)
+        detect(); open = true
+    }
+
+    func detect() {
+        let home = FileManager.default.homeDirectoryForCurrentUser
+        agents = [("Claude", ".claude"), ("ChatGPT", ".codex"), ("Cursor", ".cursor")]
+            .filter { FileManager.default.fileExists(atPath: home.appendingPathComponent($0.1).path) }.map(\.0)
+        var r = URLRequest(url: URL(string: "http://127.0.0.1:11434/api/tags")!); r.timeoutInterval = 1
+        URLSession.shared.dataTask(with: r) { _, resp, _ in
+            let ok = (resp as? HTTPURLResponse)?.statusCode == 200
+            Task { @MainActor in SetupModel.shared.ollama = ok }
+        }.resume()
+    }
+
+    var index: Int { steps.firstIndex(of: step) ?? 0 }
+    func next() {
+        if step == 0 { saveProject() }
+        if step == 1 { var st = SetupState.load(); st.assistant = assistant; st.save() }
+        if step == 3 { var st = SetupState.load(); st.compare = Array(compare); st.save() }
+        if step == 4, let c = chosen { var st = SetupState.load(); st.actingModel = c; st.save() }
+        if index + 1 < steps.count { step = steps[index + 1] } else { finish(library: false) }
+    }
+    func back() { if index > 0 { step = steps[index - 1] } }
+
+    func saveProject() {
+        let s = AppState.shared
+        let nm = name.trimmingCharacters(in: .whitespaces).isEmpty ? L.t("proj.new") : name
+        if let pid = projectID {
+            s.mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].name = nm; all[i].folder = self.folder; all[i].lang = self.lang } }
+        } else {
+            let p = Project(name: nm, lang: lang, folder: folder); s.mutate { $0.append(p) }; projectID = p.id
+        }
+        s.projectID = projectID
+    }
+
+    /// Importe un fichier de répliques dans le projet du guide (le nom du fichier ne crée pas un autre projet).
+    func importDialogues(_ url: URL) {
+        guard let pid = projectID, var data = try? Data(contentsOf: url) else { return }
+        let nm = project?.name ?? name
+        if var o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
+            o["name"] = nm; if o["folder"] == nil, let f = folder { o["folder"] = f }; o["lang"] = lang.rawValue
+            data = (try? JSONSerialization.data(withJSONObject: o)) ?? data
+        }
+        do {
+            var rep: ProjectImport.Report?
+            AppState.shared.projects = try DataStore.updateProjects { rep = try ProjectImport.apply(data, projectName: nm, to: &$0) }
+            AppState.shared.projectID = pid
+            imported = url.lastPathComponent
+            let n = project?.characters.count ?? 0, l = project?.characters.reduce(0) { $0 + $1.lines.count } ?? 0
+            importInfo = L.t("su.dlg.done", n, l) + ((rep?.warnings.isEmpty ?? true) ? "" : " · " + L.t("imp.warn", rep!.warnings.count))
+        } catch { AppState.shared.error = error.localizedDescription }
+    }
+
+    /// Écoute comparée : installe le moteur si besoin, télécharge les modèles cochés, puis chaque modèle dit les mêmes répliques
+    /// avec la même voix de la bibliothèque (son extrait est cloné ; créé d'abord par VoiceDesign s'il n'existe pas encore).
+    func prepareLines() {
+        var texts = (project?.characters ?? []).filter { !SetupModel.isCreature($0) }.compactMap { ($0.lines(in: lang) ?? $0.lines).first }.prefix(3).map { $0 }
+        if texts.count < 3 { texts += (lang == .fr ? Self.demoFR : Self.demoEN).prefix(3 - texts.count) }
+        lines = texts
+    }
+    func runComparison() {
+        guard !running, !AppState.shared.busy else { return }
+        let p = project, lg = lang
+        prepareLines(); let texts = lines
+        results = [:]; times = [:]; running = true
+        let first = p?.characters.first { !SetupModel.isCreature($0) }
+        let gender = first.flatMap { AppState.guessGender($0) } ?? .man
+        let voiceID = AppState.shared.voices.first { $0.gender == gender && !$0.custom }?.id ?? "man-young-medium-0"
+        let ids = TTSModel.acting.map(\.id).filter { compare.contains($0) }
+        AppState.shared.run("compare") { log in
+            func say(_ s: String) { Task { @MainActor in SetupModel.shared.status = s } }
+            if !Engine.installed { say(L.t("su.ec.engine")); try Engine.install(log: log) }
+            for m in [TTSModel.find("qwen3-voicedesign")!] + ids.compactMap({ TTSModel.find($0) }) where !m.installed {
+                say(L.t("su.ec.dl", L.t(m.nameKey.isEmpty ? "mdl.ref" : m.nameKey))); try Engine.download(m, log: log)
+            }
+            say(L.t("su.ec.ref"))
+            let voice = try LibraryGenerator.ensureSample(voiceID, lang: lg)
+            for id in ids {
+                guard let m = TTSModel.find(id) else { continue }
+                say(L.t("su.ec.gen", L.t(m.nameKey)))
+                var urls: [URL] = [], total = 0.0
+                for t in texts {
+                    let out = Paths.audio.appendingPathComponent("preview/compare-\(id)-\(urls.count).m4a")
+                    total += try LibraryGenerator.speak(voice: voice, text: t, lang: lg, refLang: lg, style: "", model: m, to: out)
+                    urls.append(out)
+                    let u = urls
+                    Task { @MainActor in SetupModel.shared.results[id] = u }
+                }
+                let avg = total / Double(max(texts.count, 1))
+                Task { @MainActor in SetupModel.shared.times[id] = avg }
+            }
+            Task { @MainActor in let m = SetupModel.shared; m.running = false; m.status = ""; if m.chosen == nil || !ids.contains(m.chosen!) { m.chosen = ids.first } }
+        }
+    }
+    static let demoFR = ["Hé hé hé ! Vous croyiez vraiment m'échapper ?", "Qui ose entrer dans mon château à cette heure-ci ?", "Approchez, voyageur. La Reine vous attend depuis longtemps."]
+    static let demoEN = ["Hee hee hee! Did you really think you could escape me?", "Who dares to enter my castle at this hour?", "Come closer, traveller. The Queen has been waiting for you."]
+
+    func finish(library: Bool) {
+        var st = SetupState.load(); st.completed = true; st.step = 0; st.projectID = projectID; st.save()
+        open = false
+        let s = AppState.shared
+        s.projectID = projectID ?? s.projectID; s.characterID = s.project?.characters.first?.id; s.screen = .casting
+        if library { s.generateLibrary() }
+    }
+}
+
+// MARK: Vue
+struct SetupWizard: View {
+    @ObservedObject var m = SetupModel.shared
+    @ObservedObject var s = AppState.shared
+    static let titles = ["su.s.project", "su.s.prep", "su.s.dialogues", "su.s.voice", "su.s.listen", "su.s.creatures", "su.s.library"]
+
+    var body: some View {
+        HStack(spacing: 0) {
+            VStack(alignment: .leading, spacing: 3) {
+                BrandName().padding(.horizontal, 10).padding(.bottom, 14)
+                ForEach(Array(m.steps.enumerated()), id: \.offset) { k, st in
+                    HStack(spacing: 10) {
+                        Text(k < m.index ? "✓" : "\(k + 1)").font(.system(size: 11, weight: .semibold)).frame(width: 22, height: 22)
+                            .foregroundStyle(k < m.index ? Color.white : (k == m.index ? Flat.onAcc : Flat.text2))
+                            .background(Circle().fill(k < m.index ? Flat.ok : (k == m.index ? Flat.acc : Flat.ctl)))
+                        Text(L.t(Self.titles[st])).lineLimit(1)
+                        Spacer(minLength: 0)
+                    }.padding(.horizontal, 10).padding(.vertical, 8)
+                    .background(k == m.index ? Flat.ctl : .clear, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+                    .foregroundStyle(k == m.index ? Flat.text : Flat.text2).fontWeight(k == m.index ? .semibold : .regular)
+                }
+                Spacer()
+            }.padding(.horizontal, 12).padding(.top, 44).padding(.bottom, 18).frame(width: 230)
+            .overlay(alignment: .trailing) { Rectangle().fill(Flat.line).frame(width: 1) }
+
+            VStack(spacing: 0) {
+                ScrollView(showsIndicators: false) {
+                    VStack(alignment: .leading, spacing: 16) { page }.padding(.horizontal, 30).padding(.top, 44).padding(.bottom, 20)
+                        .frame(maxWidth: 860, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
+                }
+                HStack(spacing: 10) {
+                    Button(L.t("su.later")) { m.open = false }.buttonStyle(.plain).foregroundStyle(Flat.text2)
+                    Spacer()
+                    if let skip = skipTitle { Button(skip) { m.next() }.buttonStyle(.plain).foregroundStyle(Flat.text2) }
+                    Text("\(m.index + 1) / \(m.steps.count)").font(.system(size: 12)).foregroundStyle(Flat.text2)
+                    if m.index > 0 { Button("← " + L.t("su.back")) { m.back() }.buttonStyle(FlatButton()) }
+                    Button(nextTitle + " →") { m.step == 6 ? m.finish(library: true) : m.next() }.buttonStyle(FlatButton(primary: true)).disabled(!canNext)
+                }.padding(.horizontal, 26).padding(.vertical, 12).overlay(alignment: .top) { Rectangle().fill(Flat.line).frame(height: 1) }
+            }
+        }
+        .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
+    }
+
+    var nextTitle: String {
+        switch m.step { case 3: return L.t("su.listen"); case 6: return L.t("su.lib.go")
+        default: return m.index == m.steps.count - 1 ? L.t("su.finish") : L.t("su.next") }
+    }
+    var skipTitle: String? { m.step == 2 && m.imported == nil ? L.t("su.dlg.skip") : (m.step == 5 ? L.t("su.skip") : nil) }
+    var canNext: Bool {
+        switch m.step { case 3: return !m.compare.isEmpty; case 4: return !m.running && m.chosen != nil && !m.results.isEmpty; default: return true }
+    }
+
+    @ViewBuilder var page: some View {
+        switch m.step {
+        case 0: project
+        case 1: prep
+        case 2: dialogues
+        case 3: voice
+        case 4: listen
+        case 5: creatures
+        default: library
+        }
+    }
+
+    func question(_ t: String, _ l: String) -> some View {
+        VStack(alignment: .leading, spacing: 6) {
+            Text(t).font(.system(size: 24, weight: .bold))
+            Text(l).font(.system(size: 14)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+        }
+    }
+    func choice(_ on: Bool, _ icon: String, _ title: String, _ detail: String, enabled: Bool = true, action: @escaping () -> Void, @ViewBuilder extra: () -> some View = { EmptyView() }) -> some View {
+        Button(action: action) {
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.system(size: 18)).foregroundStyle(on ? Flat.acc : Flat.text2)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) { Image(systemName: icon).frame(width: 20); Text(title).font(.system(size: 15, weight: .semibold)) }
+                    Text(detail).font(.system(size: 12.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                    extra()
+                }
+                Spacer(minLength: 0)
+            }.padding(16).contentShape(Rectangle())
+            .tile(pad: EdgeInsets(), outline: on ? Flat.acc : nil)
+        }.buttonStyle(.plain).disabled(!enabled).opacity(enabled ? 1 : 0.55)
+    }
+
+    // 1
+    var project: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.p.q"), L.t("su.p.l"))
+            Card(pad: 18) {
+                VStack(alignment: .leading, spacing: 14) {
+                    field(L.t("su.p.name")) { TextField(L.t("proj.name"), text: $m.name).flatField().font(.system(size: 14)) }
+                    field(L.t("su.p.folder")) {
+                        HStack {
+                            Text(m.folder.map { URL(fileURLWithPath: $0).lastPathComponent } ?? L.t("su.p.nofolder")).foregroundStyle(m.folder == nil ? Flat.text2 : Flat.text)
+                                .lineLimit(1).frame(maxWidth: .infinity, alignment: .leading).padding(.horizontal, 11).padding(.vertical, 7)
+                                .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).help(m.folder ?? "")
+                            Button(L.t("su.p.choose")) {
+                                let o = NSOpenPanel(); o.canChooseDirectories = true; o.canChooseFiles = false; o.canCreateDirectories = true
+                                if o.runModal() == .OK { m.folder = o.url?.path }
+                            }.buttonStyle(FlatButton(small: true))
+                        }
+                    }
+                    field(L.t("su.p.lang")) {
+                        HStack(spacing: 5) { ForEach(Lang.allCases, id: \.self) { l in Button { m.lang = l } label: { Chip(title: l == .fr ? "Français" : "English", on: m.lang == l) }.buttonStyle(.plain) } }
+                    }
+                }
+            }.frame(maxWidth: 720)
+            HStack(spacing: 18) {
+                Button(L.t("su.p.open")) { m.open = false; s.screen = .projects }.buttonStyle(.plain).foregroundStyle(Flat.text2)
+            }
+        }
+    }
+    func field(_ t: String, @ViewBuilder _ c: () -> some View) -> some View {
+        VStack(alignment: .leading, spacing: 5) { Text(t).font(.system(size: 11.5)).foregroundStyle(Flat.text2); c() }
+    }
+
+    // 2
+    var prep: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.a.q"), L.t("su.a.l"))
+            VStack(spacing: 10) {
+                choice(m.assistant == "cloud", "bubble.left.and.bubble.right", L.t("su.a.cloud"), L.t("su.a.cloud.d"), action: { m.assistant = "cloud" }) {
+                    HStack(spacing: 6) {
+                        ForEach(["Claude", "ChatGPT", "Cursor"], id: \.self) { a in Tag(title: m.agents.contains(a) ? a + " ✓" : a, color: m.agents.contains(a) ? Flat.ok : nil) }
+                    }.padding(.top, 8)
+                    if m.assistant == "cloud" {
+                        Button(L.t("su.a.copy")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(ProjectImport.guide, forType: .string); s.info = L.t("su.a.copied") }
+                            .buttonStyle(FlatButton(small: true)).padding(.top, 8)
+                    }
+                }
+                choice(m.assistant == "local", "lock.shield", L.t("su.a.local"), L.t(m.ollama ? "su.a.local.ok" : "su.a.local.no"), action: { m.assistant = "local" })
+                choice(m.assistant == "none", "pencil", L.t("su.a.none"), L.t("su.a.none.d"), action: { m.assistant = "none" })
+            }.frame(maxWidth: 760)
+        }
+    }
+
+    // 3
+    var dialogues: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.d.q"), L.t("su.d.l"))
+            VStack(spacing: 6) {
+                Image(systemName: "arrow.down.doc").font(.system(size: 26)).foregroundStyle(Flat.text2)
+                Text(L.t("su.d.drop")).font(.system(size: 14, weight: .semibold))
+                Text(L.t("su.d.formats")).foregroundStyle(Flat.text2)
+                Button(L.t("su.d.choose")) {
+                    let o = NSOpenPanel(); o.allowedContentTypes = [.json]
+                    if o.runModal() == .OK, let u = o.url { m.importDialogues(u) }
+                }.buttonStyle(FlatButton(small: true)).padding(.top, 6)
+            }.frame(maxWidth: 760).padding(28)
+            .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.ctl, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
+            .onDrop(of: [.fileURL], isTargeted: nil) { items in
+                items.first?.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { d, _ in
+                    if let d = d as? Data, let u = URL(dataRepresentation: d, relativeTo: nil) { Task { @MainActor in SetupModel.shared.importDialogues(u) } }
+                }
+                return true
+            }
+            if let f = m.imported {
+                Card(pad: 16) {
+                    VStack(alignment: .leading, spacing: 12) {
+                        HStack { Text("✓ " + f).font(.system(size: 14, weight: .semibold)); Spacer(); Text(m.importInfo).foregroundStyle(Flat.text2) }
+                        Flow(spacing: 6) {
+                            ForEach((m.project?.characters ?? []).prefix(8)) { c in Tag(title: c.name) }
+                            if (m.project?.characters.count ?? 0) > 8 { Tag(title: L.t("su.d.more", (m.project?.characters.count ?? 0) - 8)) }
+                        }
+                    }
+                }.frame(maxWidth: 760).overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.ok, lineWidth: 2))
+            }
+        }
+    }
+
+    // 4
+    var voice: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.v.q"), L.t("su.v.l", m.hw.chip, Int(m.hw.memoryGB.rounded())))
+            VStack(spacing: 10) {
+                choice(true, "laptopcomputer", L.t("su.v.mac"), L.t("su.v.mac.d"), action: {}) {
+                    VStack(spacing: 6) {
+                        ForEach(m.models) { md in
+                            Button { if m.compare.contains(md.id) { m.compare.remove(md.id) } else { m.compare.insert(md.id) } } label: {
+                                HStack(spacing: 10) {
+                                    Image(systemName: m.compare.contains(md.id) ? "checkmark.square.fill" : "square").foregroundStyle(m.compare.contains(md.id) ? Flat.acc : Flat.text2)
+                                    Text(L.t(md.nameKey)).fontWeight(.semibold)
+                                    Text("· " + L.t(md.nameKey + ".d")).foregroundStyle(Flat.text2).lineLimit(1)
+                                    Spacer(minLength: 6)
+                                    if m.hw.fit(ramGB: md.ramGB) == .possible { Tag(title: L.t("su.v.heavy"), color: Flat.warn) }
+                                    if md.id == m.recommended { Tag(title: L.t("su.v.reco"), solid: true) }
+                                }.padding(.horizontal, 12).padding(.vertical, 9).contentShape(Rectangle()).tile(pad: EdgeInsets())
+                            }.buttonStyle(.plain)
+                        }
+                        Text(L.t("su.v.hint")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).frame(maxWidth: .infinity, alignment: .leading)
+                    }.padding(.top, 10)
+                }
+                choice(false, "desktopcomputer", L.t("su.v.server"), L.t("su.v.server.d"), enabled: false, action: {}) { Tag(title: L.t("su.soon")).padding(.top, 6) }
+                choice(false, "cloud", L.t("su.v.cloud"), L.t("su.v.cloud.d"), enabled: false, action: {}) { Tag(title: L.t("su.soon")).padding(.top, 6) }
+            }.frame(maxWidth: 780)
+        }
+    }
+
+    // 5
+    var listen: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.e.q"), L.t("su.e.l"))
+            let ids = TTSModel.acting.map(\.id).filter { m.compare.contains($0) }
+            LazyVGrid(columns: [GridItem(.flexible(), spacing: 12), GridItem(.flexible(), spacing: 12)], spacing: 12) {
+                ForEach(ids, id: \.self) { id in
+                    let md = TTSModel.find(id)!, sel = m.chosen == id
+                    VStack(alignment: .leading, spacing: 10) {
+                        HStack { Text(L.t(md.nameKey)).font(.system(size: 15, weight: .semibold)); Spacer()
+                            if let t = m.times[id] { Text(L.t("su.e.time", t)).font(.system(size: 11.5)).foregroundStyle(Flat.text2) } }
+                        ForEach(Array(m.lines.enumerated()), id: \.offset) { j, l in
+                            let u = (m.results[id] ?? []).indices.contains(j) ? m.results[id]![j] : nil
+                            HStack(spacing: 8) {
+                                PlayButton(playing: u != nil && s.playingPath == u!.path, enabled: u != nil) { if let u { s.play(rel: u.path) } }
+                                VStack(alignment: .leading, spacing: 2) { Text("« \(l) »").font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1); Wave(seed: Double(j) + Double(id.count), bars: 30, playing: u != nil && s.playingPath == u!.path) }
+                            }
+                        }
+                        Button { m.chosen = id } label: { Text((sel ? "✓ " : "") + L.t("su.e.keep")).frame(maxWidth: .infinity) }
+                            .buttonStyle(FlatButton(primary: sel)).disabled(m.results[id]?.count != m.lines.count)
+                    }.padding(16).tile(pad: EdgeInsets(), outline: sel ? Flat.acc : nil)
+                }
+            }.frame(maxWidth: 860).onAppear { if m.lines.isEmpty { m.prepareLines() } }
+            HStack(spacing: 10) {
+                if m.running {
+                    ProgressView().controlSize(.small)
+                    Text(m.status).foregroundStyle(Flat.text2)
+                } else if m.results.isEmpty {
+                    Button(L.t("su.e.start")) { m.runComparison() }.buttonStyle(FlatButton(green: true)).disabled(s.busy)
+                    let gb = ids.compactMap { TTSModel.find($0) }.filter { !$0.installed }.reduce(0) { $0 + $1.sizeGB }
+                    if gb > 0 { Text(L.t("su.e.size", gb)).foregroundStyle(Flat.text2) }
+                } else { Tag(title: L.t("su.e.ready"), color: Flat.ok); Button(L.t("su.e.again")) { m.runComparison() }.buttonStyle(FlatButton(small: true)) }
+            }
+        }
+    }
+
+    // 6
+    var creatures: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.c.q"), L.t("su.c.l", m.creatures.count))
+            VStack(spacing: 6) {
+                ForEach(m.creatures.prefix(8)) { c in
+                    HStack(spacing: 12) { Avatar(letter: String(c.name.prefix(1))); VStack(alignment: .leading) { Text(c.name).fontWeight(.semibold); Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1) }; Spacer() }
+                        .tile()
+                }
+                if m.creatures.count > 8 { Text(L.t("su.d.more", m.creatures.count - 8)).foregroundStyle(Flat.text2) }
+            }.frame(maxWidth: 820)
+            Text(L.t("su.c.soon")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).padding(.horizontal, 10).padding(.vertical, 7)
+                .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+        }
+    }
+
+    // 7
+    var library: some View {
+        let left = s.remainingSamples, secs = Double(left) * s.avg
+        return VStack(alignment: .leading, spacing: 16) {
+            question(L.t("su.l.q"), L.t("su.l.l"))
+            Card(pad: 20) {
+                VStack(alignment: .leading, spacing: 14) {
+                    HStack(spacing: 30) {
+                        stat("\(s.libVoices.count)", L.t("su.l.voices"))
+                        stat(left == 0 ? "✓" : Self.duration(secs), left == 0 ? L.t("su.l.done") : L.t("su.l.time"))
+                        stat(L.t("su.l.mb", max(1, Int(Double(s.totalSamples) * 0.032))), L.t("su.l.disk"))
+                    }
+                    Text(L.t("su.l.note")).font(.system(size: 12.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                }
+            }.frame(maxWidth: 640)
+        }
+    }
+    func stat(_ v: String, _ l: String) -> some View { VStack(alignment: .leading, spacing: 2) { Text(v).font(.system(size: 24, weight: .bold)); Text(l).font(.system(size: 11.5)).foregroundStyle(Flat.text2) } }
+    static func duration(_ s: Double) -> String { let h = Int(s / 3600), mn = Int(s.truncatingRemainder(dividingBy: 3600) / 60); return h > 0 ? "≈ \(h) h \(String(format: "%02d", mn))" : "≈ \(max(mn, 1)) min" }
+}

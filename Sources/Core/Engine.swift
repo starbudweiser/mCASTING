@@ -9,12 +9,28 @@ public struct TTSModel: Identifiable, Hashable {
     public let notes: String
     public let sizeGB: Double
     public let reference: Bool
+    /// Famille d'arguments mlx-audio : qwen3 · chatterbox · omnivoice · fish.
+    public var family = "qwen3"
+    /// Peut « dire les répliques » en clonant l'extrait d'une voix de la bibliothèque (choix du guide).
+    public var acting = false
+    /// Clé du nom simple affiché dans le guide (« Voix naturelle »…), mémoire estimée pendant la génération.
+    public var nameKey = ""
+    public var ramGB: Double = 0
+    public var license = "Apache-2.0"
     public static let catalog: [TTSModel] = [
         .init(id: "qwen3-voicedesign", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-8bit", title: "Qwen3-TTS VoiceDesign (1.7B, 8 bits)", notes: "voice_design", sizeGB: 3.1, reference: true),
         .init(id: "qwen3-customvoice", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit", title: "Qwen3-TTS CustomVoice (1.7B, 8 bits)", notes: "custom_voice", sizeGB: 3.1, reference: true),
-        .init(id: "qwen3-base", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit", title: "Qwen3-TTS Base (1.7B, 8 bits)", notes: "cloning", sizeGB: 3.1, reference: false),
-        .init(id: "chatterbox", repo: "mlx-community/chatterbox-fp16", title: "Chatterbox multilingue (fp16)", notes: "cloning_expressive", sizeGB: 3.1, reference: false),
+        .init(id: "qwen3-base", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit", title: "Qwen3-TTS Base (1.7B, 8 bits)", notes: "cloning", sizeGB: 3.1, reference: false,
+              family: "qwen3", acting: true, nameKey: "mdl.natural", ramGB: 5),
+        .init(id: "fish-drama3", repo: "mlx-community/fish-audio-drama-3-4bit", title: "Fish Audio Drama 3 (4 bits)", notes: "cloning_acting", sizeGB: 22, reference: false,
+              family: "fish", acting: true, nameKey: "mdl.actor", ramGB: 26, license: "Fish Audio Community"),
+        .init(id: "chatterbox-ml", repo: "mlx-community/chatterbox-multilingual-v3", title: "Chatterbox multilingue v3", notes: "cloning_expressive", sizeGB: 2.7, reference: false,
+              family: "chatterbox", acting: true, nameKey: "mdl.expressive", ramGB: 4, license: "MIT"),
+        .init(id: "omnivoice", repo: "mlx-community/OmniVoice-bfloat16", title: "OmniVoice (0.6B)", notes: "cloning_light", sizeGB: 1.3, reference: false,
+              family: "omnivoice", acting: true, nameKey: "mdl.fast", ramGB: 2),
+        .init(id: "chatterbox", repo: "mlx-community/chatterbox-fp16", title: "Chatterbox (anglais, fp16)", notes: "cloning_expressive", sizeGB: 3.1, reference: false, family: "chatterbox", license: "MIT"),
     ]
+    public static var acting: [TTSModel] { catalog.filter(\.acting) }
     public static func find(_ id: String) -> TTSModel? { catalog.first { $0.id == id } }
 
     /// Dossier du cache Hugging Face (même règle que huggingface_hub).
@@ -116,19 +132,20 @@ public enum Engine {
     /// Sortie en .m4a (AAC, `afconvert` de macOS). Renvoie la durée de calcul.
     @discardableResult
     public static func generate(model: TTSModel, text: String, lang: Lang, instruct: String, voice: String? = nil,
-                                refAudio: URL? = nil, refText: String? = nil, to out: URL) throws -> TimeInterval {
+                                refAudio: URL? = nil, refText: String? = nil, extra: [String] = [], to out: URL) throws -> TimeInterval {
         guard installed else { throw EngineError.notInstalled }
         return try withComputeLock {
             let t0 = Date()
             let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: tmp) }
-            var args = ["-m", "mlx_audio.tts.generate", "--model", model.repo, "--text", text, "--lang_code", lang.qwen,
+            var args = ["-m", "mlx_audio.tts.generate", "--model", model.repo, "--text", text, "--lang_code", model.family == "qwen3" ? lang.qwen : lang.rawValue,
                         "--output_path", tmp.path, "--file_prefix", "v", "--join_audio"]
             if !instruct.isEmpty { args += ["--instruct", instruct] }
             if let voice { args += ["--voice", voice] }
             if let refAudio { args += ["--ref_audio", refAudio.path] }
             if let refText, !refText.isEmpty { args += ["--ref_text", refText] }
+            args += extra
             try run(python, args)
             let files = (try? FileManager.default.contentsOfDirectory(atPath: tmp.path))?.filter { $0.hasSuffix(".wav") }.sorted() ?? []
             guard let wav = files.first else { throw EngineError.failed("No audio produced") }

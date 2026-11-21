@@ -99,6 +99,8 @@ final class AppState: ObservableObject {
         if CommandLine.arguments.contains("--demo-busy") { busyFlag = true; task = "library" }      // essais d'interface : calcul simulé
         if voices.isEmpty { voices = (try? LibraryGenerator.ensureCatalog()) ?? [] }
         if CommandLine.arguments.contains("--demo-multi") { multi = Set((project?.characters ?? []).prefix(4).map(\.id)) }   // essais d'interface : sélection multiple
+        let st = SetupState.load()
+        if CommandLine.arguments.contains("--setup") || (!st.completed && (projects.isEmpty || doneSamples == 0)) { SetupModel.shared.start(quick: false) }
         timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in Task { @MainActor in AppState.shared.reload() } }
     }
     func reload(force: Bool = false) {
@@ -188,7 +190,7 @@ final class AppState: ObservableObject {
     }
 
     // MARK: tâches longues (une à la fois)
-    private func run(_ title: String, _ work: @escaping @Sendable (@escaping @Sendable (String) -> Void) throws -> Void) {
+    func run(_ title: String, _ work: @escaping @Sendable (@escaping @Sendable (String) -> Void) throws -> Void) {
         guard !busyFlag else { return }
         busyFlag = true; task = title; progress = 0; log = ""; cancelRequested = false
         DispatchQueue.global(qos: .userInitiated).async {

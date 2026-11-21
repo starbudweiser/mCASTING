@@ -5,7 +5,15 @@ import UniformTypeIdentifiers
 // MARK: Fenêtre
 struct ContentView: View {
     @ObservedObject var s = AppState.shared
+    @ObservedObject var setup = SetupModel.shared
     var body: some View {
+        Group { if setup.open { SetupWizard() } else { main } }
+        .ignoresSafeArea(.container, edges: .top)
+        .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
+        .alert(L.t("err.title"), isPresented: Binding(get: { s.error != nil }, set: { if !$0 { s.error = nil } })) { Button("OK") { s.error = nil } } message: { Text(s.error ?? "") }
+        .alert(L.t("info.title"), isPresented: Binding(get: { s.info != nil }, set: { if !$0 { s.info = nil } })) { Button("OK") { s.info = nil } } message: { Text(s.info ?? "") }
+    }
+    var main: some View {
         VStack(spacing: 0) {
             TopBar()
             HStack(spacing: 0) {
@@ -24,10 +32,6 @@ struct ContentView: View {
                 .background(alignment: .bottomTrailing) { Watermark() }.clipped()
             }
         }
-        .ignoresSafeArea(.container, edges: .top)
-        .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
-        .alert(L.t("err.title"), isPresented: Binding(get: { s.error != nil }, set: { if !$0 { s.error = nil } })) { Button("OK") { s.error = nil } } message: { Text(s.error ?? "") }
-        .alert(L.t("info.title"), isPresented: Binding(get: { s.info != nil }, set: { if !$0 { s.info = nil } })) { Button("OK") { s.info = nil } } message: { Text(s.info ?? "") }
     }
 }
 
@@ -572,12 +576,12 @@ struct ProjectsView: View {
                     .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).frame(maxWidth: 300)
                 Spacer()
                 Button(L.t("btn.import")) { let o = NSOpenPanel(); o.allowedContentTypes = [.json]; if o.runModal() == .OK, let u = o.url { s.importProject(from: u) } }.buttonStyle(FlatButton())
-                Button("＋ " + L.t("proj.new")) { adding = true }.buttonStyle(FlatButton(green: true))
+                Button("＋ " + L.t("proj.new")) { SetupModel.shared.start(quick: SetupState.load().completed) }.buttonStyle(FlatButton(green: true))
             }
             ScrollView(showsIndicators: false) {
                 LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 12), count: 3), spacing: 12) {
                     ForEach(shown) { p in card(p) }
-                    Button { adding = true } label: {
+                    Button { SetupModel.shared.start(quick: SetupState.load().completed) } label: {
                         VStack(spacing: 4) { Text("＋ " + L.t("proj.new")); Text(L.t("proj.create.agent")).font(.system(size: 11.5)) }.foregroundStyle(Flat.text2)
                             .frame(maxWidth: .infinity, minHeight: 150)
                             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.ctl, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))

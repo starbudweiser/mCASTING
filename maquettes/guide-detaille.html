@@ -1,0 +1,209 @@
+<!doctype html><html lang="fr"><head><meta charset="utf-8"><title>Guide de configuration</title><meta name="viewport" content="width=device-width,initial-scale=1"><style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:13px/1.4 -apple-system,"SF Pro Text",system-ui,sans-serif;background:#0b0b0d;color:#eee;-webkit-font-smoothing:antialiased}
+.top{padding:18px 28px 6px;display:flex;gap:14px;align-items:baseline;flex-wrap:wrap}
+.top h1{font-size:20px;font-weight:700}.top .s{color:#999}
+.screens{display:flex;gap:6px;padding:8px 28px;flex-wrap:wrap}
+.screens button,.seg button{background:#222;color:#eee;border:0;padding:8px 16px;border-radius:999px;font:inherit;font-weight:500;cursor:pointer}
+.screens button.on{background:#555}
+.tools{display:flex;align-items:center;gap:14px;padding:4px 28px 12px;color:#aaa;flex-wrap:wrap}
+.seg{display:inline-flex;background:#222;border-radius:999px;padding:3px}.seg button{padding:4px 14px}.seg button.on{background:#444}
+.legend{color:#aaa;padding:0 28px 12px;max-width:1240px;line-height:1.55}
+.stage{padding:6px 28px 40px;overflow:auto}
+
+.win{width:1200px;height:760px;display:grid;grid-template-rows:auto 1fr;overflow:hidden;background:var(--bg);color:var(--t);border-radius:12px;box-shadow:var(--sh)}
+.bar{display:flex;align-items:center;gap:12px;padding:11px 16px;border-bottom:var(--bd)}
+.lights{display:flex;gap:7px}.lights i{width:12px;height:12px;border-radius:50%;display:block}
+.lights i:nth-child(1){background:#ff5f57}.lights i:nth-child(2){background:#febc2e}.lights i:nth-child(3){background:#28c840}
+.brand{font-weight:700;font-size:15px;margin-left:8px}.m{color:var(--m)}
+.bar .r{margin-left:auto;color:var(--t2);font-size:12px}
+.body{display:grid;grid-template-columns:230px 1fr;min-height:0}
+.steps{padding:18px 12px;border-right:var(--bd);display:flex;flex-direction:column;gap:3px}
+.steps .h{padding:0 10px 8px}
+.st{display:flex;gap:10px;align-items:center;padding:8px 10px;border-radius:8px;color:var(--t2)}
+.st b{width:22px;height:22px;border-radius:50%;display:grid;place-items:center;font-size:11px;background:var(--ctl);color:var(--t2);flex:none}
+.st.done b{background:var(--ok);color:#fff}.st.on{background:var(--ctl);color:var(--t);font-weight:600}.st.on b{background:var(--acc);color:var(--onacc)}
+.steps .note{margin-top:auto}
+.main{display:flex;flex-direction:column;min-height:0}
+.content{flex:1;padding:22px 26px;display:flex;flex-direction:column;gap:14px;overflow:hidden;min-height:0}
+.title{font-size:20px;font-weight:700}.lead{color:var(--t2);max-width:760px;margin-top:3px}
+.nav{display:flex;gap:10px;align-items:center;padding:12px 26px;border-top:var(--bd)}
+.nav .sp{flex:1}.nav .dots{color:var(--t2);font-size:12px}
+.h{font-size:11px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--t2)}
+.btn{background:var(--ctl);color:var(--t);border:0;padding:7px 14px;border-radius:8px;font:inherit;font-weight:500;white-space:nowrap;display:inline-flex;gap:6px;align-items:center}
+.btn.pri{background:var(--acc);color:var(--onacc)}.btn.go{background:var(--ok);color:#fff}.btn.sm{padding:4px 10px;font-size:11.5px}.btn.ghost{background:none;color:var(--t2)}
+.box{background:var(--card);border:var(--bd);border-radius:12px;padding:14px}
+.box.sel{outline:2px solid var(--acc)}.box.ok{outline:2px solid var(--ok)}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:12px}.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.tag{font-size:10.5px;font-weight:600;padding:2px 8px;border-radius:999px;background:var(--ctl);color:var(--t2);white-space:nowrap}
+.tag.ok{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+.tag.warn{background:color-mix(in srgb,var(--warn) 22%,transparent);color:var(--warn)}
+.tag.no{opacity:.55;text-decoration:line-through}
+.tag.acc{background:var(--acc);color:var(--onacc)}
+.tags{display:flex;gap:5px;flex-wrap:wrap}
+.sub{color:var(--t2);font-size:11.5px}
+.big{font-size:24px;font-weight:700;line-height:1.1}
+.field{display:flex;flex-direction:column;gap:5px}.field span{color:var(--t2);font-size:11.5px}
+.inp{background:var(--ctl);border-radius:8px;padding:8px 11px}
+.chips{display:flex;gap:5px;flex-wrap:wrap}.chip{padding:4px 11px;border-radius:999px;background:var(--ctl);font-size:12px}.chip.on{background:var(--acc);color:var(--onacc);font-weight:600}
+.note{background:var(--ctl);border-radius:8px;padding:9px 12px;color:var(--t2);font-size:11.5px;line-height:1.5}
+.note b{color:var(--t)}
+.row{display:flex;gap:10px;align-items:center}.row .sp{flex:1}
+.mod{display:grid;grid-template-columns:22px 1fr 260px 110px 120px;gap:14px;align-items:center;padding:11px 14px}
+.ck{width:18px;height:18px;border-radius:5px;background:var(--ctl);display:grid;place-items:center;font-size:12px;font-weight:700}.ck.on{background:var(--acc);color:var(--onacc)}
+.meter{height:6px;border-radius:99px;background:var(--ctl);overflow:hidden}.meter i{display:block;height:100%;background:var(--ok)}.meter i.w{background:var(--warn)}
+.play{width:28px;height:28px;border-radius:50%;background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-size:10px;flex:none}
+.wave{display:flex;align-items:center;gap:1.5px;height:22px;flex:1}.wave i{display:block;width:2.5px;border-radius:2px;background:var(--t2);opacity:.6}
+.tbl{display:grid;gap:0;border:var(--bd);border-radius:12px;overflow:hidden;background:var(--card)}
+.tbl>div{padding:10px 12px;border-bottom:var(--bd);border-right:var(--bd);display:flex;flex-direction:column;gap:6px;justify-content:center}
+.tbl .hd{background:var(--ctl);font-weight:600}
+.star{color:var(--warn);font-size:14px;letter-spacing:1px}
+.drop{border:2px dashed var(--ctl);border-radius:12px;padding:22px;text-align:center;color:var(--t2);display:flex;flex-direction:column;gap:6px;align-items:center}
+.av{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;font-weight:700;color:var(--onacc);background:var(--acc);font-size:12px;flex:none}
+.list{display:flex;flex-direction:column;gap:6px}
+.li{display:flex;gap:10px;align-items:center;padding:8px 10px;background:var(--card);border:var(--bd);border-radius:10px}
+.win .seg{flex:none}.win .seg button{white-space:nowrap;padding:5px 12px}
+.flow{display:flex;align-items:stretch;gap:8px}.flow i{align-self:center;color:var(--t2);font-style:normal}
+.fb{flex:1;background:var(--card);border:var(--bd);border-radius:10px;padding:8px 12px;display:flex;flex-direction:column;gap:2px}.fb span{color:var(--t2);font-size:11.5px}.fb.on{outline:2px solid var(--acc)}
+.seg3{display:inline-flex;background:var(--ctl);border-radius:999px;padding:3px;flex:none}.seg3 b{padding:5px 12px;border-radius:999px;font-weight:500;white-space:nowrap}.seg3 b.on{background:var(--acc);color:var(--onacc)}
+.pbar{height:8px;border-radius:99px;background:var(--ctl);overflow:hidden}.pbar i{display:block;height:100%;background:var(--acc)}
+
+[data-th=clair]{--bg:#f4f1ec;--card:#fff;--ctl:#ebe6de;--t:#26231e;--t2:#7b756a;--acc:#26231e;--onacc:#f4f1ec;--m:#d9622b;--ok:#3f8f5a;--warn:#b7791f;--sh:0 18px 50px rgba(60,40,10,.18);--bd:1px solid #e3ddd2}
+[data-th=sombre]{--bg:#131316;--card:#232327;--ctl:#2c2c31;--t:#f5f5f7;--t2:#98989f;--acc:#0a84ff;--onacc:#fff;--m:#f08a52;--ok:#30d158;--warn:#ff9f0a;--sh:0 18px 50px rgba(0,0,0,.5);--bd:1px solid #303035}
+</style></head><body>
+<div class="top"><h1><span style="color:#d9622b">m</span>CASTING — Guide de configuration</h1><span class="s">Maquettes · Flat Mat · 8 étapes</span></div>
+<nav class="screens" id="screens"></nav>
+<div class="tools"><span class="seg" id="seg"><button data-th="clair" class="on">Clair</button><button data-th="sombre">Sombre</button></span></div>
+<p class="legend" id="legend"></p>
+<div class="stage"><div id="win" class="win" data-th="clair"></div></div>
+<script>
+const STEPS=['Projet','Matériel','Assistant IA','Dialogues','Modèle de voix','Écoute comparée','Créatures','Bibliothèque'];
+const W=n=>'<span class="wave">'+Array.from({length:n},(_,i)=>`<i style="height:${4+Math.abs(Math.sin(i*1.7)*16)}px"></i>`).join('')+'</span>';
+const LEG=[
+"Au premier lancement, et à chaque « Nouveau projet ». On peut quitter le guide à tout moment (« Plus tard ») et le reprendre depuis le menu Aide ; chaque étape est enregistrée.",
+"Détection automatique : puce, mémoire unifiée, part utilisable par le GPU, disque libre. Le niveau détecté décide quels modèles sont proposés, possibles ou masqués.",
+"L'assistant IA prépare (texte), le modèle de voix parle (audio). Assistant en ligne (Claude, ChatGPT…) avec le skill mCASTING, ou en local (Ollama, LM Studio) utilisé par l'appli elle-même.",
+"Import facultatif des dialogues (JSON mCASTING, CSV, fichiers de langue d'un jeu). L'appli devine le genre, l'âge et repère les créatures pour l'étape 6.",
+"Liste courte, tenue à jour depuis Hugging Face (mlx-community), filtrée par langue du projet et par mémoire. Le modèle recommandé est pré-coché ; on coche ceux à comparer. Rien n'est téléchargé avant l'étape suivante. Le sélecteur en haut à droite bascule vers « Serveur local » (5 bis) ou « Cloud » (5 ter).",
+"Variante de l'étape 5 : la voix est produite par un serveur déjà en place, sur ce Mac ou sur le réseau. Ollama n'y figure pas : il ne fait que du texte.",
+"Variante de l'étape 5 : la voix est produite par un service en ligne payant (ElevenLabs, OpenAI, Google), avec coût estimé et confirmé.",
+"Les modèles cochés sont téléchargés (barre de progression), puis chacun dit 3 vraies répliques du projet. On note à l'oreille, on choisit le modèle définitif.",
+"Seulement si des créatures ou animaux ont été repérés. Trois approches à écouter ; le choix se fait par personnage ou pour tous.",
+"Récapitulatif, estimation de durée et de place, lancement. La génération se poursuit en arrière-plan, reprend après une interruption, et le casting est utilisable dès les premières voix."];
+const FL=(a,v)=>`<div class="flow"><div class="fb ${a?'on':''}"><b>① Assistant IA</b><span>prépare : lit le projet, décrit les personnages, structure les répliques</span></div><i>→</i><div class="fb"><b><span class="m">m</span>CASTING</b><span>casting : vous écoutez et choisissez les voix</span></div><i>→</i><div class="fb ${v?'on':''}"><b>② Modèle de voix</b><span>parle : produit l'audio de chaque réplique</span></div></div>`;
+const nav=(i,next,extra='')=>`<div class="nav"><button class="btn ghost">Plus tard</button><span class="sp"></span>${extra}<span class="dots">Étape ${i+1} sur 8</span>${i?'<button class="btn">← Précédent</button>':''}<button class="btn pri">${next} →</button></div>`;
+const shell=(i,html,next,extra)=>`<div class="bar"><span class="lights"><i></i><i></i><i></i></span><span class="brand"><span class="m">m</span>CASTING</span><span class="r">Guide de configuration</span></div>
+<div class="body"><aside class="steps"><div class="h">Configuration</div>${STEPS.map((s,k)=>`<div class="st ${k<i?'done':k==i?'on':''}"><b>${k<i?'✓':k+1}</b>${s}</div>`).join('')}<div class="note">Tout reste modifiable ensuite dans <b>Réglages › Modèles</b>.</div></aside>
+<div class="main"><div class="content">${html}</div>${nav(i,next,extra)}</div></div>`;
+
+const S=[
+// 1 Projet
+()=>shell(0,`<div><div class="title">Bienvenue dans <span class="m">m</span>CASTING</div><div class="lead">On configure ensemble votre projet, le modèle de voix le mieux adapté à votre Mac et la bibliothèque de voix. Comptez 5 minutes, plus le téléchargement.</div></div>
+<div class="g3">
+<div class="box sel"><div class="big">＋</div><b style="margin-top:8px;display:block">Nouveau projet</b><div class="sub">Jeu, vidéo, tutoriel, trailer…</div></div>
+<div class="box"><div class="big">⇪</div><b style="margin-top:8px;display:block">Importer un projet</b><div class="sub">Fichier mcasting-project, CSV de répliques</div></div>
+<div class="box"><div class="big">↺</div><b style="margin-top:8px;display:block">Ouvrir un projet existant</b><div class="sub">3 projets sur ce Mac</div></div></div>
+<div class="box" style="display:grid;grid-template-columns:1fr 1fr;gap:14px">
+<div class="field"><span>Nom du projet</span><div class="inp">Le Château du Point & Click</div></div>
+<div class="field"><span>Dossier du projet (le casting.json y sera écrit)</span><div class="row"><div class="inp" style="flex:1">…/wSHOWCASE (WEBSITE)/easter eggs/pointclick</div><button class="btn sm">Choisir…</button></div></div>
+<div class="field"><span>Type de projet</span><div class="chips"><span class="chip on">Jeu vidéo</span><span class="chip">Vidéo / clip</span><span class="chip">Voix off</span><span class="chip">Tutoriel</span><span class="chip">Livre audio</span></div></div>
+<div class="field"><span>Langues des voix</span><div class="chips"><span class="chip on">Français · principale</span><span class="chip on">Anglais</span><span class="chip">Espagnol</span><span class="chip">Italien</span><span class="chip">＋ Autre</span></div></div></div>
+<div class="note">Le type de projet oriente les recommandations : un <b>jeu</b> privilégie le jeu d'acteur et les créatures, une <b>voix off</b> la stabilité et le naturel.</div>`,'Continuer'),
+// 2 Matériel
+()=>shell(1,`<div><div class="title">Votre Mac</div><div class="lead">Détecté automatiquement. Les modèles proposés ensuite tiennent dans cette mémoire sans ralentir le reste de votre travail.</div></div>
+<div class="g4">
+<div class="box"><div class="h">Puce</div><div class="big" style="margin-top:6px">M5 Max</div><div class="sub">Apple Silicon · MLX disponible</div></div>
+<div class="box"><div class="h">Mémoire unifiée</div><div class="big" style="margin-top:6px">64 Go</div><div class="sub">≈ 45 Go utilisables par le GPU</div></div>
+<div class="box"><div class="h">Disque libre</div><div class="big" style="margin-top:6px">412 Go</div><div class="sub">Modèles + bibliothèque : 8 à 35 Go</div></div>
+<div class="box ok"><div class="h">Niveau</div><div class="big" style="margin-top:6px">Studio</div><div class="sub">Tous les modèles de la liste</div></div></div>
+<div class="box"><div class="h" style="margin-bottom:10px">Ce que chaque niveau permet</div>
+<div class="tbl" style="grid-template-columns:150px 1fr 1fr 1fr">
+<div class="hd">Mémoire</div><div class="hd">8 à 16 Go · Léger</div><div class="hd">24 à 48 Go · Confort</div><div class="hd">64 Go et plus · Studio ✓</div>
+<div class="sub">Modèles proposés</div><div>Qwen3-TTS 0.6B, OmniVoice, Kokoro</div><div>+ Qwen3-TTS 1.7B, Chatterbox multilingue, VoxCPM2</div><div>+ Fish Audio Drama 3 (jeu d'acteur)</div>
+<div class="sub">Bibliothèque conseillée</div><div>200 voix · ≈ 1 h 30</div><div>600 voix · ≈ 3 h</div><div>600 voix · ≈ 2 h</div></div></div>
+<div class="note">Règle : un modèle est <b>proposé</b> s'il occupe moins de la moitié de la mémoire, <b>possible</b> jusqu'à 70 % (le Mac peut ralentir pendant la génération), <b>masqué</b> au-delà. Un seul calcul lourd à la fois.</div>`,'Voir les modèles'),
+// 4 Assistant IA
+()=>shell(2,`${FL(1,0)}<div><div class="title">① Assistant IA · qui prépare</div><div class="lead">Un modèle de texte qui lit votre projet, décrit chaque personnage, structure les répliques et l'émotion de chacune, repère les créatures. Il peut être en ligne ou sur ce Mac ; les deux peuvent servir.</div></div>
+<div class="g2" style="align-items:start">
+<div class="box"><div class="row"><b>Dans le cloud</b><span class="sp"></span><span class="tag">Abonnement ou gratuit</span></div><div class="sub" style="margin:4px 0 10px">Votre agent habituel prépare le projet et pilote <span class="m">m</span>CASTING. On lui installe le <b>skill mCASTING</b> (le mode d'emploi) et le serveur MCP.</div><div class="list">
+${[['C','Claude Code','ok','Installé'],['X','Codex (ChatGPT)','ok','Installé'],['U','Cursor','','Installer'],['D','Claude Desktop','','Installer']].map(a=>`<div class="li"><span class="av">${a[0]}</span><b style="flex:1">${a[1]}</b><span class="tag ${a[2]}">${a[3]}</span></div>`).join('')}
+</div><div class="row" style="margin-top:10px"><button class="btn sm go">Installer partout</button><button class="btn sm">Voir le skill</button><span class="sp"></span><button class="btn sm ghost">Exporter…</button></div></div>
+<div class="box sel"><div class="row"><b>En local</b><span class="sp"></span><span class="tag ok">Gratuit · privé</span></div><div class="sub" style="margin:4px 0 10px"><span class="m">m</span>CASTING utilise lui-même un modèle de texte local pour analyser les dialogues importés, sans rien envoyer en ligne.</div><div class="list">
+${[['O','Ollama','localhost:11434','ok','Connecté'],['S','LM Studio','localhost:1234','','Non lancé']].map(a=>`<div class="li"><span class="av">${a[0]}</span><div style="flex:1"><b>${a[1]}</b><div class="sub">${a[2]}</div></div><span class="tag ${a[3]}">${a[4]}</span></div>`).join('')}
+</div><div class="field" style="margin-top:10px"><span>Modèle de texte</span><div class="chips"><span class="chip on">qwen3:14b · conseillé</span><span class="chip">mistral-small</span><span class="chip">llama4:8b</span></div></div></div></div>
+<div class="note">Sans aucun assistant, <span class="m">m</span>CASTING fonctionne quand même : vous décrivez vos personnages à la main.</div>`,'Continuer'),
+// 4 Dialogues
+()=>shell(3,`<div><div class="title">Les dialogues du projet</div><div class="lead">Facultatif, mais conseillé : l'écoute comparée utilisera vos vraies répliques, et le casting partira de vos personnages.</div></div>
+<div class="g2" style="align-items:start">
+<div style="display:flex;flex-direction:column;gap:12px"><div class="drop"><div class="big">⇣</div><b style="color:var(--t)">Déposez un fichier de dialogues</b><div>mcasting-project (JSON), CSV, ou fichiers de langue d'un jeu (fr.js, en.js…)</div><div class="row" style="margin-top:6px"><button class="btn sm">Choisir un fichier…</button><button class="btn sm ghost">Les faire préparer par mon agent IA</button></div></div>
+<div class="box ok"><div class="row"><b>pointclick_bilingue.json</b><span class="sp"></span><span class="tag ok">Importé</span></div>
+<div class="g3" style="margin-top:10px"><div><div class="big">53</div><div class="sub">personnages</div></div><div><div class="big">237</div><div class="sub">répliques</div></div><div><div class="big">FR · EN</div><div class="sub">langues</div></div></div></div></div>
+<div class="box"><div class="h" style="margin-bottom:8px">Ce que mCASTING a compris</div><div class="list">
+${[['L','Le Lutin farceur','Enfant · espiègle','tag warn','Créature'],['G','Le Géant du château','Homme · âgé · grave','tag warn','Créature'],['R','La Reine Morgane','Femme · adulte · autoritaire','',''],['C','Le Chat du grenier','Animal','tag warn','Animal'],['M','Le Majordome','Homme · âgé · posé','',''],['D','Le Dragon','Créature · très grave','tag warn','Créature']].map(c=>`<div class="li"><span class="av">${c[0]}</span><div style="flex:1"><b>${c[1]}</b><div class="sub">${c[2]}</div></div>${c[4]?`<span class="${c[3]}">${c[4]}</span>`:''}</div>`).join('')}
+<div class="sub" style="padding:4px 2px">… et 47 autres · 7 créatures et 2 animaux repérés → étape 7</div></div></div></div>`,'Choisir la voix'),
+// 3 Modèles
+()=>{const M=[
+['on','Qwen3-TTS 1.7B','Alibaba · Apache-2.0','acc','Recommandé',['ok:FR EN ES IT','ok:Voix décrite','ok:Émotion','ok:Clonage'],'4,5 Go',38,'Rapide'],
+['on','Fish Audio Drama 3','Fish Audio · licence communautaire','','Meilleur jeu d\'acteur',['ok:83 langues','ok:Indications de jeu','ok:Rires, soupirs','ok:Clonage','no:Voix décrite'],'22 Go · pic 26',58,'Lent'],
+['on','Chatterbox multilingue v3','Resemble AI · MIT','','Expressif',['ok:FR EN ES IT','ok:Exagération','ok:Clonage','no:Voix décrite'],'2,7 Go',20,'Rapide'],
+['','OmniVoice 0.6B','k2-fsa · Apache-2.0','','Léger',['ok:FR EN ES IT','ok:Voix décrite','ok:Rires, soupirs','ok:Clonage'],'1,3 Go',10,'Très rapide'],
+['','VoxCPM2 2B','OpenBMB · Apache-2.0','warn','FR à confirmer',['warn:Langues','ok:Voix décrite','ok:Clonage','ok:48 kHz'],'3,2 Go',24,'Moyen']];
+return shell(4,`${FL(0,1)}<div class="row"><div><div class="title">② Modèle de voix · qui parle</div><div class="lead">Le moteur qui fabrique l'audio. Ici : téléchargé une fois depuis Hugging Face, puis il tourne sur ce Mac, gratuit et hors ligne. Cochez ceux à écouter (2 ou 3).</div></div><span class="sp"></span><div class="seg3"><b class="on">Sur ce Mac</b><b class="">Serveur local</b><b class="">Cloud</b></div></div>
+<div class="list">${M.map(m=>`<div class="box mod ${m[0]?'sel':''}" style="padding:7px 14px"><span class="ck ${m[0]}">${m[0]?'✓':''}</span>
+<div><div class="row" style="gap:8px"><b>${m[1]}</b>${m[4]?`<span class="tag ${m[3]}">${m[4]}</span>`:''}</div><div class="sub">${m[2]}</div></div>
+<div class="tags">${m[5].map(t=>{const[k,v]=t.split(':');return`<span class="tag ${k}">${v}</span>`}).join('')}</div>
+<div><div class="sub">${m[6]}</div><div class="meter" style="margin-top:5px"><i class="${m[7]>50?'w':''}" style="width:${m[7]}%"></i></div></div>
+<div class="sub" style="text-align:right">${m[8]}</div></div>`).join('')}</div>
+<div class="row"><span class="sub">Masqués pour ce projet : Kokoro (sans clonage), Voxtral (non commercial), Bark (instable), Dia / CSM (anglais seul) · </span><button class="btn sm ghost">Tout afficher</button></div>
+<div class="note">La jauge indique la part de mémoire utilisée pendant la génération. <b>Fish Audio Drama 3</b> impose la mention « Built with Fish Audio » pour un usage commercial ; la licence s'affiche avant le téléchargement.</div>`,'Continuer')},
+// 3b Serveur local
+()=>shell(4,`${FL(0,1)}<div class="row"><div><div class="title">② Modèle de voix · qui parle</div><div class="lead">Le moteur de voix tourne sur un serveur déjà en place : ce Mac ou une autre machine du réseau (PC avec carte graphique, NAS). Gratuit, rien ne part sur Internet.</div></div><span class="sp"></span><div class="seg3"><b class="">Sur ce Mac</b><b class="on">Serveur local</b><b class="">Cloud</b></div></div>
+<div class="g2" style="align-items:start">
+<div class="box"><div class="h" style="margin-bottom:8px">Serveurs de voix trouvés</div><div class="list">
+${[['A','mlx-audio server','localhost:8000','ok','Qwen3, Kokoro…'],['L','LocalAI','pc-studio.local:8080','ok','Chatterbox, Piper'],['K','Kokoro-FastAPI','nas.local:8880','ok','Kokoro'],['S','LM Studio','localhost:1234','','Non lancé']].map(a=>`<div class="li"><span class="av">${a[0]}</span><div style="flex:1"><b>${a[1]}</b><div class="sub">${a[2]}</div></div><span class="tag ${a[3]}">${a[4]}</span></div>`).join('')}
+</div><div class="row" style="margin-top:10px"><button class="btn sm">Rechercher à nouveau</button><span class="sp"></span><button class="btn sm ghost">＋ Ajouter une adresse</button></div></div>
+<div class="box sel"><div class="row"><b>LocalAI · pc-studio.local</b><span class="sp"></span><span class="tag ok">Connecté · 42 ms</span></div>
+<div class="field" style="margin-top:10px"><span>Adresse</span><div class="inp">http://pc-studio.local:8080/v1</div></div>
+<div class="field" style="margin-top:8px"><span>Clé d'accès (si demandée, gardée dans le Trousseau)</span><div class="inp">••••••••</div></div>
+<div class="field" style="margin-top:8px"><span>Modèles de voix de ce serveur, à écouter</span><div class="chips"><span class="chip on">chatterbox-multilingual</span><span class="chip on">qwen3-tts-1.7b</span><span class="chip">piper-fr-siwis</span></div></div></div></div>
+<div class="note">Tout serveur compatible avec l'API OpenAI de synthèse vocale (<b>/v1/audio/speech</b>) fonctionne. <b>Ollama n'apparaît pas ici</b> : il ne fait pas de voix. Il sert d'assistant IA local (étape 3).</div>`,'Continuer'),
+// 3c Cloud
+()=>shell(4,`${FL(0,1)}<div class="row"><div><div class="title">② Modèle de voix · qui parle</div><div class="lead">Le moteur de voix d'un service en ligne. Qualité souvent excellente, mais payant au caractère et les répliques partent sur Internet.</div></div><span class="sp"></span><div class="seg3"><b class="">Sur ce Mac</b><b class="">Serveur local</b><b class="on">Cloud</b></div></div>
+<div class="list">${[['E','ElevenLabs','Clé API · crédits','ok','Clé trouvée','Multilingual v2 · ≈ 0,4 crédit / caractère'],['O','OpenAI','Clé API · paiement à l\'usage','','Pas de clé','gpt-4o-mini-tts · ≈ 0,6 $ / 100 répliques'],['G','Google Cloud','Clé API · paiement à l\'usage','','Pas de clé','Chirp 3 HD']].map(a=>`<div class="box" style="padding:11px 14px"><div class="row"><span class="av">${a[0]}</span><div style="flex:1"><b>${a[1]}</b><div class="sub">${a[2]} · ${a[5]}</div></div><span class="tag ${a[3]}">${a[4]}</span><button class="btn sm">${a[3]?'Choisir':'Ajouter une clé'}</button></div></div>`).join('')}</div>
+<div class="box"><div class="h" style="margin-bottom:8px">Coût estimé pour ce projet</div><div class="g3"><div><div class="big">237</div><div class="sub">répliques · 2 langues</div></div><div><div class="big">≈ 21 000</div><div class="sub">caractères</div></div><div><div class="big">≈ 8 400</div><div class="sub">crédits ElevenLabs</div></div></div></div>
+<div class="note">Pas de bibliothèque de 600 voix générée en cloud (trop coûteux) : le casting se fait dans le catalogue du service. Le coût est affiché et confirmé avant chaque génération.</div>`,'Continuer'),
+// 5 Écoute
+()=>{const L=['« Hé hé hé ! Vous croyiez m\'échapper ? »','« Qui ose pénétrer dans mon château ? »','« Approchez, voyageur, la Reine vous attend. »'];
+const M=[['Qwen3-TTS 1.7B','★★★★☆','3,1 s'],['Fish Audio Drama 3','★★★★★','9,4 s'],['Chatterbox multilingue v3','★★★☆☆','2,4 s']];
+return shell(5,`<div class="row"><div><div class="title">Écoute comparée</div><div class="lead">Chaque modèle coché dit trois répliques de votre projet, avec la même description de personnage. Notez à l'oreille, puis choisissez.</div></div><span class="sp"></span><div class="seg" style="background:var(--ctl)"><button style="background:var(--acc);color:var(--onacc)">Français</button><button style="background:none;color:var(--t)">Anglais</button></div></div>
+<div class="box" style="padding:10px 14px"><div class="row"><span class="sub" style="width:160px">Téléchargement</span><div class="pbar" style="flex:1"><i style="width:100%"></i></div><span class="tag ok">3 modèles prêts · 29 Go</span></div></div>
+<div class="tbl" style="grid-template-columns:200px repeat(3,1fr)">
+<div class="hd">Modèle</div>${L.map(l=>`<div class="hd" style="font-weight:500;font-size:12px">${l}</div>`).join('')}
+${M.map((m,k)=>`<div><b>${m[0]}</b><div class="row"><span class="star">${m[1]}</span><span class="sub">${m[2]} / réplique</span></div></div>${L.map((_,j)=>`<div class="row"><span class="play">${k==1&&j==1?'■':'▶'}</span>${W(22)}</div>`).join('')}`).join('')}</div>
+<div class="g3">${M.map((m,k)=>`<div class="box ${k==1?'sel':''}"><div class="row"><span class="ck ${k==1?'on':''}" style="border-radius:50%">${k==1?'✓':''}</span><b>${m[0]}</b></div><div class="sub" style="margin-top:6px">${['Équilibré, rapide, voix décrite par texte : idéal pour 600 voix.','Le plus vivant et le plus juste en émotion ; 3 fois plus lent.','Très expressif, mais il ne crée pas de voix à partir d\'une description.'][k]}</div></div>`).join('')}</div>
+<div class="note">Les modèles non retenus peuvent être supprimés pour libérer de la place (proposé à la fin), ou gardés pour l'écoute « Expressive ».</div>`,'Choisir Fish Audio Drama 3')},
+// 6 Créatures
+()=>shell(6,`<div><div class="title">Créatures et animaux</div><div class="lead">9 personnages ne sont pas humains. Aucun modèle de voix ne fait seul un vrai monstre : on combine une voix, des effets et, pour les cris sans paroles, un modèle de bruitage.</div></div>
+<div class="g3">
+<div class="box sel"><div class="row"><b>Voix + effets</b><span class="sp"></span><span class="tag acc">Conseillé</span></div><div class="sub" style="margin:6px 0 10px">Voix décrite (rauque, gutturale), puis hauteur et formants abaissés, saturation, dédoublement. Reste compréhensible.</div><div class="row"><span class="play">▶</span>${W(26)}</div><div class="chips" style="margin-top:10px"><span class="chip on">Géant</span><span class="chip">Lutin</span><span class="chip">Dragon</span><span class="chip">Spectre</span><span class="chip">Robot</span></div></div>
+<div class="box"><div class="row"><b>Cris et grognements</b><span class="sp"></span><span class="tag">Stable Audio 3</span></div><div class="sub" style="margin:6px 0 10px">Modèle de bruitage (3,5 Go) pour rugir, grogner, miauler, sans paroles. Mixé sous la voix ou seul pour un animal.</div><div class="row"><span class="play">▶</span>${W(26)}</div><div class="row" style="margin-top:10px"><span class="tag warn">À tester sur vos personnages</span></div></div>
+<div class="box"><div class="row"><b>Timbre de créature</b><span class="sp"></span><span class="tag">Avancé</span></div><div class="sub" style="margin:6px 0 10px">Conversion de voix (Seed-VC) à partir d'un extrait de créature de votre banque de sons. Plus réaliste, plus lent.</div><div class="row"><span class="play">▶</span>${W(26)}</div><div class="row" style="margin-top:10px"><span class="tag">Téléchargement séparé · 1,6 Go</span></div></div></div>
+<div class="box"><div class="h" style="margin-bottom:8px">Par personnage</div><div class="tbl" style="grid-template-columns:200px 1fr 1fr 120px">
+<div class="hd">Personnage</div><div class="hd">Approche</div><div class="hd">Réglage</div><div class="hd">Écouter</div>
+${[['Le Géant du château','Voix + effets','Géant · −6 demi-tons'],['Le Dragon','Voix + effets + cris','Dragon · rugissement mixé'],['Le Chat du grenier','Cris seuls','Miaulement agacé'],['Le Lutin farceur','Voix + effets','Lutin · +5 demi-tons, accéléré']].map(r=>`<div><b>${r[0]}</b></div><div>${r[1]}</div><div class="sub">${r[2]}</div><div><span class="play">▶</span></div>`).join('')}</div></div>`,'Continuer','<button class="btn ghost">Passer cette étape</button>'),
+// 7 Bibliothèque
+()=>shell(7,`<div><div class="title">Votre bibliothèque de voix</div><div class="lead">mCASTING génère une bibliothèque variée (genres, âges, timbres, accents) dans laquelle vous ferez le casting. Elle sert à tous vos projets.</div></div>
+<div class="g2" style="align-items:start">
+<div class="box"><div class="h" style="margin-bottom:10px">Récapitulatif</div>
+${[['Projet','Le Château du Point & Click'],['Langues','Français, anglais'],['Modèle de voix','Fish Audio Drama 3 (4 bits)'],['Écoute « Expressive »','Qwen3-TTS 1.7B (gardé)'],['Créatures','Voix + effets · Stable Audio 3 Small'],['Dialogues','53 personnages · 237 répliques']].map(r=>`<div class="row" style="padding:6px 0;border-bottom:var(--bd)"><span class="sub" style="width:170px">${r[0]}</span><b>${r[1]}</b></div>`).join('')}</div>
+<div style="display:flex;flex-direction:column;gap:12px"><div class="box"><div class="h" style="margin-bottom:8px">Taille de la bibliothèque</div><div class="chips"><span class="chip">200 voix</span><span class="chip on">600 voix · conseillé</span><span class="chip">1 000 voix</span></div>
+<div class="g3" style="margin-top:12px"><div><div class="big">1 200</div><div class="sub">extraits (2 langues)</div></div><div><div class="big">≈ 3 h 10</div><div class="sub">sur ce Mac</div></div><div><div class="big">1,4 Go</div><div class="sub">sur le disque</div></div></div></div>
+<div class="box"><div class="row"><b>En cours</b><span class="sp"></span><span class="sub">214 / 1 200 · reste ≈ 2 h 35</span></div><div class="pbar" style="margin-top:8px"><i style="width:18%"></i></div><div class="sub" style="margin-top:8px">Le casting est déjà possible avec les voix prêtes. Génération en arrière-plan ; elle reprend seule après une interruption.</div></div></div></div>
+<div class="note">Après le lancement, le guide se ferme sur l'écran <b>Casting</b> du projet. Option : <b>supprimer Chatterbox</b> (2,7 Go), non retenu.</div>`,'Lancer la génération')];
+
+let cur=0,th='clair';const win=document.getElementById('win'),sc=document.getElementById('screens'),lg=document.getElementById('legend');
+const TAB=['1. Projet','2. Matériel','3. Assistant IA','4. Dialogues','5. Voix · ce Mac','5 bis. Voix · serveur local','5 ter. Voix · cloud','6. Écoute comparée','7. Créatures','8. Bibliothèque'];TAB.forEach((s,i)=>{const b=document.createElement('button');b.textContent=s;b.onclick=()=>{cur=i;draw()};sc.append(b)});
+function draw(){win.innerHTML=S[cur]();win.dataset.th=th;lg.textContent=LEG[cur];[...sc.children].forEach((b,i)=>b.classList.toggle('on',i==cur))}
+document.querySelectorAll('#seg button').forEach(b=>b.onclick=()=>{th=b.dataset.th;document.querySelectorAll('#seg button').forEach(x=>x.classList.toggle('on',x==b));draw()});
+draw();
+</script></body></html>
