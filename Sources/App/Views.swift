@@ -552,7 +552,8 @@ struct VoiceCard: View {
     @ViewBuilder var langTag: some View {
         let proj = s.project?.languages ?? []
         let ready = proj.filter { v.samples[$0.rawValue] != nil }, missing = proj.filter { v.samples[$0.rawValue] == nil }
-        if v.custom || proj.isEmpty || mode == .library { if !v.samples.isEmpty { Tag(title: v.samples.keys.compactMap(Lang.init(rawValue:)).sorted().map { $0.rawValue.uppercased() }.joined(separator: " · ")) } }
+        if mode == .library { EmptyView() }      // bibliothèque : cartes étroites, langues dans le menu et la fiche
+        else if v.custom || proj.isEmpty { if !v.samples.isEmpty { Tag(title: v.samples.keys.compactMap(Lang.init(rawValue:)).sorted().map { $0.rawValue.uppercased() }.joined(separator: " · ")) } }
         else if missing.isEmpty { Tag(title: ready.map { $0.rawValue.uppercased() }.joined(separator: " · "), color: Flat.ok) }
         else { Tag(title: (ready + missing).map { $0.rawValue.uppercased() + (missing.contains($0) ? "…" : "") }.joined(separator: " · "), color: Flat.warn).help(L.t("lang.tag.missing")) }
     }
