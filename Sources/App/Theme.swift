@@ -25,7 +25,8 @@ enum Flat {
     static let rb: CGFloat = 12, rc: CGFloat = 8
     /// Fonds pastel des panneaux de l'écran Casting (thème clair : pastel ; thème sombre : même teinte, assombrie).
     static let peach = dyn(0xfbe7dc, 0x45301f), sky = dyn(0xe0ecf8, 0x1d3350), mint = dyn(0xdff1e6, 0x1c3f2d),
-               lavender = dyn(0xebe5f7, 0x36285a), butter = dyn(0xf8f0d6, 0x423a1c), rose = dyn(0xf8e2e7, 0x472433)
+               lavender = dyn(0xebe5f7, 0x36285a), butter = dyn(0xf8f0d6, 0x423a1c), rose = dyn(0xf8e2e7, 0x472433),
+               prune = dyn(0xf1e2f2, 0x3e2440)
 }
 
 /// Boîte de la maquette : fond carte, filet 1 px, rayon 12, marge 11.

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Couleurs des panneaux</title>
+<style>
+:root{--bg:#131316;--card:#232327;--ctl:#2c2c31;--text:#f5f5f7;--text2:#98989f;--line:#303035;--acc:#0a84ff;--brand:#f08a52}
+.light{--bg:#f4f1ec;--card:#fff;--ctl:#ebe6de;--text:#26231e;--text2:#7b756a;--line:#e3ddd2;--acc:#26231e;--brand:#d9622b}
+*{box-sizing:border-box}body{margin:0;background:#0d0d0f;color:#f5f5f7;font:13px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:20px 16px}
+h1{font-size:17px;margin:0 0 4px}p.sub{color:#98989f;margin:0 0 18px}
+.pick{display:flex;flex-wrap:wrap;gap:14px 28px;margin-bottom:20px}
+.pick .grp b{display:block;font-size:11px;letter-spacing:.4px;text-transform:uppercase;color:#98989f;margin-bottom:8px}
+.sw{display:flex;flex-wrap:wrap;gap:8px}
+.sw button{border:2px solid transparent;border-radius:10px;padding:6px 10px 6px 6px;background:#232327;color:#f5f5f7;font:inherit;display:flex;align-items:center;gap:8px;cursor:pointer}
+.sw button i{width:22px;height:22px;border-radius:6px;display:block}
+.sw button.on{border-color:#0a84ff}
+.theme{display:grid;grid-template-columns:1fr;gap:16px}
+@media(min-width:900px){.theme{grid-template-columns:1fr 1fr}}
+.screen{background:var(--bg);color:var(--text);border-radius:14px;padding:14px;border:1px solid #2a2a2e}
+.screen>small{display:block;color:var(--text2);font-size:11px;text-transform:uppercase;letter-spacing:.4px;margin-bottom:10px}
+.row{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.panel{border-radius:12px;border:1px solid var(--line);padding:12px;min-width:0}
+.who{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.av{width:38px;height:38px;border-radius:9px;background:#26231e;color:#fff;display:grid;place-items:center;font-weight:700}
+.screen:not(.light) .av{background:#2c2c31}
+.who b{font-size:14px}.who div div{color:var(--text2);font-size:12px}
+.h{font-size:11px;font-weight:600;letter-spacing:.44px;color:var(--text2);text-transform:uppercase;margin:10px 0 6px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{background:var(--ctl);border-radius:999px;padding:4px 10px;font-size:11.5px}
+.chip.on{background:var(--acc);color:#fff}
+.light .chip.on{color:#f4f1ec}
+.search{background:var(--ctl);border-radius:8px;padding:7px 11px;color:var(--text2);margin-bottom:10px}
+.btn{display:inline-block;background:var(--acc);color:#fff;border-radius:8px;padding:3px 9px;font-size:11.5px;font-weight:600;margin-right:6px}
+.light .btn{color:#f4f1ec}
+.note{color:var(--text2);font-size:11.5px;margin-top:8px}
+@media(max-width:560px){.row{grid-template-columns:1fr}}
+</style></head><body>
+<h1>Couleurs des panneaux de l'écran Casting</h1>
+<p class="sub">Choisis une teinte pour chaque panneau ; l'aperçu montre le thème sombre et le thème clair.</p>
+<div class="pick">
+  <div class="grp"><b>Panneau du personnage</b><div class="sw" id="p1"></div></div>
+  <div class="grp"><b>Panneau de recherche</b><div class="sw" id="p2"></div></div>
+</div>
+<div class="theme">
+  <div class="screen" id="dark"></div>
+  <div class="screen light" id="light"></div>
+</div>
+<script>
+const T={
+ orange:{n:"Orange actuel",d:"#45301f",l:"#fbe7dc"},
+ rose:{n:"Rose framboise",d:"#472433",l:"#f8e2e7"},
+ prune:{n:"Prune",d:"#3e2440",l:"#f1e2f2"},
+ violet:{n:"Violet",d:"#36285a",l:"#ebe5f7"},
+ bleu:{n:"Bleu",d:"#1d3350",l:"#e0ecf8"},
+ sarcelle:{n:"Sarcelle",d:"#1a3d40",l:"#dcf0f0"},
+ vert:{n:"Vert",d:"#1c3f2d",l:"#dff1e6"},
+ olive:{n:"Olive",d:"#34391d",l:"#eef0d8"},
+ sable:{n:"Sable",d:"#3d3626",l:"#f3ecdc"},
+ ardoise:{n:"Ardoise",d:"#2b3240",l:"#e4e8ef"},
+ neutre:{n:"Sans couleur",d:"#232327",l:"#ffffff"}
+};
+let sel={p1:"orange",p2:"bleu"};
+try{const s=JSON.parse(localStorage.getItem("mc-tints"));if(s)sel=s}catch(e){}
+function swatches(id){const el=document.getElementById(id);el.innerHTML="";
+ for(const k in T){const b=document.createElement("button");b.className=sel[id]===k?"on":"";
+  b.innerHTML=`<i style="background:linear-gradient(135deg,${T[k].d} 50%,${T[k].l} 50%)"></i>${T[k].n}`;
+  b.onclick=()=>{sel[id]=k;try{localStorage.setItem("mc-tints",JSON.stringify(sel))}catch(e){};render()};el.appendChild(b)}}
+function screen(el,dark){const c1=T[sel.p1][dark?"d":"l"],c2=T[sel.p2][dark?"d":"l"];
+ el.innerHTML=`<small>Thème ${dark?"sombre":"clair"} · ${c1} / ${c2}</small><div class="row">
+ <div class="panel" style="background:${c1}"><div class="who"><span class="av">H</span><div><b>Héros</b><div>dry sarcastic young adventurer, deadpan humor</div></div></div>
+  <div class="h">Voix actuelle</div><span class="btn">▶ Extrait 1</span><span class="btn">▶ Extrait 2</span>
+  <div class="h">Interprétation</div><div class="chips"><span class="chip">Neutre</span><span class="chip">Fatigué</span><span class="chip on">Joyeux</span><span class="chip">Colère</span></div>
+  <div class="h">Réplique</div><div class="chips"><span class="chip on">Fidèle</span><span class="chip">Expressive</span></div>
+  <div class="note">Timbre exact de l'échantillon, sans émotion.</div></div>
+ <div class="panel" style="background:${c2}"><div class="search">⌕ Rechercher une voix…</div>
+  <div class="h">Genre</div><div class="chips"><span class="chip on">Tous</span><span class="chip">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span><span class="chip">Créature</span></div>
+  <div class="h">Ton</div><div class="chips"><span class="chip">Grave</span><span class="chip">Aigu</span><span class="chip">Chaleureux</span><span class="chip">Sec</span></div>
+  <div class="note" style="text-align:right">600 voix · 600 filtrées</div></div></div>`}
+function render(){swatches("p1");swatches("p2");screen(document.getElementById("dark"),true);screen(document.getElementById("light"),false)}
+render();
+</script></body></html>

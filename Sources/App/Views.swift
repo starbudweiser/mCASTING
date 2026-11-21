@@ -306,7 +306,7 @@ struct CharacterStrip: View {
     let c: Character
     @ObservedObject var s = AppState.shared
     var body: some View {
-        Card(pad: 12, stretch: true, tint: Flat.peach) { VStack(alignment: .leading, spacing: 10) {
+        Card(pad: 12, stretch: true, tint: Flat.sky) { VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 Avatar(letter: String(c.name.prefix(1)), size: 40)
                 VStack(alignment: .leading, spacing: 3) {
@@ -381,7 +381,7 @@ struct CharacterSheet: View {
         .onAppear { name = c.name; role = c.role; notes = c.notes ?? ""; linesText = c.lines.joined(separator: "\n") }
     }
     var identity: some View {
-        Card(pad: 14, tint: Flat.peach) { VStack(alignment: .leading, spacing: 8) {
+        Card(pad: 14, tint: Flat.sky) { VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.identity"))
             TextField(L.t("char.name"), text: $name).flatField().onChange(of: name) { _, v in s.update(character: c.id) { $0.name = v } }
             Text(L.t("char.role")).font(.system(size: 12)).foregroundStyle(Flat.text2)
@@ -466,7 +466,7 @@ struct FilterBox: View {
     var search = false
     var stretch = false
     var body: some View {
-        Card(pad: 12, stretch: stretch, tint: Flat.sky) { VStack(alignment: .leading, spacing: 8) {
+        Card(pad: 12, stretch: stretch, tint: Flat.prune) { VStack(alignment: .leading, spacing: 8) {
             if search {
                 HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.text2); TextField(L.t("lib.search.short"), text: $s.fText).textFieldStyle(.plain) }
                     .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
