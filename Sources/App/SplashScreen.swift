@@ -75,7 +75,8 @@ final class Splash {
         if quiet { p.orderBack(nil) } else { p.orderFrontRegardless() }
         panel = p
         shownAt = Date()
-        model.appeared = true
+        // l'état final est posé après le premier affichage de la carte, sinon SwiftUI la dessine d'emblée sans animation
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [model] in model.appeared = true }
         if let sf = (NSScreen.main ?? NSScreen.screens.first)?.frame {
             trace(String(format: "splash visible, écart au centre de l'écran : %.0f/%.0f px", p.frame.midX - sf.midX, p.frame.midY - sf.midY))
         }
