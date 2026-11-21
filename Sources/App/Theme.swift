@@ -28,9 +28,10 @@ enum Flat {
 /// Boîte de la maquette : fond carte, filet 1 px, rayon 12, marge 11.
 struct Card<C: View>: View {
     var pad: CGFloat = 11
+    var stretch = false          // prend la hauteur du voisin (deux cartes côte à côte de même hauteur)
     @ViewBuilder var content: C
     var body: some View {
-        content.padding(pad).frame(maxWidth: .infinity, alignment: .leading)
+        content.padding(pad).frame(maxWidth: .infinity, maxHeight: stretch ? .infinity : nil, alignment: .topLeading)
             .background(Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
     }

@@ -29,7 +29,7 @@ let tools: [[String: Any]] = [
     ["name": "set_casting", "description": "Assign a voice to a character (and an optional emotion style).",
      "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "voice_id": "Voice id", "style": "Emotion/delivery"], required: ["project", "character", "voice_id"])],
     ["name": "preview_voice", "description": "Generate a preview of a voice for a line (slow: runs the local TTS). Returns the audio path.",
-     "inputSchema": schema(["voice_id": "Voice id", "text": "Line to speak", "lang": "fr|en", "style": "Emotion"], required: ["voice_id", "text"])],
+     "inputSchema": schema(["voice_id": "Voice id", "text": "Line to speak", "lang": "fr|en", "style": "Emotion (only used when expressive is true)", "expressive": "true = apply the emotion (voice timbre approximate); default false = exact timbre of the library sample, no emotion"], required: ["voice_id", "text"])],
     ["name": "get_import_guide", "description": "START HERE to bring an existing project into mCASTING: returns the import format (mcasting-project/1) and how to build it from the project's files. Works with any agent.", "inputSchema": schema([:])],
     ["name": "import_project", "description": "Import (or update) an in-progress project: its characters, sample lines and current voices. Provide project_json (JSON text) OR path (absolute path of a .json file). mode: merge (default, never erases an existing casting) or replace. dry_run: true to preview only. Call get_import_guide first for the format.",
      "inputSchema": schema(["project_json": "Project JSON text (format mcasting-project/1, or a bare array of characters)", "path": "Absolute path of a JSON file (alternative to project_json)", "name": "Project name (needed only if the JSON has none)", "mode": "merge|replace", "dry_run": "true to preview without saving"])],
@@ -93,7 +93,7 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
         return "OK"
     case "preview_voice":
         guard let v = DataStore.voices().first(where: { $0.id == s("voice_id") }) else { throw NSError(domain: "mcasting", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unknown voice"]) }
-        return try LibraryGenerator.preview(voice: v, text: s("text"), lang: Lang(rawValue: s("lang")) ?? .fr, style: s("style")).path
+        return try LibraryGenerator.preview(voice: v, text: s("text"), lang: Lang(rawValue: s("lang")) ?? .fr, style: s("style"), expressive: (a["expressive"] as? Bool) ?? (s("expressive") == "true")).path
     case "get_import_guide": return ProjectImport.guide
     case "import_project":
         var data = Data(s("project_json").utf8)

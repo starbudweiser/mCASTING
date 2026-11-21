@@ -20,6 +20,9 @@ final class AppState: ObservableObject {
     @Published var fAge: String? = nil
     @Published var fTone: String? = nil
     @Published var fFav = false
+    @Published var revealTick = 0
+    @Published var multi: Set<String> = []        // personnages sélectionnés (⌘-clic, ⇧-clic) pour une action groupée
+    @Published var expressive = UserDefaults.standard.bool(forKey: "expressive") { didSet { UserDefaults.standard.set(expressive, forKey: "expressive") } }
     @Published var favorites: Set<String> = DataStore.favorites()
     @Published var avg: Double = 5.6
     @Published var castTab = 0
@@ -80,6 +83,12 @@ final class AppState: ObservableObject {
         }
     }
 
+    /// Clic sur le nom vert d'un personnage : l'affiche dans la liste des voix, filtres levés, voisines visibles.
+    func showVoice(of c: Character) {
+        characterID = c.id; castTab = 0
+        fGender = nil; fLang = nil; fText = ""; fAge = nil; fTone = nil; fFav = false
+        revealTick += 1
+    }
     func toggleFavorite(_ id: String) {
         if favorites.contains(id) { favorites.remove(id) } else { favorites.insert(id) }
         do { try DataStore.saveFavorites(favorites) } catch { self.error = error.localizedDescription }
@@ -89,6 +98,7 @@ final class AppState: ObservableObject {
         Paths.prepare(); reload(force: true)
         if CommandLine.arguments.contains("--demo-busy") { busyFlag = true; task = "library" }      // essais d'interface : calcul simulé
         if voices.isEmpty { voices = (try? LibraryGenerator.ensureCatalog()) ?? [] }
+        if CommandLine.arguments.contains("--demo-multi") { multi = Set((project?.characters ?? []).prefix(4).map(\.id)) }   // essais d'interface : sélection multiple
         timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in Task { @MainActor in AppState.shared.reload() } }
     }
     func reload(force: Bool = false) {
@@ -116,6 +126,50 @@ final class AppState: ObservableObject {
         guard let pid = projectID else { return }
         mutate { all in
             if let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == id }) { f(&all[i].characters[j]) }
+        }
+    }
+    var filtersActive: Bool { fGender != nil || fLang != nil || fAge != nil || fTone != nil || fFav || !fText.isEmpty }
+    /// Genre deviné d'après la description du personnage (« farm woman », « grumbling man »…) ; nil si rien d'évident.
+    static func guessGender(_ c: Character) -> Gender? {
+        let words = Set((c.role + " " + (c.notes ?? "")).lowercased().split { !$0.isLetter }.map(String.init))
+        if !words.isDisjoint(with: ["woman", "women", "girl", "female", "lady", "mother", "queen", "witch", "she"]) { return .woman }
+        if !words.isDisjoint(with: ["child", "kid", "children"]) { return .child }
+        if !words.isDisjoint(with: ["man", "men", "boy", "male", "father", "king", "he", "guy"]) { return .man }
+        return nil
+    }
+    /// Voix au hasard pour des personnages. Filtres posés : on tire parmi les voix filtrées ; sinon dans la bibliothèque, en
+    /// respectant le genre deviné d'après la description (sans indice : voix d'hommes ou de femmes, jamais d'animaux ni de créatures). Les voix pas encore utilisées dans le projet passent en premier.
+    func assignRandom(_ ids: [String]) {
+        guard let p = project else { return }
+        let filtered = filtersActive
+        let base = filtered ? filteredVoices : voices.filter { !$0.custom }
+        guard !base.isEmpty else { return }
+        let targets = Set(ids)
+        var used = Set(p.characters.filter { !targets.contains($0.id) }.compactMap(\.voiceID))
+        var picks: [String: String] = [:]
+        for id in ids {
+            guard let c = p.characters.first(where: { $0.id == id }) else { continue }
+            var pool = base
+            if !filtered {
+                let g = AppState.guessGender(c)
+                let m = base.filter { g != nil ? $0.gender == g : ($0.gender == .man || $0.gender == .woman) }   // sans indice : voix humaines adultes
+                if !m.isEmpty { pool = m }
+            }
+            let fresh = pool.filter { !used.contains($0.id) }
+            guard let v = (fresh.isEmpty ? pool : fresh).randomElement() else { continue }
+            picks[id] = v.id; used.insert(v.id)
+        }
+        mutate { all in
+            guard let i = all.firstIndex(where: { $0.id == p.id }) else { return }
+            for j in all[i].characters.indices { if let v = picks[all[i].characters[j].id] { all[i].characters[j].voiceID = v } }
+        }
+    }
+    func clearVoice(_ ids: [String]) {
+        guard let pid = projectID else { return }
+        let t = Set(ids)
+        mutate { all in
+            guard let i = all.firstIndex(where: { $0.id == pid }) else { return }
+            for j in all[i].characters.indices where t.contains(all[i].characters[j].id) { all[i].characters[j].voiceID = nil }
         }
     }
     func choose(voice id: String) { if abVoiceID == id { abVoiceID = nil }; if let c = characterID { update(character: c) { $0.voiceID = id } } }
@@ -154,10 +208,11 @@ final class AppState: ObservableObject {
         }
     }
     func cancel() { cancelRequested = true }
-    func preview(voice: Voice, text: String, style: String) {
+    func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil) {
+        let expr = expressive ?? self.expressive
         let lang = project?.lang ?? .fr
         run("preview") { log in
-            let u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style)
+            let u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style, expressive: expr)
             Task { @MainActor in AppState.shared.play(rel: u.path) }
         }
     }

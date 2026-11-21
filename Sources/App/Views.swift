@@ -207,22 +207,53 @@ struct CharacterColumn: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             Header(title: L.t("char.title"))
+            if !s.multi.isEmpty {
+                VStack(spacing: 6) {
+                    HStack(spacing: 6) {
+                        Tag(title: L.t("rand.sel", s.multi.count))
+                        Spacer(minLength: 0)
+                        Button(L.t("rand.cancel")) { s.multi = [] }.buttonStyle(FlatButton(small: true))
+                    }
+                    Button(s.multi.count > 1 ? L.t("rand.many", s.multi.count) : L.t("rand.one")) { s.assignRandom(ordered(s.multi)) }.buttonStyle(FlatButton(green: true, wide: true))
+                }
+            }
             ScrollView(showsIndicators: false) { VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } } }
             Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton(green: true, wide: true))
         }
     }
+    var chars: [Character] { s.project?.characters ?? [] }
+    func ordered(_ set: Set<String>) -> [String] { chars.map(\.id).filter { set.contains($0) } }
+    /// Clic : sélection simple ; ⌘-clic : ajoute ou retire ; ⇧-clic : étend depuis le personnage actif.
+    func click(_ c: Character) {
+        let f = NSApp.currentEvent?.modifierFlags ?? []
+        if f.contains(.command) {
+            if s.multi.isEmpty, let a = s.characterID { s.multi = [a] }
+            if s.multi.contains(c.id) { s.multi.remove(c.id) } else { s.multi.insert(c.id) }
+        } else if f.contains(.shift), let a = s.characterID, let i = chars.firstIndex(where: { $0.id == a }), let j = chars.firstIndex(where: { $0.id == c.id }) {
+            s.multi = Set(chars[min(i, j)...max(i, j)].map(\.id))
+        } else { s.multi = []; s.characterID = c.id }
+    }
+    @ViewBuilder func menu(_ c: Character) -> some View {
+        let t = s.multi.contains(c.id) ? ordered(s.multi) : [c.id]
+        Button(t.count > 1 ? L.t("rand.many", t.count) : L.t("rand.one")) { s.assignRandom(t) }
+        Button(t.count > 1 ? L.t("rand.clear.many", t.count) : L.t("rand.clear")) { s.clearVoice(t) }
+        Divider()
+        Button(L.t("rand.nov")) { s.multi = Set(chars.filter { $0.voiceID == nil }.map(\.id)) }
+        Button(L.t("rand.all")) { s.multi = Set(chars.map(\.id)) }
+        if !s.multi.isEmpty { Button(L.t("rand.none")) { s.multi = [] } }
+    }
     func row(_ c: Character) -> some View {
         let v = s.voices.first { $0.id == c.voiceID }
-        return Button { s.characterID = c.id } label: {
+        return Group {
             HStack(spacing: 10) {
                 Avatar(letter: String(c.name.prefix(1)))
                 VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 6) { Text(c.name).fontWeight(.semibold).rowName(c.name); if let v { Tag(title: v.name, color: Flat.ok) } else { Tag(title: L.t("char.novoice")) } }
+                    HStack(spacing: 6) { Text(c.name).fontWeight(.semibold).rowName(c.name); if let v { Tag(title: v.name, color: Flat.ok).contentShape(Rectangle()).onTapGesture { s.showVoice(of: c) }.help(L.t("char.showvoice")) } else { Tag(title: L.t("char.novoice")) } }
                     Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(c.role)
                 }
                 Spacer(minLength: 0)
-            }.tile(selected: s.characterID == c.id)
-        }.buttonStyle(.plain)
+            }.tile(selected: s.characterID == c.id || s.multi.contains(c.id))
+        }.contentShape(Rectangle()).onTapGesture { click(c) }.contextMenu { menu(c) }.accessibilityAddTraits(.isButton)
     }
 }
 
@@ -250,7 +281,13 @@ struct CastingRight: View {
         VStack(alignment: .leading, spacing: 10) {
             Seg(items: [L.t("char.tab.voices"), L.t("char.tab.sheet")], selection: $s.castTab)
             if let c = s.character {
-                if s.castTab == 0 { CharacterStrip(c: c); VoicePane() } else { CharacterSheet(c: c).id(c.id) }
+                if s.castTab == 0 {
+                    HStack(alignment: .top, spacing: 10) {
+                        CharacterStrip(c: c).frame(maxWidth: .infinity, alignment: .topLeading)
+                        FilterBox(search: true, stretch: true).frame(maxWidth: .infinity, alignment: .topLeading)
+                    }.fixedSize(horizontal: false, vertical: true)
+                    VoicePane()
+                } else { CharacterSheet(c: c).id(c.id) }
             } else { Text(L.t("char.none")).foregroundStyle(Flat.text2); Spacer() }
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
     }
@@ -261,27 +298,37 @@ struct CharacterStrip: View {
     let c: Character
     @ObservedObject var s = AppState.shared
     var body: some View {
-        Card(pad: 12) { VStack(alignment: .leading, spacing: 10) {
+        Card(pad: 12, stretch: true) { VStack(alignment: .leading, spacing: 10) {
             HStack(alignment: .top, spacing: 12) {
                 Avatar(letter: String(c.name.prefix(1)), size: 40)
                 VStack(alignment: .leading, spacing: 3) {
                     Text(c.name).font(.system(size: 15, weight: .semibold)).rowName(c.name)
                     Text(c.role.isEmpty ? "—" : c.role).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(2).fixedSize(horizontal: false, vertical: true)
                 }
-                Spacer(minLength: 8)
-                if let cur = c.current, !cur.samples.isEmpty {
-                    VStack(alignment: .trailing, spacing: 4) {
-                        Header(title: L.t("char.current"))
-                        HStack(spacing: 6) { ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { i, smp in
-                            Button { s.play(rel: smp.file) } label: { HStack(spacing: 5) { Image(systemName: s.playingPath == smp.file ? "stop.fill" : "play.fill").font(.system(size: 10)); Text(L.t("char.extract", i + 1)) } }
-                                .buttonStyle(FlatButton(primary: true, small: true)).disabled(!FileManager.default.fileExists(atPath: smp.file)).help(smp.text ?? "") } }
+                Spacer(minLength: 0)
+            }
+            if let cur = c.current, !cur.samples.isEmpty {
+                HStack(spacing: 8) {
+                    Header(title: L.t("char.current")).fixedSize()
+                    ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { i, smp in
+                        Button { s.play(rel: smp.file) } label: { HStack(spacing: 5) { Image(systemName: s.playingPath == smp.file ? "stop.fill" : "play.fill").font(.system(size: 10)); Text(L.t("char.extract", i + 1)) } }
+                            .buttonStyle(FlatButton(primary: true, small: true)).disabled(!FileManager.default.fileExists(atPath: smp.file)).help(smp.text ?? "")
                     }
+                    Spacer(minLength: 0)
                 }
             }
             Divider().overlay(Flat.line)
-            HStack(alignment: .top, spacing: 10) {
-                Header(title: L.t("char.interp")).padding(.top, 6).fixedSize()
-                EmotionPicker(c: c)
+            VStack(alignment: .leading, spacing: 5) {
+                Header(title: L.t("char.interp"))
+                EmotionPicker(c: c).opacity(s.expressive ? 1 : 0.45)
+            }
+            VStack(alignment: .leading, spacing: 5) {
+                Header(title: L.t("rep.title"))
+                HStack(spacing: 6) {
+                    Button { s.expressive = false } label: { Chip(title: L.t("rep.faithful"), on: !s.expressive) }.buttonStyle(.plain)
+                    Button { s.expressive = true } label: { Chip(title: L.t("rep.expressive"), on: s.expressive) }.buttonStyle(.plain)
+                }
+                Text(L.t(s.expressive ? "rep.hint.e" : "rep.hint.f")).font(.system(size: 11)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
             }
         } }
     }
@@ -377,15 +424,28 @@ struct CharacterSheet: View {
 /// Colonne droite : recherche, filtres (`.box`), voix en deux colonnes, comparaison A / B.
 struct VoicePane: View {
     @ObservedObject var s = AppState.shared
+    /// Voix affichées : les 120 premières, ou une fenêtre autour de la voix choisie si elle est plus loin.
+    var shown: [Voice] {
+        let all = s.filteredVoices
+        guard let id = s.character?.voiceID, let i = all.firstIndex(where: { $0.id == id }), i >= 100 else { return Array(all.prefix(120)) }
+        return Array(all[max(0, i - 50)..<min(all.count, i + 70)])
+    }
+    /// Au changement de personnage, amène sa voix choisie au centre de la liste pour essayer les voisines.
+    func reveal(_ proxy: ScrollViewProxy) {
+        guard let id = s.character?.voiceID, shown.contains(where: { $0.id == id }) else { return }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(id, anchor: .center) } }
+    }
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
-            HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.text2); TextField(L.t("lib.search"), text: $s.fText).textFieldStyle(.plain) }
-                .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
-            FilterBox()
-            ScrollView(showsIndicators: false) {
-                LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                    ForEach(s.filteredVoices.prefix(120)) { v in VoiceCard(v: v, mode: .casting) }
+            ScrollViewReader { proxy in
+                ScrollView(showsIndicators: false) {
+                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                        ForEach(shown) { v in VoiceCard(v: v, mode: .casting).id(v.id) }
+                    }
                 }
+                .onAppear { reveal(proxy) }
+                .onChange(of: s.characterID) { _ in reveal(proxy) }
+                .onChange(of: s.revealTick) { _ in reveal(proxy) }
             }
             ABBox()
         }.frame(maxWidth: .infinity)
@@ -395,8 +455,14 @@ struct VoicePane: View {
 struct FilterBox: View {
     @ObservedObject var s = AppState.shared
     var showAgeTone = true
+    var search = false
+    var stretch = false
     var body: some View {
-        Card { VStack(alignment: .leading, spacing: 6) {
+        Card(pad: 12, stretch: stretch) { VStack(alignment: .leading, spacing: 8) {
+            if search {
+                HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.text2); TextField(L.t("lib.search.short"), text: $s.fText).textFieldStyle(.plain) }
+                    .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            }
             row(L.t("f.gender")) {
                 chip(L.t("lib.all"), s.fGender == nil) { s.fGender = nil }
                 ForEach(Gender.allCases, id: \.self) { g in chip(L.t("g.\(g.rawValue)"), s.fGender == g) { s.fGender = g } }
@@ -409,18 +475,17 @@ struct FilterBox: View {
                     ForEach([("low", "tone.low"), ("high", "tone.high"), ("warm", "tone.warm"), ("dry", "tone.dry"), ("mischievous", "tone.dark")], id: \.0) { t in chip(L.t(t.1), s.fTone == t.0) { s.fTone = s.fTone == t.0 ? nil : t.0 } }
                 }
             }
-            HStack(spacing: 8) {
-                label(L.t("f.lang"))
+            row(L.t("f.lang")) {
                 ForEach(Lang.allCases, id: \.self) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
                 chip("★ " + L.t("f.fav"), s.fFav) { s.fFav.toggle() }
-                Spacer(minLength: 0)
-                Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count))
             }
+            Spacer(minLength: 0)
+            HStack { Spacer(minLength: 0); Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count)) }
         } }
     }
     func label(_ t: String) -> some View { Text(t).font(.system(size: 11)).foregroundStyle(Flat.text2).frame(width: 44, alignment: .leading) }
     func chip(_ t: String, _ on: Bool, _ a: @escaping () -> Void) -> some View { Button(action: a) { Chip(title: t, on: on) }.buttonStyle(.plain) }
-    func row<C: View>(_ t: String, @ViewBuilder _ c: () -> C) -> some View { HStack(spacing: 8) { label(t); c(); Spacer(minLength: 0) } }
+    func row<C: View>(_ t: String, @ViewBuilder _ c: () -> C) -> some View { HStack(alignment: .top, spacing: 8) { label(t).padding(.top, 5); Flow(spacing: 6) { c() }; Spacer(minLength: 0) } }
 }
 
 enum CardMode { case casting, library }
@@ -621,7 +686,7 @@ struct Sheet: View {
             Header(title: L.t("lib.test")).padding(.top, 6)
             TextEditor(text: $line).font(.system(size: 12.5)).flatEditor(height: 52)
             Flow { ForEach(TrialBox.emotions, id: \.0) { e in Button { emo = e.1 } label: { Chip(title: L.t(e.0), on: emo == e.1) }.buttonStyle(.plain) } }
-            Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: s.fLang ?? .fr) : line, style: emo) }
+            Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: s.fLang ?? .fr) : line, style: emo, expressive: !emo.isEmpty) }
                 .buttonStyle(FlatButton(primary: true)).disabled(s.busy || !s.engineInstalled)
         } }
         .onAppear { if line.isEmpty { line = Catalog.sample(for: v, lang: s.fLang ?? .fr) } }
