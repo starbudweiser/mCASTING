@@ -452,7 +452,8 @@ struct VoiceCard: View {
             if mode == .casting {
                 HStack(spacing: 6) {
                     Button(L.t("v.line")) { tryLine() }.buttonStyle(FlatButton(small: true)).disabled(s.busy || !s.engineInstalled || s.character?.lines.first == nil)
-                    Button(L.t("lib.ab")) { s.abVoiceID = v.id }.buttonStyle(FlatButton(small: true))
+                    if isB { Button(L.t("ab.cancel")) { s.abVoiceID = nil }.buttonStyle(FlatButton(small: true)) }
+                    else if !chosen { Button(L.t("lib.ab")) { s.abVoiceID = v.id }.buttonStyle(FlatButton(small: true)) }
                     Spacer(minLength: 0)
                     Button(chosen ? L.t("lib.chosen") : L.t("lib.choose")) { s.choose(voice: v.id) }.buttonStyle(FlatButton(primary: chosen, small: true)).disabled(s.characterID == nil)
                 }
@@ -468,9 +469,10 @@ struct VoiceCard: View {
 struct ABBox: View {
     @ObservedObject var s = AppState.shared
     var body: some View {
-        if let b = s.voices.first(where: { $0.id == s.abVoiceID }), let a = s.voices.first(where: { $0.id == s.character?.voiceID }) {
+        if let b = s.voices.first(where: { $0.id == s.abVoiceID }), let a = s.voices.first(where: { $0.id == s.character?.voiceID }), a.id != b.id {
             Card { VStack(alignment: .leading, spacing: 6) {
-                Header(title: L.t("ab.title"))
+                HStack { Header(title: L.t("ab.title")); Spacer(minLength: 0)
+                    Button(L.t("ab.cancel")) { s.abVoiceID = nil }.buttonStyle(FlatButton(small: true)) }
                 HStack(alignment: .top, spacing: 8) { side("A", a); side("B", b) }
             } }
         }

@@ -111,7 +111,7 @@ final class AppState: ObservableObject {
             if let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == id }) { f(&all[i].characters[j]) }
         }
     }
-    func choose(voice id: String) { if let c = characterID { update(character: c) { $0.voiceID = id } } }
+    func choose(voice id: String) { if abVoiceID == id { abVoiceID = nil }; if let c = characterID { update(character: c) { $0.voiceID = id } } }
     func writeCasting() {
         guard let p = project else { return }
         do { let u = try CastingExport.write(p, voices: voices); log = "casting.json → \(u.path)" } catch { self.error = error.localizedDescription }
