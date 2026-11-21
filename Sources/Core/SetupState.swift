@@ -11,8 +11,10 @@ public struct SetupState: Codable {
     public var projectID: String?
     public var serverURL: String?            // serveur de voix du réseau (API OpenAI)
     public var serverLibrary = false         // fabriquer la bibliothèque sur ce serveur
+    public var extraLangs: [String] = []     // langues calculées pour toute la bibliothèque sans projet qui les demande
+    public var pausedLangs: [String] = []    // langues dont le calcul est mis en pause
     public init() {}
-    enum K: String, CodingKey { case completed, step, assistant, voiceMode, compare, actingModel, projectID, serverURL, serverLibrary }
+    enum K: String, CodingKey { case completed, step, assistant, voiceMode, compare, actingModel, projectID, serverURL, serverLibrary, extraLangs, pausedLangs }
     /// Lecture tolérante : un champ ajouté par une version plus récente ne fait pas perdre les autres réglages.
     public init(from d: Decoder) throws {
         let c = try d.container(keyedBy: K.self)
@@ -25,6 +27,8 @@ public struct SetupState: Codable {
         projectID = try? c.decodeIfPresent(String.self, forKey: .projectID)
         serverURL = try? c.decodeIfPresent(String.self, forKey: .serverURL)
         serverLibrary = (try? c.decodeIfPresent(Bool.self, forKey: .serverLibrary)) ?? false
+        extraLangs = (try? c.decodeIfPresent([String].self, forKey: .extraLangs)) ?? []
+        pausedLangs = (try? c.decodeIfPresent([String].self, forKey: .pausedLangs)) ?? []
     }
 
     static var url: URL { Paths.home.appendingPathComponent("setup.json") }

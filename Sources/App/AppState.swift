@@ -53,10 +53,20 @@ final class AppState: ObservableObject {
             (q.isEmpty || (v.name + " " + v.recipe + " " + v.tone + " " + (v.species ?? "")).lowercased().contains(q))
         }
     }
-    var remainingSamples: Int { LibraryGenerator.remaining(voices) }
+    var remainingSamples: Int { LibraryGenerator.remaining(voices, langs: libLangs) }
     var libVoices: [Voice] { voices.filter { !$0.custom } }
-    var doneSamples: Int { libVoices.reduce(0) { $0 + $1.samples.count } }
-    var totalSamples: Int { libVoices.count * Lang.allCases.count }
+    /// Langues calculées pour la bibliothèque (projets + langues ajoutées), hors pause.
+    var libLangs: [Lang] { let st = SetupState.load(); return LibraryGenerator.targetLangs(projects: projects, setup: st).filter { !st.pausedLangs.contains($0.rawValue) } }
+    var doneSamples: Int { libLangs.reduce(0) { $0 + LibraryGenerator.ready(voices, $1) } }
+    var totalSamples: Int { libVoices.count * libLangs.count }
+    /// Langues proposées dans les filtres : celles du projet affiché, puis les autres langues déjà présentes dans la bibliothèque.
+    var filterLangs: [Lang] {
+        let proj = project?.languages ?? []
+        let present = Set(voices.flatMap { $0.samples.keys }).compactMap(Lang.init(rawValue:)).filter { !proj.contains($0) }.sorted()
+        return proj + present
+    }
+    /// Langue écoutée : celle choisie dans la barre latérale pour le projet affiché.
+    var activeLang: Lang { project?.activeLang ?? .fr }
     func mcpLog(_ n: Int = 6) -> String {
         guard let t = try? String(contentsOf: Paths.home.appendingPathComponent("mcp.log"), encoding: .utf8) else { return "" }
         return t.split(separator: "\n").suffix(n).joined(separator: "\n")
@@ -117,9 +127,20 @@ final class AppState: ObservableObject {
     func mutate(_ body: @escaping (inout [Project]) -> Void) {
         do { projects = try DataStore.updateProjects(body); stamp.0 = DataStore.modified(Paths.projects) } catch { self.error = error.localizedDescription }
     }
-    func newProject(name: String, lang: Lang) {
-        let p = Project(name: name, lang: lang); mutate { $0.append(p) }; projectID = p.id; screen = .casting
+    func newProject(name: String, lang: Lang, second: Lang? = nil) {
+        let p = Project(name: name, lang: lang, second: second); mutate { $0.append(p) }; projectID = p.id; screen = .casting
     }
+    /// Langues du projet affiché (la première devient la principale).
+    func setLanguages(_ l: [Lang]) { guard let pid = projectID else { return }; mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].setLanguages(l) } } }
+    func setActive(_ l: Lang) { guard let pid = projectID else { return }; mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].active = l } } }
+    /// Ajoute une langue à toute la bibliothèque (sans projet), ou la met en pause / la reprend.
+    func addLibraryLang(_ l: Lang) { var st = SetupState.load(); if !st.extraLangs.contains(l.rawValue) { st.extraLangs.append(l.rawValue) }; st.pausedLangs.removeAll { $0 == l.rawValue }; st.save(); objectWillChange.send() }
+    func togglePause(_ l: Lang) {
+        var st = SetupState.load()
+        if st.pausedLangs.contains(l.rawValue) { st.pausedLangs.removeAll { $0 == l.rawValue } } else { st.pausedLangs.append(l.rawValue) }
+        st.save(); objectWillChange.send()
+    }
+    func purge(_ l: Lang) { do { try LibraryGenerator.purge(l); reload(force: true) } catch { self.error = error.localizedDescription } }
     /// Retire le projet de mCASTING (le dossier du projet et son casting.json ne sont pas touchés).
     func deleteProject(_ id: String) {
         mutate { $0.removeAll { $0.id == id } }
@@ -225,14 +246,33 @@ final class AppState: ObservableObject {
         }
     }
     private var warnedNoAlt = false
-    /// Réplique à dire dans la langue du projet : le texte d'origine en FR ; en EN, la réplique anglaise du même rang si l'import
-    /// l'a fournie, sinon la phrase type de la bibliothèque (avec un avertissement, une fois).
-    func spokenLine(_ c: Character, _ i: Int, voice: Voice) -> String {
-        let pl = project?.lang ?? .fr
-        if let a = c.lines(in: pl) { return a.indices.contains(i) ? a[i] : a[0] }
-        if pl == .fr { return c.lines.indices.contains(i) ? c.lines[i] : (c.lines.first ?? "") }
-        if !warnedNoAlt { warnedNoAlt = true; info = L.t("alt.missing") }
-        return Catalog.sample(for: voice, lang: pl)
+    /// Réplique à dire dans `lang` (langue écoutée par défaut) : celle de cette langue si le projet la fournit, sinon la phrase
+    /// type de la voix dans cette langue (avec un avertissement, une fois).
+    func spokenLine(_ c: Character, _ i: Int, voice: Voice, lang: Lang? = nil) -> String {
+        let l = lang ?? activeLang, main = project?.lang ?? .fr
+        if let a = c.lines(in: l, main: main), !a.isEmpty { return a.indices.contains(i) ? a[i] : a[0] }
+        if !warnedNoAlt { warnedNoAlt = true; info = L.t("alt.missing", l.localized) }
+        return Catalog.sample(for: voice, lang: l)
+    }
+    /// Répliques à afficher pour un personnage dans la langue écoutée (à défaut, celles d'origine).
+    func shownLines(_ c: Character) -> [String] { c.lines(in: activeLang, main: project?.lang ?? .fr) ?? c.lines }
+    /// Écoute d'une voix dans une langue : extrait prêt joué tout de suite ; sinon phrase type (ou `text`) dite avec le même
+    /// timbre par clonage, calculée puis gardée en cache.
+    func listen(voice: Voice, lang: Lang, text: String? = nil, style: String = "", expressive: Bool = false, fx: VoiceFX? = nil) {
+        if text == nil, fx == nil, let rel = voice.samples[lang.rawValue] { play(rel: rel); return }
+        if voice.engine == "elevenlabs" { pendingPaid = (voice, text ?? Catalog.sample(for: voice, lang: lang), fx); return }
+        let t = text ?? Catalog.sample(for: voice, lang: lang), prefer = project?.lang
+        if !expressive, fx == nil {           // déjà en cache : immédiat, sans passer par la file de calcul
+            let m = Languages.actingModel(for: lang, preferred: SetupState.load().actingModel)?.id ?? "none"
+            let u = LibraryGenerator.cacheURL(voice: voice, lang: lang, text: t, style: style, expressive: false, model: m)
+            if voice.refAudio == nil, voice.engine != "server", FileManager.default.fileExists(atPath: u.path) { play(rel: u.path); return }
+        }
+        run("preview") { _ in
+            var u = try LibraryGenerator.listen(voice: voice, text: t, lang: lang, style: style, expressive: expressive, prefer: prefer)
+            if let fx { let o = Paths.audio.appendingPathComponent("preview/\(UUID().uuidString).fx.m4a"); try CreatureFX.render(fx, input: u, output: o); u = o }
+            let path = u.path
+            Task { @MainActor in AppState.shared.play(rel: path) }
+        }
     }
     /// Réplique ElevenLabs en attente de confirmation du coût.
     @Published var pendingPaid: (voice: Voice, text: String, fx: VoiceFX?)?
@@ -247,14 +287,7 @@ final class AppState: ObservableObject {
             Task { @MainActor in AppState.shared.play(rel: path) }
         }
     }
-    func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil, fx: VoiceFX? = nil) {
-        if voice.engine == "elevenlabs" { pendingPaid = (voice, text, fx); return }      // payant : coût confirmé d'abord
-        let expr = expressive ?? self.expressive
-        let lang = project?.lang ?? .fr
-        run("preview") { log in
-            var u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style, expressive: expr, timbreFrom: voice.samples[lang.rawValue] != nil ? lang : voice.timbreLang)
-            if let fx { let o = u.deletingPathExtension().appendingPathExtension("fx.m4a"); try CreatureFX.render(fx, input: u, output: o); u = o }
-            Task { @MainActor in AppState.shared.play(rel: u.path) }
-        }
+    func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil, fx: VoiceFX? = nil, lang: Lang? = nil) {
+        listen(voice: voice, lang: lang ?? activeLang, text: text, style: style, expressive: expressive ?? self.expressive, fx: fx)
     }
 }

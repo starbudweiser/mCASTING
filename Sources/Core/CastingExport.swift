@@ -21,7 +21,7 @@ public enum CastingExport {
     public struct File: Codable {
         public var format = "mcasting/1"
         public var project: String, lang: String
-        public var languages = ["fr", "en"]            // langues pour lesquelles ce casting est utilisable (clonage du timbre entre langues)
+        public var languages: [String]                 // langues du projet (principale en premier) ; d'autres restent possibles par clonage du timbre
         public var characters: [String: Entry]
     }
 
@@ -30,7 +30,7 @@ public enum CastingExport {
         for c in p.characters {
             guard let vid = c.voiceID, let v = voices.first(where: { $0.id == vid }) else { continue }
             out[c.id] = Entry(voice_id: v.id, engine: v.engine, recipe: v.recipe, style: c.style,
-                              sample: v.samples[p.lang.rawValue].map { Paths.audio.appendingPathComponent($0).path },
+                              sample: v.samples[v.timbre(for: p.lang).rawValue].map { Paths.audio.appendingPathComponent($0).path },
                               name: c.name, role: c.role,
                               ref_audio: v.refAudio.map { Paths.audio.appendingPathComponent($0).path }, ref_text: v.refText,
                               samples: v.samples.mapValues { Paths.audio.appendingPathComponent($0).path },
@@ -42,7 +42,7 @@ public enum CastingExport {
                               fx: c.fx, fx_ffmpeg: CreatureFX.find(c.fx, for: c)?.ffmpeg,
                               remote_model: v.remoteModel, remote_voice: v.remoteVoice, server: v.engine == "server" ? v.source : nil)
         }
-        return File(project: p.name, lang: p.lang.rawValue, characters: out)
+        return File(project: p.name, lang: p.lang.rawValue, languages: p.languages.map(\.rawValue), characters: out)
     }
 
     /// Écrit `<dossier du projet>/casting.json` ; renvoie le chemin.

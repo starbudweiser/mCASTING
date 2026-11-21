@@ -19,17 +19,20 @@ func schema(_ props: [String: String], required: [String] = []) -> [String: Any]
 
 let tools: [[String: Any]] = [
     ["name": "list_projects", "description": "List casting projects with progress.", "inputSchema": schema([:])],
-    ["name": "create_project", "description": "Create a casting project. lang: fr or en. folder: where casting.json will be written.",
-     "inputSchema": schema(["name": "Project name", "lang": "fr|en", "folder": "Absolute folder of the target project"], required: ["name"])],
+    ["name": "list_languages", "description": "Voice languages (ISO 639-1): those the voice library can be made in, those any voice can be heard in by cloning its timbre (installed models), and each project's languages.", "inputSchema": schema([:])],
+    ["name": "create_project", "description": "Create a casting project. languages: 1 or 2 ISO 639-1 codes, main language first (e.g. \"de,en\"); call list_languages. The library samples of these languages are computed by the app. folder: where casting.json will be written.",
+     "inputSchema": schema(["name": "Project name", "languages": "Comma-separated codes, main first (e.g. de,en). 'lang' alone is still accepted.", "folder": "Absolute folder of the target project"], required: ["name"])],
+    ["name": "set_project_languages", "description": "Change a project's languages (1 or 2 ISO 639-1 codes, main first). Missing library samples are computed by the app.",
+     "inputSchema": schema(["project": "Project name or id", "languages": "Comma-separated codes, main first"], required: ["project", "languages"])],
     ["name": "add_characters", "description": "Add characters to a project. characters_json: JSON array of {name, role, lines[]}.",
      "inputSchema": schema(["project": "Project name or id", "characters_json": "JSON array"], required: ["project", "characters_json"])],
     ["name": "list_characters", "description": "List characters of a project with their cast voice.", "inputSchema": schema(["project": "Project name or id"], required: ["project"])],
-    ["name": "search_voices", "description": "Search the voice library. Filters: gender (man|woman|child|animal|creature), age, pitch (low|medium|high), tone, species, text, lang (fr|en), limit.",
+    ["name": "search_voices", "description": "Search the voice library. Filters: gender (man|woman|child|animal|creature), age, pitch (low|medium|high), tone, species, text, lang (ISO 639-1: voices with a ready sample in that language), limit.",
      "inputSchema": schema(["gender": "", "age": "", "pitch": "", "tone": "", "species": "", "text": "free text", "lang": "", "limit": "default 20"])],
     ["name": "set_casting", "description": "Assign a voice to a character (and an optional emotion style).",
      "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "voice_id": "Voice id", "style": "Emotion/delivery"], required: ["project", "character", "voice_id"])],
     ["name": "preview_voice", "description": "Generate a preview of a voice for a line (slow: runs the local TTS). Returns the audio path.",
-     "inputSchema": schema(["voice_id": "Voice id", "text": "Line to speak", "lang": "fr|en", "style": "Emotion (only used when expressive is true)", "timbre_lang": "fr|en: clone the timbre of the voice's sample in this language to speak lang (cross-language, keeps the same voice)", "expressive": "true = apply the emotion (voice timbre approximate); default false = exact timbre of the library sample, no emotion"], required: ["voice_id", "text"])],
+     "inputSchema": schema(["voice_id": "Voice id", "text": "Line to speak", "lang": "ISO 639-1 code of the language to speak (any code from list_languages: a voice can be heard in a language it has no sample in, by cloning its timbre; a slight accent may remain)", "style": "Emotion (only used when expressive is true)", "timbre_lang": "optional: language of the sample whose timbre is cloned (default: the sample of lang if it exists, else the project's main language)", "expressive": "true = apply the emotion (voice timbre approximate); default false = exact timbre of the library sample, no emotion"], required: ["voice_id", "text"])],
     ["name": "get_import_guide", "description": "START HERE to bring an existing project into mCASTING: returns the import format (mcasting-project/1) and how to build it from the project's files. Works with any agent.", "inputSchema": schema([:])],
     ["name": "import_project", "description": "Import (or update) an in-progress project: its characters, sample lines and current voices. Provide project_json (JSON text) OR path (absolute path of a .json file). mode: merge (default, never erases an existing casting) or replace. dry_run: true to preview only. Call get_import_guide first for the format.",
      "inputSchema": schema(["project_json": "Project JSON text (format mcasting-project/1, or a bare array of characters)", "path": "Absolute path of a JSON file (alternative to project_json)", "name": "Project name (needed only if the JSON has none)", "mode": "merge|replace", "dry_run": "true to preview without saving"])],
@@ -53,9 +56,31 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
     func s(_ k: String) -> String { (a[k] as? String) ?? "" }
     switch name {
     case "list_projects":
-        return json(DataStore.projects().map { ["id": $0.id, "name": $0.name, "lang": $0.lang.rawValue, "characters": "\($0.characters.count)", "cast": "\($0.castCount)"] })
-    case "create_project":
-        let p = Project(name: s("name"), lang: Lang(rawValue: s("lang")) ?? .fr, folder: s("folder").isEmpty ? nil : s("folder"))
+        return json(DataStore.projects().map { ["id": $0.id, "name": $0.name, "lang": $0.lang.rawValue, "languages": $0.languages.map(\.rawValue).joined(separator: ","), "characters": "\($0.characters.count)", "cast": "\($0.castCount)"] })
+    case "list_languages":
+        struct L: Encodable { var code: String, name: String, native: String }
+        struct Out: Encodable { var library: [L]; var listen: [L]; var projects: [String: [String]]; var note: String }
+        let f: (Lang) -> L = { L(code: $0.rawValue, name: $0.english, native: $0.native) }
+        return json(Out(library: Languages.library.map(f), listen: Languages.listenable().map(f),
+                        projects: Dictionary(DataStore.projects().map { ($0.name, $0.languages.map(\.rawValue)) }, uniquingKeysWith: { a, _ in a }),
+                        note: "Project languages must be library languages. Any voice can be heard in a 'listen' language by cloning its timbre; a slight accent may remain."))
+    case "create_project", "set_project_languages":
+        let raw = s("languages").isEmpty ? s("lang") : s("languages")
+        let codes = raw.split { $0 == "," || $0 == " " }.map(String.init)
+        let ls = codes.compactMap { Lang(rawValue: $0) }
+        if let bad = codes.first(where: { Lang(rawValue: $0) == nil }) { throw NSError(domain: "mcasting", code: 4, userInfo: [NSLocalizedDescriptionKey: "Unknown language code: \(bad). Call list_languages."]) }
+        if let no = ls.first(where: { !Languages.library.contains($0) }) { throw NSError(domain: "mcasting", code: 4, userInfo: [NSLocalizedDescriptionKey: "The voice library cannot be made in \(no.english). Call list_languages."]) }
+        if name == "set_project_languages" {
+            guard !ls.isEmpty else { throw NSError(domain: "mcasting", code: 4, userInfo: [NSLocalizedDescriptionKey: "languages is required"]) }
+            var out: Project?
+            try DataStore.updateProjects { all in
+                guard let i = findProject(s("project"), in: all) else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project"]) }
+                all[i].setLanguages(ls); out = all[i]
+            }
+            return "Languages: " + (out?.languages.map(\.rawValue).joined(separator: ", ") ?? "")
+        }
+        let main = ls.first ?? Lang.system
+        let p = Project(name: s("name"), lang: Languages.library.contains(main) ? main : .en, second: ls.dropFirst().first, folder: s("folder").isEmpty ? nil : s("folder"))
         try DataStore.updateProjects { $0.append(p) }
         return json(p)
     case "add_characters":
@@ -93,7 +118,8 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
         return "OK"
     case "preview_voice":
         guard let v = DataStore.voices().first(where: { $0.id == s("voice_id") }) else { throw NSError(domain: "mcasting", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unknown voice"]) }
-        return try LibraryGenerator.preview(voice: v, text: s("text"), lang: Lang(rawValue: s("lang")) ?? .fr, style: s("style"), expressive: (a["expressive"] as? Bool) ?? (s("expressive") == "true"), timbreFrom: Lang(rawValue: s("timbre_lang"))).path
+        if !s("lang").isEmpty, Lang(rawValue: s("lang")) == nil { throw NSError(domain: "mcasting", code: 4, userInfo: [NSLocalizedDescriptionKey: "Unknown language code. Call list_languages."]) }
+        return try LibraryGenerator.listen(voice: v, text: s("text"), lang: Lang(rawValue: s("lang")) ?? .fr, style: s("style"), expressive: (a["expressive"] as? Bool) ?? (s("expressive") == "true"), prefer: Lang(rawValue: s("timbre_lang"))).path
     case "get_import_guide": return ProjectImport.guide
     case "import_project":
         var data = Data(s("project_json").utf8)

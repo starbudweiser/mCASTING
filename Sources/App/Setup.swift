@@ -11,7 +11,10 @@ final class SetupModel: ObservableObject {
     // 1 · Projet
     @Published var name = ""
     @Published var folder: String?
-    @Published var lang: Lang = .fr
+    @Published var lang: Lang = SetupModel.defaultMain
+    @Published var lang2: Lang? = SetupModel.defaultMain == .en ? nil : .en
+    /// Langue principale proposée : celle du système si la bibliothèque sait la faire, sinon l'anglais.
+    static var defaultMain: Lang { Languages.library.contains(Lang.system) ? Lang.system : .en }
     @Published var projectID: String?
     // 2 · Préparation
     @Published var assistant = "cloud"
@@ -70,7 +73,7 @@ final class SetupModel: ObservableObject {
 
     func start(quick q: Bool) {
         let st = SetupState.load()
-        quick = q; step = 0; name = ""; folder = nil; lang = .fr; projectID = nil; imported = nil; importInfo = ""
+        quick = q; step = 0; name = ""; folder = nil; lang = Self.defaultMain; lang2 = Self.defaultMain == .en ? nil : .en; projectID = nil; imported = nil; importInfo = ""
         results = [:]; times = [:]; chosen = st.actingModel; assistant = st.assistant ?? "cloud"
         compare = Set(st.compare.isEmpty ? [recommended] + (models.contains { $0.id == "fish-drama3" } ? ["fish-drama3"] : []) : st.compare)
         voiceMode = st.voiceMode; serverURL = st.serverURL ?? ""; serverLibrary = st.serverLibrary; serverModels = []; serverStatus = ""; elStatus = ""
@@ -183,9 +186,10 @@ final class SetupModel: ObservableObject {
         let s = AppState.shared
         let nm = name.trimmingCharacters(in: .whitespaces).isEmpty ? L.t("proj.new") : name
         if let pid = projectID {
-            s.mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].name = nm; all[i].folder = self.folder; all[i].lang = self.lang } }
+            let ls = [lang] + (lang2.map { [$0] } ?? [])
+            s.mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].name = nm; all[i].folder = self.folder; all[i].setLanguages(ls) } }
         } else {
-            let p = Project(name: nm, lang: lang, folder: folder); s.mutate { $0.append(p) }; projectID = p.id
+            let p = Project(name: nm, lang: lang, second: lang2, folder: folder); s.mutate { $0.append(p) }; projectID = p.id
         }
         s.projectID = projectID
     }
@@ -201,7 +205,7 @@ final class SetupModel: ObservableObject {
         analyzed = false
         let nm = project?.name ?? name
         if var o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
-            o["name"] = nm; if o["folder"] == nil, let f = folder { o["folder"] = f }; o["lang"] = lang.rawValue
+            o["name"] = nm; if o["folder"] == nil, let f = folder { o["folder"] = f }; o["languages"] = ([lang] + (lang2.map { [$0] } ?? [])).map(\.rawValue)
             data = (try? JSONSerialization.data(withJSONObject: o)) ?? data
         }
         do {
@@ -217,8 +221,9 @@ final class SetupModel: ObservableObject {
     /// Écoute comparée : installe le moteur si besoin, télécharge les modèles cochés, puis chaque modèle dit les mêmes répliques
     /// avec la même voix de la bibliothèque (son extrait est cloné ; créé d'abord par VoiceDesign s'il n'existe pas encore).
     func prepareLines() {
-        var texts = (project?.characters ?? []).filter { !SetupModel.isCreature($0) }.compactMap { ($0.lines(in: lang) ?? $0.lines).first }.prefix(3).map { $0 }
-        if texts.count < 3 { texts += (lang == .fr ? Self.demoFR : Self.demoEN).prefix(3 - texts.count) }
+        var texts = (project?.characters ?? []).filter { !SetupModel.isCreature($0) }.compactMap { $0.lines(in: lang, main: project?.lang ?? lang)?.first }.prefix(3).map { $0 }
+        let demo = lang == .fr ? Self.demoFR : lang == .en ? Self.demoEN : [String(format: lang.samples[0], "Alex"), lang.samples[1]]
+        if texts.count < 3 { texts += demo.prefix(3 - texts.count) }
         lines = texts
     }
     func runComparison() {
@@ -423,9 +428,7 @@ struct SetupWizard: View {
                             }.buttonStyle(FlatButton(small: true))
                         }
                     }
-                    field(L.t("su.p.lang")) {
-                        HStack(spacing: 5) { ForEach(Lang.allCases, id: \.self) { l in Button { m.lang = l } label: { Chip(title: l == .fr ? "Français" : "English", on: m.lang == l) }.buttonStyle(.plain) } }
-                    }
+                    field(L.t("su.p.lang")) { LangPairPicker(main: $m.lang, second: $m.lang2) }
                 }
             }.frame(maxWidth: .infinity)
             HStack(spacing: 18) {

@@ -21,7 +21,12 @@ For each character:
 - `kind`: `human`, `creature` or `animal` (non-human characters get creature voices and generated cries).
 - `notes`: anything else useful (relationships, accent, running gags).
 - `lines`: 5 to 20 varied lines that show the character's range (calm, angry, joking…), exactly as spoken.
-  If the project has several languages: `"lines": {"fr": [...], "en": [...]}`, same order in each language.
+  If the project has several languages: `"lines": {"de": [...], "en": [...]}`, same order in each language.
+
+**Languages.** Any project chooses 1 or 2 voice languages (ISO 639-1 codes, main one first): set `"languages": ["de", "en"]`
+in the import JSON (or `create_project` / `set_project_languages`). Call `list_languages` first: project languages must be
+*library* languages (the app computes the library samples in them); any voice can also be heard in every *listen* language
+by cloning its timbre (`preview_voice` with `lang`), with a possible slight accent.
 
 ## 2. Import into mCASTING
 Call the MCP tool `get_import_guide` for the exact schema (format `mcasting-project/1`), write the JSON to a file,

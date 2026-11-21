@@ -104,18 +104,12 @@ struct NavPanel: View {
                         .foregroundStyle(active == it.0 ? Flat.text : Flat.text2).fontWeight(active == it.0 ? .semibold : .regular)
                 }.buttonStyle(.plain)
             }
-            Header(title: L.t("nav.lang")).padding(.horizontal, 11).padding(.top, 14)
-            HStack(spacing: 5) {
-                ForEach(Lang.allCases, id: \.self) { l in
-                    Button { setLang(l) } label: { Chip(title: l.rawValue.uppercased(), on: (s.project?.lang ?? .fr) == l) }.buttonStyle(.plain).disabled(s.project == nil)
-                }
-            }.padding(.horizontal, 6)
+            SidebarLangs()
             Spacer()
             ComputeStatus()
         }.padding(.horizontal, 10).padding(.vertical, 12)
         .overlay(alignment: .trailing) { Rectangle().fill(Flat.line).frame(width: 1) }
     }
-    func setLang(_ l: Lang) { guard let pid = s.projectID else { return }; s.mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].lang = l } } }
 }
 
 /// État du calcul, en bas de la navigation : texte centré sur une barre de progression en arrière-plan (indéterminée si le calcul n'a pas de pourcentage).
@@ -404,26 +398,30 @@ struct CharacterSheet: View {
     }
     var lines: some View {
         Card(pad: 14, tint: Flat.lavender) { VStack(alignment: .leading, spacing: 8) {
-            HStack { Header(title: L.t("char.lines.title")); Tag(title: "\(c.lines.count)"); Spacer(minLength: 6)
-                Button(editing ? L.t("char.lines.done") : L.t("char.lines.edit")) { editing.toggle(); if !editing { linesText = c.lines.joined(separator: "\n") } }.buttonStyle(FlatButton(small: true)) }
+            HStack { Header(title: L.t("char.lines.title")); Tag(title: "\(s.shownLines(c).count)"); Tag(title: s.activeLang.rawValue.uppercased()); Spacer(minLength: 6)
+                Button(editing ? L.t("char.lines.done") : L.t("char.lines.edit")) { editing.toggle(); linesText = editLines.joined(separator: "\n") }.buttonStyle(FlatButton(small: true)) }
             if editing {
                 Text(L.t("char.lines")).font(.system(size: 12)).foregroundStyle(Flat.sub)
                 TextEditor(text: $linesText).font(.system(size: 13)).flatEditor(height: 240)
-                    .onChange(of: linesText) { _, v in let l = v.split(separator: "\n").map(String.init); s.update(character: c.id) { $0.lines = l } }
-            } else if c.lines.isEmpty {
+                    .onChange(of: linesText) { _, v in
+                        let l = v.split(separator: "\n").map(String.init), lang = s.activeLang, main = s.project?.lang ?? .fr
+                        s.update(character: c.id) { ch in if lang == main { ch.lines = l } else { var a = ch.altLines ?? [:]; a[lang.rawValue] = l; ch.altLines = a } } }
+            } else if s.shownLines(c).isEmpty {
                 Text(L.t("char.nolines")).font(.system(size: 13)).foregroundStyle(Flat.sub)
             } else {
-                ForEach(Array((c.lines(in: s.project?.lang ?? .fr) ?? c.lines).enumerated()), id: \.offset) { i, l in
+                ForEach(Array(s.shownLines(c).enumerated()), id: \.offset) { i, l in
                     HStack(alignment: .top, spacing: 10) {
                         Text(l).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
                         Button(L.t("char.lines.try")) { if let v = voice { s.preview(voice: v, text: s.spokenLine(c, i, voice: v), style: c.style, fx: CreatureFX.find(c.fx, for: c)) } }.buttonStyle(FlatButton(small: true))
                             .disabled(voice == nil || s.busy || !s.engineInstalled).help(voice == nil ? L.t("char.pickvoice") : "")
                     }
-                    if i < (c.lines(in: s.project?.lang ?? .fr) ?? c.lines).count - 1 { Divider().overlay(Flat.sep) }
+                    if i < s.shownLines(c).count - 1 { Divider().overlay(Flat.sep) }
                 }
             }
         } }
     }
+    /// Répliques modifiées par « Modifier » : celles de la langue écoutée (principale = `lines`).
+    var editLines: [String] { s.activeLang == (s.project?.lang ?? .fr) ? c.lines : (c.lines(in: s.activeLang) ?? []) }
     var interpretation: some View {
         Card(pad: 14, tint: Flat.butter) { VStack(alignment: .leading, spacing: 8) { Header(title: L.t("char.interp")); EmotionPicker(c: c) } }
     }
@@ -484,7 +482,8 @@ struct FilterBox: View {
                 }
             }
             row(L.t("f.lang")) {
-                ForEach(Lang.allCases, id: \.self) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
+                ForEach(s.project?.languages ?? []) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
+                chip(L.t("lang.all"), s.fLang == nil) { s.fLang = nil }
                 chip("★ " + L.t("f.fav"), s.fFav) { s.fFav.toggle() }
             }
             Spacer(minLength: 0)
@@ -506,11 +505,14 @@ struct VoiceCard: View {
     @ObservedObject var s = AppState.shared
     var chosen: Bool { mode == .casting && s.character?.voiceID == v.id }
     var fav: Bool { s.favorites.contains(v.id) }
+    @State private var pick: Lang?
+    @State private var free = false
+    /// Langue écoutée sur cette carte : celle choisie dans son menu, sinon la langue écoutée du projet (ou le filtre Langue).
+    var lang: Lang { pick ?? (mode == .casting ? s.activeLang : (s.fLang ?? s.project?.activeLang ?? .fr)) }
     var body: some View {
-        let lang = mode == .casting ? (s.project?.lang ?? .fr) : (s.fLang ?? .fr)
-        let rel = v.samples[lang.rawValue] ?? v.samples.values.first
+        let rel = v.samples[lang.rawValue]
         let isA = chosen, isB = mode == .casting && s.abVoiceID == v.id
-        let playing = rel.map { s.playingPath?.hasSuffix($0) == true } ?? false
+        let playing = rel.map { s.playingPath?.hasSuffix($0) == true } ?? (s.playingPath?.contains("/cache/\(v.id).\(lang.rawValue).") == true)
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -521,15 +523,20 @@ struct VoiceCard: View {
                     Text(mode == .casting ? "\(L.t("g.\(v.gender.rawValue)")) · \(v.tone)" : v.tone).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(v.tone)
                 }
                 Spacer(minLength: 0)
-                if !v.samples.isEmpty { Tag(title: v.samples.keys.sorted().joined(separator: "/").uppercased()) }
+                langTag
                 Button { s.toggleFavorite(v.id) } label: {
                     Image(systemName: fav ? "star.fill" : "star").font(.system(size: 13)).foregroundStyle(fav ? Flat.brand : Flat.text2).frame(width: 22, height: 22).contentShape(Rectangle())
                 }.buttonStyle(.plain).help(L.t(fav ? "fav.remove" : "fav.add"))
             }
-            HStack(spacing: 8) { PlayButton(playing: playing, enabled: rel != nil) { s.play(rel: rel) }; Wave(seed: Double(v.id.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 97 }) / 7, bars: mode == .casting ? 34 : 26, playing: playing) }
+            HStack(spacing: 8) {
+                PlayButton(playing: playing, enabled: rel != nil || (s.engineInstalled && !s.busy && !v.samples.isEmpty)) { if playing { s.play(rel: s.playingPath) } else { s.listen(voice: v, lang: lang) } }
+                Wave(seed: Double(v.id.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 97 }) / 7, bars: mode == .casting ? 30 : 22, playing: playing)
+                ListenLangMenu(v: v, lang: Binding(get: { lang }, set: { pick = $0 }), onPick: { s.listen(voice: v, lang: $0) }, onFreeText: { free = true })
+            }
+            .popover(isPresented: $free) { FreeTextPopover(v: v, lang: lang, shown: $free) }
             if mode == .casting {
                 HStack(spacing: 6) {
-                    Button(L.t("v.line")) { tryLine() }.buttonStyle(FlatButton(small: true)).disabled(s.busy || !s.engineInstalled || s.character?.lines.first == nil)
+                    Button(L.t("v.line")) { tryLine() }.buttonStyle(FlatButton(small: true)).disabled(s.busy || !s.engineInstalled || s.character.map(s.shownLines)?.first == nil)
                     if isB { Button(L.t("ab.cancel")) { s.abVoiceID = nil }.buttonStyle(FlatButton(small: true)) }
                     else if !chosen { Button(L.t("lib.ab")) { s.abVoiceID = v.id }.buttonStyle(FlatButton(small: true)) }
                     Spacer(minLength: 0)
@@ -540,7 +547,15 @@ struct VoiceCard: View {
         .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: chosen ? Flat.ok : (isB ? Flat.acc : nil), dashed: isB && !chosen, selected: selected)
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
     }
-    func tryLine() { if let c = s.character, !c.lines.isEmpty { s.preview(voice: v, text: s.spokenLine(c, 0, voice: v), style: c.style, fx: CreatureFX.find(c.fx, for: c)) } }
+    func tryLine() { if let c = s.character, !s.shownLines(c).isEmpty { s.preview(voice: v, text: s.spokenLine(c, 0, voice: v, lang: lang), style: c.style, fx: CreatureFX.find(c.fx, for: c), lang: lang) } }
+    /// Langues prêtes de la voix pour le projet (« DE · EN »), en orange si une langue du projet reste à calculer.
+    @ViewBuilder var langTag: some View {
+        let proj = s.project?.languages ?? []
+        let ready = proj.filter { v.samples[$0.rawValue] != nil }, missing = proj.filter { v.samples[$0.rawValue] == nil }
+        if v.custom || proj.isEmpty || mode == .library { if !v.samples.isEmpty { Tag(title: v.samples.keys.compactMap(Lang.init(rawValue:)).sorted().map { $0.rawValue.uppercased() }.joined(separator: " · ")) } }
+        else if missing.isEmpty { Tag(title: ready.map { $0.rawValue.uppercased() }.joined(separator: " · "), color: Flat.ok) }
+        else { Tag(title: (ready + missing).map { $0.rawValue.uppercased() + (missing.contains($0) ? "…" : "") }.joined(separator: " · "), color: Flat.warn).help(L.t("lang.tag.missing")) }
+    }
 }
 
 /// Comparaison A / B : voix choisie (A) contre la voix mise de côté (B), même réplique.
@@ -556,7 +571,7 @@ struct ABBox: View {
         }
     }
     func side(_ l: String, _ v: Voice) -> some View {
-        let lang = (s.project?.lang ?? .fr).rawValue, rel = v.samples[lang]
+        let lang = s.activeLang.rawValue, rel = v.samples[lang]
         return VStack(alignment: .leading, spacing: 4) {
             HStack(spacing: 6) { Tag(title: l, solid: true); Text(v.name).fontWeight(.semibold).rowName(v.name) }
             HStack(spacing: 8) { PlayButton(playing: rel.map { s.playingPath?.hasSuffix($0) == true } ?? false, enabled: rel != nil) { s.play(rel: rel) }; Wave(seed: l == "A" ? 3 : 5, bars: 40, playing: l == "A") }
@@ -570,6 +585,7 @@ struct ProjectsView: View {
     @State private var adding = false
     @State private var name = ""
     @State private var lang: Lang = .fr
+    @State private var second: Lang? = nil
     @State private var filter = ""
     @State private var toDelete: Project?
     var shown: [Project] { filter.isEmpty ? s.projects : s.projects.filter { $0.name.lowercased().contains(filter.lowercased()) } }
@@ -609,10 +625,10 @@ struct ProjectsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 Text(L.t("proj.new")).font(.system(size: 15, weight: .semibold))
                 TextField(L.t("proj.name"), text: $name).flatField()
-                Picker(L.t("proj.lang"), selection: $lang) { Text("Français").tag(Lang.fr); Text("English").tag(Lang.en) }.pickerStyle(.segmented)
+                LangPairPicker(main: $lang, second: $second)
                 HStack { Spacer(); Button(L.t("btn.cancel")) { adding = false }.buttonStyle(FlatButton())
-                    Button(L.t("btn.create")) { s.newProject(name: name.isEmpty ? L.t("proj.new") : name, lang: lang); name = ""; adding = false }.buttonStyle(FlatButton(primary: true)) }
-            }.padding(20).frame(width: 380).background(Flat.bg).foregroundStyle(Flat.text).tint(Flat.acc)
+                    Button(L.t("btn.create")) { s.newProject(name: name.isEmpty ? L.t("proj.new") : name, lang: lang, second: second); name = ""; adding = false }.buttonStyle(FlatButton(primary: true)) }
+            }.padding(20).frame(width: 620).background(Flat.bg).foregroundStyle(Flat.text).tint(Flat.acc)
         }
     }
     func state(_ p: Project) -> (String, Color) {
@@ -624,7 +640,7 @@ struct ProjectsView: View {
         let st = state(p)
         return Button { s.projectID = p.id; s.characterID = p.characters.first?.id; s.screen = .casting } label: {
             VStack(alignment: .leading, spacing: 8) {
-                HStack { Text(p.name).font(.system(size: 15, weight: .semibold)).rowName(p.name); Spacer(minLength: 4); Tag(title: p.lang.rawValue.uppercased()).padding(.trailing, 22) }
+                HStack { Text(p.name).font(.system(size: 15, weight: .semibold)).rowName(p.name); Spacer(minLength: 4); Tag(title: p.languages.map { $0.rawValue.uppercased() }.joined(separator: " · ")).padding(.trailing, 22) }
                 Text(p.folder.map { URL(fileURLWithPath: $0).lastPathComponent } ?? "—").font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(p.folder ?? "")
                 HStack(spacing: 18) {
                     VStack(alignment: .leading) { Text("\(p.characters.count)").font(.system(size: 24, weight: .bold)); Text(L.t("proj.chars")).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
@@ -671,7 +687,7 @@ struct LibraryView: View {
                     Button { s.fGender = nil } label: { Chip(title: L.t("lib.all"), on: s.fGender == nil) }.buttonStyle(.plain)
                     ForEach(Gender.allCases, id: \.self) { g in Button { s.fGender = g } label: { Chip(title: L.t("g.\(g.rawValue)"), on: s.fGender == g) }.buttonStyle(.plain) }
                     Text(L.t("f.lang")).font(.system(size: 11)).foregroundStyle(Flat.text2).padding(.leading, 14)
-                    ForEach(Lang.allCases, id: \.self) { l in Button { s.fLang = s.fLang == l ? nil : l } label: { Chip(title: l.rawValue.uppercased(), on: s.fLang == l) }.buttonStyle(.plain) }
+                    ForEach(s.filterLangs) { l in Button { s.fLang = s.fLang == l ? nil : l } label: { Chip(title: l.rawValue.uppercased(), on: s.fLang == l) }.buttonStyle(.plain).help(l.localized) }
                     Spacer(minLength: 0)
                     Button { usage = usage == 1 ? 0 : 1 } label: { Chip(title: L.t("lib.used"), on: usage == 1) }.buttonStyle(.plain)
                     Button { usage = usage == 2 ? 0 : 2 } label: { Chip(title: L.t("lib.unused"), on: usage == 2) }.buttonStyle(.plain)
@@ -699,17 +715,19 @@ struct Sheet: View {
             Text(L.t("lib.recipe")).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
             Text(v.recipe).font(.system(size: 11.5, design: .monospaced)).padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
             kv(L.t("lib.engine"), v.engine == "qwen3-base" ? "Qwen3 Base" : "Qwen3 VoiceDesign")
-            kv(L.t("lib.samples"), Lang.allCases.map { $0.rawValue.uppercased() + (v.samples[$0.rawValue] != nil ? " ✓" : " –") }.joined(separator: " · "))
+            kv(L.t("lib.samples"), s.filterLangs.map { $0.rawValue.uppercased() + (v.samples[$0.rawValue] != nil ? " ✓" : " –") }.joined(separator: " · "))
             kv(L.t("lib.usedin"), names.isEmpty ? "—" : names)
             Header(title: L.t("lib.test")).padding(.top, 6)
             TextEditor(text: $line).font(.system(size: 12.5)).flatEditor(height: 52)
             Flow { ForEach(TrialBox.emotions, id: \.0) { e in Button { emo = e.1 } label: { Chip(title: L.t(e.0), on: emo == e.1) }.buttonStyle(.plain) } }
-            Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: s.fLang ?? .fr) : line, style: emo, expressive: !emo.isEmpty) }
+            Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: sheetLang) : line, style: emo, expressive: !emo.isEmpty, lang: sheetLang) }
                 .buttonStyle(FlatButton(primary: true)).disabled(s.busy || !s.engineInstalled)
         } }
-        .onAppear { if line.isEmpty { line = Catalog.sample(for: v, lang: s.fLang ?? .fr) } }
-        .onChange(of: v.id) { _, _ in line = Catalog.sample(for: v, lang: s.fLang ?? .fr) }
+        .onAppear { if line.isEmpty { line = Catalog.sample(for: v, lang: sheetLang) } }
+        .onChange(of: v.id) { _, _ in line = Catalog.sample(for: v, lang: sheetLang) }
+        .onChange(of: s.fLang) { _, _ in line = Catalog.sample(for: v, lang: sheetLang) }
     }
+    var sheetLang: Lang { s.fLang ?? s.project?.activeLang ?? .fr }
     func kv(_ k: String, _ val: String) -> some View { HStack(alignment: .top) { Text(k).foregroundStyle(Flat.text2); Spacer(minLength: 8); Text(val).multilineTextAlignment(.trailing) }.font(.system(size: 13)) }
 }
 
@@ -734,12 +752,14 @@ struct GenerationView: View {
                 stat(left == 0 ? "—" : time, L.t("gen.left", s.avg)); stat("\(sizeMB) Mo", "audio")
             }
             Card { Bar2(value: Double(done) / Double(total), height: 10) }
+            LibraryLangsCard()
             HStack(alignment: .top, spacing: 12) {
                 Card { VStack(alignment: .leading, spacing: 6) {
                     Header(title: L.t("gen.bycat"))
                     ForEach(Gender.allCases, id: \.self) { g in
-                        let vs = s.libVoices.filter { $0.gender == g }, d = vs.reduce(0) { $0 + $1.samples.count }, t = max(vs.count * Lang.allCases.count, 1)
-                        HStack { Text(L.t("g.\(g.rawValue)")).foregroundStyle(Flat.text2); Spacer(); Text("\(d) / \(vs.count * Lang.allCases.count)").monospacedDigit() }
+                        let vs = s.libVoices.filter { $0.gender == g }, ls = s.libLangs
+                        let d = ls.reduce(0) { $0 + LibraryGenerator.ready(vs, $1) }, t = max(vs.count * ls.count, 1)
+                        HStack { Text(L.t("g.\(g.rawValue)")).foregroundStyle(Flat.text2); Spacer(); Text("\(d) / \(vs.count * ls.count)").monospacedDigit() }
                         Bar2(value: Double(d) / Double(t))
                     }
                 } }
@@ -851,7 +871,7 @@ struct ModelsView: View {
             ScrollView(showsIndicators: false) { VStack(spacing: 8) {
                 row(letter: "E", title: L.t("mod.engine"), sub: "uv · Python 3.12 · mlx-audio · yt-dlp", ok: s.engineInstalled, size: nil, first: false, action: { s.installEngine() }, label: L.t("mod.install"), enabled: !s.busy)
                 ForEach(TTSModel.catalog) { m in
-                    row(letter: String(m.title.prefix(1)), title: m.title, sub: m.notes.replacingOccurrences(of: "_", with: " "), ok: m.installed, size: m.sizeGB, first: m.reference && m.id == "qwen3-voicedesign", ref: m.reference,
+                    row(letter: String(m.title.prefix(1)), title: m.title, sub: m.notes.replacingOccurrences(of: "_", with: " "), ok: m.installed, size: m.sizeGB, first: m.reference && m.id == "qwen3-voicedesign", ref: m.reference, langs: Languages.of(m),
                         action: { s.download(m) }, label: L.t("mod.download"), enabled: !s.busy && s.engineInstalled)
                 }
                 if s.busy { Card { Text(String(s.log.suffix(400))).font(.system(size: 11.5, design: .monospaced)).foregroundStyle(Flat.text2).frame(maxWidth: .infinity, alignment: .leading) } }
@@ -860,11 +880,13 @@ struct ModelsView: View {
                 .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
         }
     }
-    func row(letter: String, title: String, sub: String, ok: Bool, size: Double?, first: Bool, ref: Bool = false, action: @escaping () -> Void, label: String, enabled: Bool) -> some View {
+    func row(letter: String, title: String, sub: String, ok: Bool, size: Double?, first: Bool, ref: Bool = false, langs: [Lang] = [], action: @escaping () -> Void, label: String, enabled: Bool) -> some View {
         HStack(spacing: 14) {
             Avatar(letter: letter, size: 42)
-            VStack(alignment: .leading, spacing: 2) { HStack(spacing: 8) { Text(title).fontWeight(.semibold).rowName(title); if ref { Tag(title: L.t("mod.reference"), solid: true) } }
-                Text(sub).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(sub) }
+            VStack(alignment: .leading, spacing: 2) { HStack(spacing: 8) { Text(title).fontWeight(.semibold).rowName(title); if ref { Tag(title: L.t("mod.reference"), solid: true) }
+                    if !langs.isEmpty { Tag(title: L.t("mdl.langs", langs.count), color: Flat.acc).help(langs.map(\.native).joined(separator: " · ")) } }
+                Text(sub).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(sub)
+                if !langs.isEmpty { Text(langs.map(\.native).joined(separator: " · ")).font(.system(size: 11)).foregroundStyle(Flat.text2).lineLimit(1).truncationMode(.tail).help(langs.map { $0.localized }.joined(separator: ", ")) } }
             Spacer(minLength: 8)
             VStack(alignment: .leading, spacing: 4) {
                 HStack(spacing: 6) { Tag(title: ok ? L.t("mod.installed") : L.t("mod.notinstalled"), color: ok ? Flat.ok : Flat.warn); if let size { Text(String(format: "%.1f GB", size)).font(.system(size: 11.5)).foregroundStyle(Flat.text2) } }

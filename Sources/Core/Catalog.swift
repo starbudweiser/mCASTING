@@ -1,4 +1,4 @@
-// mCASTING — recettes de la bibliothèque (600) générées par combinaison, et textes d'échantillon FR / EN.
+// mCASTING — recettes de la bibliothèque (600) générées par combinaison, et textes d'échantillon (voir Languages).
 import Foundation
 
 public enum Catalog {
@@ -60,13 +60,9 @@ public enum Catalog {
         return v
     }
 
-    /// Textes d'échantillon (8 à 10 s), choisis selon le registre.
+    /// Texte d'échantillon (8 à 10 s) dans `lang`, choisi selon le registre de la voix.
     public static func sample(for v: Voice, lang: Lang) -> String {
-        let fr = ["Bonjour, je m'appelle %@. Il fait beau ce matin, mais je crois qu'un orage arrive avant ce soir.",
-                  "Attendez, vous avez entendu ça ? Quelqu'un marche derrière la porte, et je ne suis pas rassuré du tout."]
-        let en = ["Hello, my name is %@. It's a lovely morning, but I think a storm is coming before tonight.",
-                  "Wait, did you hear that? Someone is walking behind the door, and I'm not reassured at all."]
-        let table = lang == .fr ? fr : en
+        let table = lang.samples
         let first = v.name.split(separator: " ").first.map(String.init) ?? v.name
         let idx = (v.tone.contains("nervous") || v.tone.contains("mischievous") || v.tone.contains("melancholic")) ? 1 : 0
         return idx == 0 ? String(format: table[0], first) : table[1]

@@ -105,7 +105,7 @@ public enum DialogueAnalyzer {
                 guard f.count >= 2 else { continue }
                 if i == 0, ["personnage", "character", "name", "nom", "personaje", "personaggio"].contains(f[0].lowercased().trimmingCharacters(in: .whitespaces)) { continue }
                 let lang = f.count > 2 ? f[2].lowercased().trimmingCharacters(in: .whitespaces) : "default"
-                add(f[0], f[1], ["fr", "en"].contains(lang) ? lang : "default")
+                add(f[0], f[1], Lang(rawValue: lang)?.rawValue ?? "default")
             }
         } else {
             for r in rows { if let c = r.firstIndex(of: ":") { add(String(r[..<c]), String(r[r.index(after: c)...]), "default") } }

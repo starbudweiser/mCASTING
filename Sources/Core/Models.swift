@@ -2,10 +2,6 @@
 import Foundation
 
 public enum Gender: String, Codable, CaseIterable { case man, woman, child, animal, creature }
-public enum Lang: String, Codable, CaseIterable {
-    case fr, en
-    public var qwen: String { self == .fr ? "french" : "english" }
-}
 
 /// Une « voix » de la bibliothèque = une recette (description VoiceDesign) + un échantillon par langue.
 public struct Voice: Codable, Identifiable, Hashable {
@@ -26,7 +22,17 @@ public struct Voice: Codable, Identifiable, Hashable {
     public var remoteModel: String? // voix d'un serveur ou d'ElevenLabs : modèle à utiliser
     public var remoteVoice: String? // nom de la voix sur le serveur, ou identifiant de voix ElevenLabs
     /// Langue de référence du timbre : le français d'abord (casting rédigé en français), sinon la première langue disponible.
-    public var timbreLang: Lang { samples["fr"] != nil ? .fr : (samples.keys.compactMap { Lang(rawValue: $0) }.first ?? .fr) }
+    public var timbreLang: Lang { samples["fr"] != nil ? .fr : (samples.keys.compactMap { Lang(rawValue: $0) }.sorted().first ?? .fr) }
+    /// Langue de référence du timbre pour parler `lang` : l'extrait de cette langue s'il existe, sinon celui de `prefer`, sinon `timbreLang`.
+    public func timbre(for lang: Lang, prefer: Lang? = nil) -> Lang {
+        if samples[lang.rawValue] != nil { return lang }
+        if let p = prefer, samples[p.rawValue] != nil { return p }
+        return timbreLang
+    }
+    /// Recette VoiceDesign pour créer l'extrait dans `lang` : la mention « French-speaking » des recettes suit la langue.
+    public func recipe(for lang: Lang) -> String {
+        lang == .fr ? recipe : recipe.replacingOccurrences(of: "A French-speaking person", with: "A \(lang.english)-speaking person")
+    }
     public init(id: String, name: String, gender: Gender, age: String, pitch: String, tone: String, species: String? = nil,
                 recipe: String, engine: String = "qwen3-voicedesign", samples: [String: String] = [:], custom: Bool = false,
                 refAudio: String? = nil, refText: String? = nil, source: String? = nil) {
@@ -50,10 +56,18 @@ public struct Character: Codable, Identifiable, Hashable {
     public var key: String?         // identifiant stable côté projet source (sert à fusionner les imports successifs)
     public var name: String
     public var role: String
-    public var lines: [String]      // répliques d'exemple (langue du projet)
+    public var lines: [String]      // répliques d'exemple (langue principale du projet)
     public var altLines: [String: [String]]?   // répliques par langue fournies par le projet source (« fr » / « en » → [...])
-    /// Répliques à afficher et à dire dans une langue : celles de cette langue si le projet source les fournit, sinon `lines`.
+    /// Répliques fournies dans une langue par le projet source (nil si aucune).
     public func lines(in lang: Lang) -> [String]? { altLines?[lang.rawValue].flatMap { $0.isEmpty ? nil : $0 } }
+    /// Répliques à dire dans `lang` pour un projet de langue principale `main` : celles de cette langue, ou `lines` si `lang`
+    /// est la principale et qu'aucune autre langue ne les revendique ; nil sinon (on dira alors la phrase type de la voix).
+    public func lines(in lang: Lang, main: Lang) -> [String]? {
+        if let l = lines(in: lang) { return l }
+        guard lang == main, !lines.isEmpty else { return nil }
+        if let a = altLines, a.contains(where: { $0.key != lang.rawValue && $0.value == lines }) { return nil }
+        return lines
+    }
     public var lineCount: Int?      // nombre total de répliques du personnage dans le projet source
     public var notes: String?
     public var current: CurrentVoice?
@@ -72,11 +86,52 @@ public struct Character: Codable, Identifiable, Hashable {
 public struct Project: Codable, Identifiable, Hashable {
     public var id: String
     public var name: String
+    /// Langue principale : celle des répliques (`lines`) et du casting.
     public var lang: Lang
+    /// Langues du projet (principale en premier, secondaire facultative). nil = projet 1.x (français + anglais).
+    public var langs: [Lang]?
+    /// Langue d'écoute choisie dans la barre latérale (une des langues du projet).
+    public var active: Lang?
     public var folder: String?      // dossier où écrire casting.json
     public var characters: [Character]
-    public init(id: String = UUID().uuidString, name: String, lang: Lang = .fr, folder: String? = nil, characters: [Character] = []) {
+    public init(id: String = UUID().uuidString, name: String, lang: Lang = .fr, second: Lang? = nil, folder: String? = nil, characters: [Character] = []) {
         self.id = id; self.name = name; self.lang = lang; self.folder = folder; self.characters = characters
+        self.langs = [lang] + (second.map { $0 == lang ? [] : [$0] } ?? [])
     }
     public var castCount: Int { characters.filter { $0.voiceID != nil }.count }
+    /// Langues du projet, principale en premier.
+    public var languages: [Lang] { langs.map { $0.isEmpty ? [lang] : $0 } ?? [lang] }
+    /// Langue écoutée en ce moment.
+    public var activeLang: Lang { active.flatMap { languages.contains($0) ? $0 : nil } ?? lang }
+    /// Change les langues : la première devient la principale.
+    public mutating func setLanguages(_ l: [Lang]) {
+        var seen = Set<Lang>(); let u = l.filter { seen.insert($0).inserted }
+        guard let first = u.first else { return }
+        if first != lang {                     // les répliques restent attachées à leur langue d'origine
+            let old = lang.rawValue
+            for i in characters.indices where !characters[i].lines.isEmpty {
+                var a = characters[i].altLines ?? [:]
+                if a[old] == nil { a[old] = characters[i].lines }
+                characters[i].altLines = a
+                if let n = a[first.rawValue], !n.isEmpty { characters[i].lines = n }
+            }
+        }
+        lang = first; langs = Array(u.prefix(2))
+        if let a = active, !languages.contains(a) { active = nil }
+    }
+
+    enum CodingKeys: String, CodingKey { case id, name, lang, langs, active, folder, characters }
+    public init(from d: Decoder) throws {
+        let c = try d.container(keyedBy: CodingKeys.self)
+        id = try c.decode(String.self, forKey: .id); name = try c.decode(String.self, forKey: .name)
+        folder = try c.decodeIfPresent(String.self, forKey: .folder)
+        characters = try c.decodeIfPresent([Character].self, forKey: .characters) ?? []
+        let l = try c.decodeIfPresent(Lang.self, forKey: .lang) ?? .fr
+        if let ls = try c.decodeIfPresent([Lang].self, forKey: .langs) {
+            lang = l; langs = ls; active = try c.decodeIfPresent(Lang.self, forKey: .active)
+        } else {
+            // Projet 1.x : répliques en français, bibliothèque en français et en anglais, langue écoutée = ancienne « langue du projet ».
+            lang = .fr; langs = [.fr, .en]; active = l
+        }
+    }
 }

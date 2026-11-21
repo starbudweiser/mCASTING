@@ -1,3 +1,20 @@
+# mCASTING 2.0 — les langues de son choix (validé le 21/11/2026)
+
+Maquettes validées : `maquettes/multilingue-2.0.html`.
+
+- Chaque projet a 1 ou 2 langues (principale = langue des répliques et du casting). `Project.langs`, `Project.active`
+  (langue écoutée) ; projets 1.x relus comme FR + EN, sans perte.
+- `Lang` devient un code ISO 639-1 ouvert (`Sources/Core/Languages.swift` : 23 langues, nom natif, phrases d'extrait,
+  langues de chaque moteur). Langues de la bibliothèque = celles du créateur de voix (Qwen3 : 10).
+- La bibliothèque calcule les langues des projets (+ langues ajoutées), langue par langue, avec pause ; une langue déjà
+  calculée n'est jamais refaite. La recette « French-speaking » suit la langue calculée.
+- Écoute à la demande dans toute langue d'un modèle installé (clonage du timbre, cache `audio/cache/`), mention de
+  l'accent possible dans le menu « Écouter en » et la saisie de texte libre.
+- Changement de langue principale : les répliques restent rattachées à leur langue (`altLines`).
+- Import (`languages`), CSV (colonne langue = tout code), casting.json (`languages` = langues du projet, format inchangé),
+  MCP (`list_languages`, `create_project languages`, `set_project_languages`, `preview_voice lang` = tout code).
+- Reste à faire avant la release 2.0 : documentation FR / EN et PDF, notes de version, captures.
+
 # mCASTING — Guide « Premiers pas » : architecture (proposée le 21/11/2026, à valider)
 
 Maquettes validées : `maquettes/guide.html` (version simple, 7 étapes). Version détaillée de référence : `maquettes/guide-detaille.html`.

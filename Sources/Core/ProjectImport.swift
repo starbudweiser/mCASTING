@@ -21,6 +21,7 @@ public enum ProjectImport {
         var format: String?
         var name: String?
         var lang: String?
+        var languages: [String]?
         var folder: String?
         var characters: [Item]
         struct Item: Decodable {
@@ -55,7 +56,7 @@ public enum ProjectImport {
     static func decode(_ data: Data) throws -> Spec {
         let dec = JSONDecoder()
         if let s = try? dec.decode(Spec.self, from: data) { return s }
-        if let items = try? dec.decode([Spec.Item].self, from: data) { return Spec(format: nil, name: nil, lang: nil, folder: nil, characters: items) }
+        if let items = try? dec.decode([Spec.Item].self, from: data) { return Spec(format: nil, name: nil, lang: nil, languages: nil, folder: nil, characters: items) }
         throw NSError(domain: "mcasting", code: 20, userInfo: [NSLocalizedDescriptionKey: "Invalid import JSON. Call get_import_guide for the expected format."])
     }
 
@@ -65,16 +66,21 @@ public enum ProjectImport {
         guard let name = (projectName?.isEmpty == false ? projectName : spec.name), !name.isEmpty else {
             throw NSError(domain: "mcasting", code: 21, userInfo: [NSLocalizedDescriptionKey: "Missing project name"])
         }
-        let lang = Lang(rawValue: spec.lang ?? "") ?? .fr
+        // Langues : « languages » (principale en premier) ou « lang » seule ; codes ISO 639-1, inconnus ignorés (avertissement).
+        let listed = (spec.languages ?? []).compactMap { Lang(rawValue: $0) }
+        let lang = listed.first ?? Lang(rawValue: spec.lang ?? "") ?? .fr
+        let langs = listed.isEmpty ? (spec.lang.flatMap { Lang(rawValue: $0) }.map { [$0] }) : listed
         var work = projects
         var created = false
         var pi = work.firstIndex { $0.id == name || $0.name.lowercased() == name.lowercased() }
-        if pi == nil { work.append(Project(name: name, lang: lang, folder: spec.folder)); pi = work.count - 1; created = true }
+        if pi == nil { work.append(Project(name: name, lang: lang, second: langs?.dropFirst().first, folder: spec.folder)); pi = work.count - 1; created = true }
         let i = pi!
         if let f = spec.folder, !f.isEmpty { work[i].folder = f }
-        if created == false, let l = spec.lang, Lang(rawValue: l) != nil { work[i].lang = lang }
+        if !created, let ls = langs { work[i].setLanguages(listed.isEmpty ? [ls[0]] + work[i].languages.filter { $0 != ls[0] } : ls) }
         let plang = work[i].lang
         var rep = Report(project: work[i].name, dry_run: dryRun, project_created: created)
+        for c in (spec.languages ?? []) + [spec.lang].compactMap({ $0 }) where Lang(rawValue: c) == nil { rep.warnings.append("unknown language code: \(c)") }
+        for l in work[i].languages where !Languages.library.contains(l) { rep.warnings.append("the voice library cannot be made in \(l.english); it can only be heard by cloning") }
         var seen = Set<String>()
 
         for it in spec.characters {
@@ -120,7 +126,7 @@ public enum ProjectImport {
     /// Exporte un projet dans le même format (casting compris), pour qu'un agent le relise ou le transmette.
     public static func export(_ p: Project, voices: [Voice]) -> Data {
         struct Out: Encodable {
-            var format = "mcasting-project/1"; var name: String; var lang: String; var folder: String?
+            var format = "mcasting-project/1"; var name: String; var lang: String; var languages: [String]; var folder: String?
             var characters: [C]
             struct C: Encodable {
                 var id: String?, name: String, role: String, notes: String?, line_count: Int?, lines: [String]
@@ -129,7 +135,7 @@ public enum ProjectImport {
                 struct Cast: Encodable { var voice_id: String, voice_name: String?, style: String }
             }
         }
-        let o = Out(name: p.name, lang: p.lang.rawValue, folder: p.folder, characters: p.characters.map { c in
+        let o = Out(name: p.name, lang: p.lang.rawValue, languages: p.languages.map(\.rawValue), folder: p.folder, characters: p.characters.map { c in
             .init(id: c.key, name: c.name, role: c.role, notes: c.notes, line_count: c.lineCount, lines: c.lines,
                   current_voice: c.current.map { .init(description: $0.description, engine: $0.engine, samples: $0.samples.map { .init(file: $0.file, text: $0.text) }) },
                   cast: c.voiceID.map { v in .init(voice_id: v, voice_name: voices.first { $0.id == v }?.name, style: c.style) })
@@ -150,7 +156,8 @@ public enum ProjectImport {
     {
       "format": "mcasting-project/1",
       "name": "Project name (required)",
-      "lang": "fr" | "en"                      // language of the voices to cast (default fr)
+      "languages": ["de", "en"],               // the project's voice languages, ISO 639-1, main one first (1 or 2). Call list_languages.
+                                               // ("lang": "fr" alone is still accepted: main language only.)
       "folder": "/absolute/path/of/the/project" // where casting.json will be written (optional but recommended)
       "characters": [
         {
@@ -160,7 +167,7 @@ public enum ProjectImport {
           "kind": "human" | "creature" | "animal", // optional; non-human characters get creature voices and generated cries
           "notes": "free text (age, accent, relationships…)",
           "line_count": 383,                    // total number of lines the character speaks (optional)
-          "lines": ["a few representative lines", "…"]   // or {"fr": [...], "en": [...]} ; 5–20 varied lines are plenty
+          "lines": ["a few representative lines", "…"]   // in the main language, or by language {"de": [...], "en": [...]} ; 5–20 varied lines are plenty
           "current_voice": {                    // only if the project already has a voice for this character
             "description": "how it was generated / what it sounds like",
             "engine": "qwen3-customvoice",

@@ -1,0 +1,247 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>mCASTING 2.0 multilingue</title>
+<style>
+:root{--bg:#0d0d0f;--win:#1c1c1f;--side:#18181b;--card:#232327;--card2:#2a2a2f;--line:#303035;--t1:#f5f5f7;--t2:#98989f;--acc:#0a84ff;--green:#2f7d4a;--ok:#30d158;--warn:#ff9f0a;--sky:#1d3350;--prune:#3e2440;--chip:rgba(255,255,255,.09);--chipt:rgba(255,255,255,.88);--sel:rgba(255,255,255,.94);--selt:#15151a;--field:rgba(0,0,0,.22);--sub:rgba(255,255,255,.68);--head:rgba(255,255,255,.55);--sep:rgba(255,255,255,.10);--pop:#2c2c31;--shadow:0 12px 32px rgba(0,0,0,.5)}
+:root[data-theme="light"]{--bg:#e9e5de;--win:#f4f1ec;--side:#ece8e1;--card:#ffffff;--card2:#f1ede6;--line:#e3ddd2;--t1:#26231e;--t2:#7b756a;--acc:#0a6fd8;--green:#2f7d4a;--ok:#248a3d;--warn:#b25d00;--sky:#ccc8c0;--prune:#e3e0da;--chip:rgba(255,255,255,.65);--chipt:#26231e;--sel:#26231e;--selt:#fff;--field:rgba(255,255,255,.75);--sub:rgba(29,27,24,.66);--head:rgba(29,27,24,.55);--sep:rgba(0,0,0,.08);--pop:#fff;--shadow:0 12px 32px rgba(0,0,0,.18)}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--t1);font:13px -apple-system,BlinkMacSystemFont,"SF Pro Text",sans-serif;padding:20px 16px 40px}
+h1{font-size:18px;margin:0 0 4px}.intro{color:var(--t2);margin:0 0 14px;max-width:980px;line-height:1.5}
+.bar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin-bottom:16px}
+.seg{display:inline-flex;flex-wrap:wrap;background:var(--card2);border-radius:9px;padding:3px}
+.seg button{border:0;background:none;color:var(--t2);font:inherit;padding:5px 12px;border-radius:7px;cursor:pointer}
+.seg button.on{background:var(--acc);color:#fff;font-weight:600}
+.tab{display:none}.tab.on{display:block}
+.win{max-width:1200px;background:var(--win);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow)}
+.tb{height:44px;display:flex;align-items:center;gap:8px;padding:0 14px;border-bottom:1px solid var(--line)}
+.dot{width:12px;height:12px;border-radius:50%;background:var(--line)}
+.brand{font-weight:800;margin-left:20px;letter-spacing:.2px}.brand i{font-style:normal;color:#f08a52}
+.tb .r{margin-left:auto;display:flex;gap:12px;align-items:center;color:var(--t2);font-size:12px}
+.pill{background:var(--card2);border-radius:7px;padding:4px 10px;color:var(--t1);font-weight:600}
+.body{display:grid;grid-template-columns:200px 1fr;min-height:560px}
+.side{border-bottom-left-radius:12px;background:var(--side);border-right:1px solid var(--line);padding:14px 10px;display:flex;flex-direction:column;gap:2px}
+.side .h{font-size:11px;font-weight:600;letter-spacing:.44px;color:var(--t2);text-transform:uppercase;margin:12px 8px 6px}
+.side .it{padding:7px 10px;border-radius:8px;color:var(--t1)}.side .it.on{background:var(--card2);font-weight:600}
+.side .langs{display:flex;flex-wrap:wrap;gap:6px;padding:0 8px}
+.main{padding:16px 18px 24px;min-width:0}
+#t-casting .main{padding-bottom:300px}
+.chip{display:inline-flex;align-items:center;gap:5px;background:var(--chip);color:var(--chipt);border-radius:999px;padding:4px 10px;font-size:11.5px;white-space:nowrap}
+.chip.on{background:var(--sel);color:var(--selt);font-weight:600}
+.chip.plain{background:var(--card2);color:var(--t1)}
+.chip.acc{background:var(--acc);color:#fff;font-weight:600}
+.badge{font-size:10.5px;font-weight:700;border-radius:6px;padding:2px 6px;background:var(--card2);color:var(--t2)}
+.badge.ok{color:var(--ok)}.badge.warn{color:var(--warn)}
+.btn{display:inline-flex;align-items:center;gap:6px;border-radius:8px;padding:6px 12px;font-weight:600;background:var(--card2);color:var(--t1);white-space:nowrap}
+.btn.p{background:var(--acc);color:#fff}.btn.g{background:var(--green);color:#fff}.btn.s{padding:3px 9px;font-size:11.5px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px}
+.lbl{color:var(--t2);font-size:12px;margin:12px 0 6px}
+.field{background:var(--card2);border-radius:8px;padding:8px 11px;color:var(--t2)}
+.note{color:var(--t2);font-size:11.5px;line-height:1.45}
+.mark{outline:2px dashed #f08a52;outline-offset:3px;border-radius:10px}
+.callout{display:inline-block;background:#f08a52;color:#1a1208;font-weight:700;font-size:11px;border-radius:6px;padding:2px 7px;margin-left:6px;vertical-align:middle}
+.explain{max-width:1200px;margin-top:12px;background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 16px;line-height:1.55}
+.explain li{margin:3px 0}
+/* onglet projet */
+.wiz{max-width:800px;margin:10px auto}
+.wiz h2{font-size:22px;margin:6px 0 4px}
+.lgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.lpick{background:var(--card2);border-radius:10px;padding:10px}
+.lpick .cur{display:flex;align-items:center;justify-content:space-between;font-weight:700;font-size:14px;margin-bottom:8px}
+.lpick .list{display:flex;flex-wrap:wrap;gap:6px}
+.est{display:flex;gap:10px;align-items:flex-start;background:var(--card2);border-radius:10px;padding:10px 12px;margin-top:12px}
+/* casting */
+.cgrid{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.vcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 12px;position:relative}
+.vcard .top{display:flex;align-items:center;gap:6px}.vcard b{font-size:14px}
+.vcard .d{color:var(--t2);font-size:12px;margin:2px 0 8px}
+.play{display:flex;align-items:center;gap:8px}
+.pb{width:26px;height:26px;border-radius:50%;background:var(--acc);color:#fff;display:grid;place-items:center;font-size:10px;flex:none}
+.wave{flex:1;height:22px;background:repeating-linear-gradient(90deg,var(--t2) 0 2px,transparent 2px 5px);opacity:.45;border-radius:3px;-webkit-mask:linear-gradient(0deg,transparent 20%,#000 20% 80%,transparent 80%)}
+.lsel{display:inline-flex;align-items:center;gap:4px;background:var(--card2);border-radius:7px;padding:3px 8px;font-weight:700;font-size:11.5px}
+.acts{display:flex;gap:6px;margin-top:8px}.acts .btn{font-size:11.5px;padding:3px 9px}.acts .r{margin-left:auto}
+.pop{position:absolute;z-index:3;right:12px;top:66px;width:300px;background:var(--pop);border:1px solid var(--line);border-radius:12px;box-shadow:var(--shadow);padding:8px}
+.pop .ph{font-size:10.5px;font-weight:700;letter-spacing:.4px;text-transform:uppercase;color:var(--t2);padding:6px 8px 4px}
+.pop .row{display:flex;align-items:center;gap:8px;padding:6px 8px;border-radius:7px}
+.pop .row.on{background:var(--acc);color:#fff}.pop .row.on .note{color:rgba(255,255,255,.8)}
+.pop .row .r{margin-left:auto}
+.pop .search{background:var(--card2);border-radius:7px;padding:6px 9px;color:var(--t2);margin:4px 4px 6px}
+.pop .sep{height:1px;background:var(--line);margin:6px 4px}
+.pop .txt{display:flex;gap:6px;padding:4px}
+.panel{border-radius:12px;padding:12px}
+.panel .h{font-size:11px;font-weight:600;letter-spacing:.44px;color:var(--head);text-transform:uppercase;margin:0 0 6px}
+.panel .chip{background:var(--chip)}.panel .chip.on{background:var(--sel)}
+.panel .srch{background:var(--field);border-radius:8px;padding:7px 11px;color:var(--head);margin-bottom:10px}
+.labg{display:grid;grid-template-columns:62px 1fr;gap:6px 4px;align-items:center}.labg .l{color:var(--head);font-size:12px}
+.labg .chips{display:flex;flex-wrap:wrap;gap:6px}
+/* bibliothèque */
+.cov{width:100%;border-collapse:collapse;margin-top:6px}
+.cov th{font-size:11px;text-transform:uppercase;letter-spacing:.4px;color:var(--t2);text-align:left;padding:6px 8px;border-bottom:1px solid var(--line)}
+.cov td{padding:8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.bar2{height:6px;border-radius:3px;background:var(--card2);overflow:hidden;width:160px}.bar2 i{display:block;height:100%;background:var(--ok)}
+/* modèles */
+.mrow{display:grid;grid-template-columns:220px 1fr auto;gap:12px;align-items:center;padding:12px 0;border-bottom:1px solid var(--line)}
+.mrow .chips{display:flex;flex-wrap:wrap;gap:5px}
+/* plan */
+.plan{max-width:1000px;line-height:1.55}
+.plan h2{font-size:15px;margin:22px 0 8px}.plan h3{font-size:13px;margin:14px 0 4px}
+.plan code{background:var(--card2);border-radius:4px;padding:1px 5px;font-size:12px}
+.plan table{border-collapse:collapse;width:100%;margin:6px 0}.plan td,.plan th{border-bottom:1px solid var(--line);padding:6px 8px;text-align:left;vertical-align:top}
+.plan th{font-size:11px;text-transform:uppercase;color:var(--t2)}
+.flow{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:8px 0}
+.flow span{background:var(--card2);border-radius:8px;padding:6px 10px}.flow em{color:var(--t2);font-style:normal}
+@media(max-width:820px){.body{grid-template-columns:1fr}.side{display:none}.cgrid,.lgrid{grid-template-columns:1fr}.mrow{grid-template-columns:1fr}.pop{position:static;width:auto;margin-top:8px}}
+</style></head><body>
+<h1>mCASTING 2.0 · les langues de son choix</h1>
+<p class="intro">Maquettes des écrans qui changent. Chaque projet choisit 2 langues de base : la bibliothèque calcule ses extraits dans ces langues, sur la machine hôte ou le serveur de voix. Ensuite, n'importe quelle voix peut s'écouter dans n'importe quelle langue du moteur, calculée à la demande avec le même timbre. Les repères orange <span class="callout">nouveau</span> montrent ce qui change.</p>
+<div class="bar">
+ <div class="seg" id="tabs"><button data-t="projet" class="on">1 · Nouveau projet</button><button data-t="casting">2 · Casting et écoute</button><button data-t="biblio">3 · Bibliothèque</button><button data-t="modeles">4 · Modèles</button><button data-t="plan">5 · Plan technique</button></div>
+ <div class="seg" id="theme"><button data-v="dark" class="on">Sombre</button><button data-v="light">Clair</button></div>
+</div>
+
+<!-- 1 · NOUVEAU PROJET -->
+<section class="tab on" id="t-projet">
+<div class="win"><div class="tb"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="brand"><i>m</i>CASTING</span><span class="r">Premiers pas</span></div>
+<div class="body"><div class="side"><div class="it on">① Projet</div><div class="it">② Préparation</div><div class="it">③ Dialogues</div><div class="it">④ Voix</div><div class="it">⑤ Écoute</div><div class="it">⑥ Bibliothèque</div></div>
+<div class="main"><div class="wiz">
+ <h2>Comment s'appelle votre projet ?</h2><p class="note" style="font-size:13px;margin:0 0 12px">On lui donne un nom, un dossier et ses deux langues. Le résultat du casting y sera enregistré.</p>
+ <div class="card">
+  <div class="lbl" style="margin-top:0">Nom</div><div class="field" style="color:var(--t1)">La Tour du Sorcier</div>
+  <div class="lbl">Dossier</div><div style="display:flex;gap:8px"><div class="field" style="flex:1">~/Projets/La Tour du Sorcier</div><span class="btn s" style="align-self:center">Choisir…</span></div>
+  <div class="lbl">Langues des voix <span class="callout">nouveau</span></div>
+  <div class="lgrid mark">
+   <div class="lpick"><div class="cur"><span>Principale · Deutsch</span><span class="note">Allemand</span></div>
+    <div class="list"><span class="chip plain">Français</span><span class="chip plain">English</span><span class="chip on">Deutsch</span><span class="chip plain">Español</span><span class="chip plain">Italiano</span><span class="chip plain">Português</span><span class="chip plain">Русский</span><span class="chip plain">中文</span><span class="chip plain">日本語</span><span class="chip plain">한국어</span></div></div>
+   <div class="lpick"><div class="cur"><span>Secondaire · English</span><span class="note">Anglais</span></div>
+    <div class="list"><span class="chip plain">Français</span><span class="chip on">English</span><span class="chip plain" style="opacity:.4">Deutsch</span><span class="chip plain">Español</span><span class="chip plain">Italiano</span><span class="chip plain">Português</span><span class="chip plain">Русский</span><span class="chip plain">中文</span><span class="chip plain">日本語</span><span class="chip plain">한국어</span><span class="chip plain">Aucune</span></div></div>
+  </div>
+  <p class="note" style="margin:8px 0 0">Seules les langues du moteur installé sont proposées (ici Qwen3-TTS : 10 langues). Chaque langue s'affiche dans sa propre écriture, avec son nom traduit dans la langue de l'interface.</p>
+  <div class="est mark"><span style="font-size:16px">⏱</span><div><b>Bibliothèque : 600 voix</b><div class="note">English : 600 extraits déjà prêts. Deutsch : 600 extraits à calculer sur ce Mac (durée estimée affichée ici, mesurée sur la machine). Le calcul se lance en arrière-plan ; on peut caster pendant ce temps, les voix arrivent au fur et à mesure.</div></div></div>
+ </div>
+ <p class="note" style="margin-top:12px">Ouvrir un projet existant</p>
+</div></div></div></div>
+<div class="explain"><ul>
+ <li><b>Deux langues par projet</b> : la principale (celle du casting et des répliques) et une secondaire facultative. Une seule langue suffit pour un projet monolingue.</li>
+ <li><b>Avant de lancer</b>, l'appli annonce ce qui est déjà calculé et ce qui reste : rien n'est refait d'un projet à l'autre, la bibliothèque est commune à tous les projets.</li>
+ <li>Les langues d'un projet restent modifiables dans sa fiche ; les extraits manquants sont alors calculés.</li>
+</ul></div>
+</section>
+
+<!-- 2 · CASTING -->
+<section class="tab" id="t-casting">
+<div class="win"><div class="tb"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="brand"><i>m</i>CASTING</span><span class="r"><span style="color:var(--ok)">●</span> Serveur MCP prêt <span>Qwen3-TTS · installé</span><span class="pill">⚙ Réglages</span></span></div>
+<div class="body"><div class="side"><div class="h">Navigation</div><div class="it">Projets</div><div class="it on">Casting</div><div class="it">Bibliothèque de voix</div><div class="it">Cloner une voix</div><div class="it">Modèles TTS</div>
+ <div class="h">Langues du projet <span class="callout">nouveau</span></div><div class="langs mark"><span class="chip acc">DE</span><span class="chip plain">EN</span><span class="chip plain">＋</span></div>
+ <p class="note" style="padding:6px 8px 0">DE : 412 / 600 extraits prêts</p></div>
+<div class="main">
+ <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px;flex-wrap:wrap"><b style="font-size:16px">La Tour du Sorcier</b><span class="badge">7 personnages</span><span class="badge ok">1 casté</span><span class="badge warn">6 à caster</span><span style="margin-left:auto" class="btn s">Importer…</span><span class="btn s p">Écrire casting.json ▸ projet</span></div>
+ <div class="cgrid" style="margin-bottom:12px">
+  <div class="panel" style="background:var(--sky)"><div style="display:flex;gap:10px;margin-bottom:8px"><span class="pb" style="width:38px;height:38px;border-radius:9px;background:rgba(0,0,0,.28);font-size:14px">L</span><div><b style="font-size:15px">Lina</b><div style="color:var(--sub);font-size:12px">jeune aventurière courageuse, un peu insolente</div></div></div>
+   <div class="h">Interprétation</div><div class="labg" style="grid-template-columns:1fr"><div class="chips"><span class="chip on">Neutre</span><span class="chip">Fatigué</span><span class="chip">Joyeux</span><span class="chip">Colère</span></div></div>
+   <div class="h" style="margin-top:10px">Réplique</div><div class="chips" style="display:flex;gap:6px"><span class="chip on">Fidèle</span><span class="chip">Expressive</span></div></div>
+  <div class="panel" style="background:var(--prune)"><div class="srch">⌕ Rechercher une voix…</div>
+   <div class="labg"><span class="l">Genre</span><div class="chips"><span class="chip on">Tous</span><span class="chip">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span></div>
+   <span class="l">Ton</span><div class="chips"><span class="chip">Grave</span><span class="chip">Aigu</span><span class="chip">Chaleureux</span></div>
+   <span class="l">Langue</span><div class="chips mark"><span class="chip on">DE</span><span class="chip">EN</span><span class="chip">Toutes</span><span class="chip">★ Favoris</span></div></div></div>
+ </div>
+ <div class="cgrid">
+  <div class="vcard"><div class="top"><b>Lukas 1</b><span style="margin-left:auto" class="badge ok">DE · EN</span><span>☆</span></div><div class="d">Homme · dry and deadpan</div>
+   <div class="play"><span class="pb">▶</span><span class="wave"></span><span class="lsel mark">DE ▾</span></div>
+   <div class="acts"><span class="btn">Réplique du perso</span><span class="btn">Comparer</span><span class="btn r">Choisir</span></div>
+   <div class="pop mark"><div class="ph">Écouter en</div><div class="search">⌕ Langue…</div>
+    <div class="ph">Langues du projet</div>
+    <div class="row on"><b>Deutsch</b><span class="note">extrait prêt</span><span class="r">✓</span></div>
+    <div class="row"><b>English</b><span class="note">extrait prêt</span></div>
+    <div class="ph">Autres langues · même timbre</div>
+    <div class="row">Français <span class="note">en cache</span></div>
+    <div class="row">日本語 <span class="note">à calculer · ~5 s</span><span class="r">⟳</span></div>
+    <div class="row">Español <span class="note">à calculer · ~5 s</span><span class="r">⟳</span></div>
+    <div class="row note">+ 5 autres…</div>
+    <div class="sep"></div><div class="ph">Texte</div>
+    <div class="txt"><span class="chip on">Phrase type</span><span class="chip plain">Réplique du perso</span><span class="chip plain">Texte libre…</span></div>
+    <div class="sep"></div><p class="note" style="margin:2px 8px 4px">ⓘ Dans une autre langue que celle de sa création, la voix garde son timbre mais peut conserver un léger accent.</p></div>
+  </div>
+  <div class="vcard"><div class="top"><b>Gaspard 2</b><span style="margin-left:auto" class="badge warn">EN · DE en cours</span><span>☆</span></div><div class="d">Homme · warm and friendly</div>
+   <div class="play"><span class="pb">▶</span><span class="wave"></span><span class="lsel">EN ▾</span></div>
+   <div class="acts"><span class="btn">Réplique du perso</span><span class="btn">Comparer</span><span class="btn r">Choisir</span></div></div>
+  <div class="vcard"><div class="top"><b>Marcus 3</b><span style="margin-left:auto" class="badge ok">DE · EN</span><span>★</span></div><div class="d">Homme · gruff and tired</div>
+   <div class="play"><span class="pb">▶</span><span class="wave"></span><span class="lsel">DE ▾</span></div>
+   <div class="acts"><span class="btn">Réplique du perso</span><span class="btn">Comparer</span><span class="btn r">Choisir</span></div></div>
+ </div>
+</div></div></div>
+<div class="explain"><ul>
+ <li><b>Sélecteur de langue sur chaque lecteur</b> : les 2 langues du projet en tête (extraits déjà prêts, écoute instantanée), puis toutes les autres langues du moteur, calculées à la demande avec le timbre de la voix et gardées en cache.</li>
+ <li><b>Texte écouté</b> : phrase type de la langue, réplique du personnage si elle existe dans cette langue (fournie par l'import ou l'agent), ou texte libre tapé sur place.</li>
+ <li><b>Badge de langues</b> sur la carte : langues prêtes, ou calcul en cours. Le filtre Langue propose les langues du projet plutôt que FR / EN.</li>
+ <li><b>Barre latérale</b> : langue active du projet (DE) en un clic, avancement du calcul, ＋ pour ajouter ou changer une langue.</li>
+</ul></div>
+</section>
+
+<!-- 3 · BIBLIOTHÈQUE -->
+<section class="tab" id="t-biblio">
+<div class="win"><div class="tb"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="brand"><i>m</i>CASTING</span><span class="r"><span class="pill">⚙ Réglages</span></span></div>
+<div class="body"><div class="side"><div class="h">Navigation</div><div class="it">Projets</div><div class="it">Casting</div><div class="it on">Bibliothèque de voix</div><div class="it">Cloner une voix</div><div class="it">Modèles TTS</div></div>
+<div class="main">
+ <div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><b style="font-size:16px">Bibliothèque de voix</b><span class="badge">600 voix</span><span class="badge">Calcul : ce Mac</span></div>
+ <div class="card mark"><div style="display:flex;align-items:center"><b>Langues de la bibliothèque</b><span class="callout">nouveau</span><span style="margin-left:auto" class="btn s">＋ Ajouter une langue</span></div>
+  <table class="cov"><tr><th>Langue</th><th>Extraits</th><th></th><th>Utilisée par</th><th></th></tr>
+   <tr><td><b>Français</b> <span class="note">fr</span></td><td>600 / 600</td><td><div class="bar2"><i style="width:100%"></i></div></td><td class="note">4 projets</td><td><span class="btn s">Réécouter</span></td></tr>
+   <tr><td><b>English</b> <span class="note">en</span></td><td>600 / 600</td><td><div class="bar2"><i style="width:100%"></i></div></td><td class="note">3 projets</td><td><span class="btn s">Réécouter</span></td></tr>
+   <tr><td><b>Deutsch</b> <span class="note">de</span></td><td>412 / 600</td><td><div class="bar2"><i style="width:69%"></i></div></td><td class="note">La Tour du Sorcier</td><td><span class="btn s">⏸ Pause</span></td></tr>
+   <tr><td><b>日本語</b> <span class="note">ja</span></td><td>23 / 600</td><td><div class="bar2"><i style="width:4%"></i></div></td><td class="note">écoutes à la demande</td><td><span class="btn s p">Tout calculer</span></td></tr>
+  </table>
+  <p class="note" style="margin:10px 0 0">Les langues des projets se calculent d'elles-mêmes. Une langue sans projet ne garde que les écoutes faites à la demande ; on peut la calculer en entier ou libérer sa place (✕ au survol, 600 extraits ≈ 70 Mo).</p>
+ </div>
+</div></div></div>
+<div class="explain"><ul><li>Vue d'ensemble de ce qui est calculé, langue par langue, et de qui s'en sert. Le calcul passe toujours par la file unique (un seul calcul lourd à la fois), pausable et repris au lancement suivant.</li></ul></div>
+</section>
+
+<!-- 4 · MODÈLES -->
+<section class="tab" id="t-modeles">
+<div class="win"><div class="tb"><span class="dot"></span><span class="dot"></span><span class="dot"></span><span class="brand"><i>m</i>CASTING</span></div>
+<div class="body"><div class="side"><div class="h">Navigation</div><div class="it">Projets</div><div class="it">Casting</div><div class="it">Bibliothèque de voix</div><div class="it">Cloner une voix</div><div class="it on">Modèles TTS</div></div>
+<div class="main"><b style="font-size:16px">Modèles TTS</b>
+ <div class="mrow"><div><b>Créateur de voix</b><div class="note">Qwen3-TTS VoiceDesign · installé</div></div><div class="chips mark"><span class="chip plain">Français</span><span class="chip plain">English</span><span class="chip plain">Deutsch</span><span class="chip plain">Español</span><span class="chip plain">Italiano</span><span class="chip plain">Português</span><span class="chip plain">Русский</span><span class="chip plain">中文</span><span class="chip plain">日本語</span><span class="chip plain">한국어</span></div><span class="badge ok">10 langues</span></div>
+ <div class="mrow"><div><b>Voix naturelle</b><div class="note">Qwen3-TTS Base (clonage) · installé</div></div><div class="chips"><span class="chip plain">mêmes 10 langues</span></div><span class="badge ok">10 langues</span></div>
+ <div class="mrow"><div><b>Voix multilingue</b> <span class="callout">nouveau, plus tard</span><div class="note">Chatterbox Multilingual · non installé</div></div><div class="chips"><span class="chip plain">+ العربية</span><span class="chip plain">हिन्दी</span><span class="chip plain">Nederlands</span><span class="chip plain">Polski</span><span class="chip plain">Türkçe</span><span class="chip plain">Svenska</span><span class="chip plain">Ελληνικά</span><span class="chip plain">עברית</span><span class="chip plain">+ 5</span></div><span class="btn s">Installer</span></div>
+ <div class="mrow"><div><b>Voix rapide</b><div class="note">Kokoro · installé</div></div><div class="chips"><span class="chip plain">English</span><span class="chip plain">Français</span><span class="chip plain">Español</span><span class="chip plain">Italiano</span><span class="chip plain">Português</span><span class="chip plain">日本語</span><span class="chip plain">中文</span><span class="chip plain">हिन्दी</span></div><span class="badge">8 langues</span></div>
+</div></div></div>
+<div class="explain"><ul><li>Chaque modèle affiche les langues qu'il parle vraiment. Les listes de langues du reste de l'appli en découlent : on ne propose jamais une langue qu'aucun moteur installé ne sait dire.</li><li>Un moteur pour plus de langues (Chatterbox, environ 23) est une étape à part, après la 2.0.</li></ul></div>
+</section>
+
+<!-- 5 · PLAN -->
+<section class="tab" id="t-plan"><div class="card plan">
+<h2 style="margin-top:4px">Architecture proposée</h2>
+<div class="flow"><span>Moteurs installés</span><em>→ langues disponibles →</em><span>Projet : 2 langues</span><em>→ extraits manquants →</em><span>File de calcul (hôte ou serveur)</span><em>→</em><span>Bibliothèque commune</span><em>→</em><span>casting.json</span></div>
+<h3>Données</h3>
+<table><tr><th>Aujourd'hui</th><th>2.0</th></tr>
+<tr><td><code>enum Lang { fr, en }</code></td><td><code>struct Lang</code> : code ISO 639-1 (<code>de</code>, <code>ja</code>…) + catalogue (nom natif, code propre à chaque moteur : <code>german</code> pour Qwen, <code>d</code> pour Kokoro…). Nom affiché traduit par macOS dans la langue de l'interface.</td></tr>
+<tr><td><code>Project.lang</code> (une langue)</td><td><code>Project.languages</code> (principale + secondaire facultative). Anciens projets : <code>[lang, l'autre de fr/en]</code>, sans perte.</td></tr>
+<tr><td><code>Voice.samples["fr"/"en"]</code></td><td>Inchangé : déjà indexé par code de langue, il accepte toutes les langues. Aucune migration de la bibliothèque.</td></tr>
+<tr><td>Phrases et prénoms FR / EN dans le code</td><td>Fichier <code>Resources/langues.json</code> : phrase type et prénoms pour chaque langue des moteurs.</td></tr>
+<tr><td>—</td><td>Cache des écoutes à la demande : <code>audio/cache/&lt;voix&gt;.&lt;langue&gt;.&lt;texte&gt;.wav</code>, comptabilisé dans la vue Bibliothèque.</td></tr></table>
+<h3>Modules</h3>
+<ul>
+<li><b>Core / Languages</b> (nouveau) : catalogue des langues, langues de chaque moteur, correspondance des codes.</li>
+<li><b>LibraryGenerator</b> : calcule les langues demandées par les projets (au lieu de <code>Lang.allCases</code>), avec avancement par langue, pause et reprise.</li>
+<li><b>Écoute à la demande</b> : réutilise le clonage de timbre entre langues qui existe déjà (échantillon de référence → nouvelle langue), plus le cache.</li>
+<li><b>Import</b> (CSV, texte, JSON) : la colonne langue accepte tout code ; répliques rangées par langue.</li>
+<li><b>casting.json v2</b> : <code>lang</code> = principale, <code>languages</code> = langues du projet, <code>samples</code> par code. Les champs actuels restent : un lecteur v1 continue de fonctionner.</li>
+<li><b>MCP</b> : <code>lang</code> accepte tout code ; <code>create_project</code> prend <code>languages</code> ; nouvel outil <code>list_languages</code> (langues des moteurs installés).</li>
+<li><b>Interface</b> : sélecteur de langues (projet, guide), menu de langue du lecteur, couverture dans la Bibliothèque, langues par modèle. L'interface elle-même reste en 4 langues.</li>
+</ul>
+<h3>Étapes</h3>
+<table><tr><th>#</th><th>Étape</th><th>Vérification</th></tr>
+<tr><td>1</td><td>Cœur : <code>Lang</code> ouvert, catalogue, migration des projets, <code>langues.json</code></td><td>Tests : anciens projets et casting.json relus à l'identique</td></tr>
+<tr><td>2</td><td>Calcul par langue de projet, cache des écoutes à la demande</td><td>Une langue nouvelle (DE) calculée sur quelques voix, écoute JA à la demande</td></tr>
+<tr><td>3</td><td>Interface : guide, projet, casting, lecteur, bibliothèque, modèles</td><td>Captures sombre et clair, 4 langues d'interface</td></tr>
+<tr><td>4</td><td>Import, casting.json v2, MCP, documentation FR / EN</td><td>Agent de test (faux dossier personnel) : projet DE + EN de bout en bout</td></tr>
+<tr><td>5</td><td>Plus tard : moteur Chatterbox (environ 23 langues)</td><td>Version 2.1</td></tr></table>
+<h3>Limites</h3>
+<ul><li>« Toutes les langues » = toutes celles des moteurs installés : 10 avec Qwen3-TTS en 2.0.</li><li>Une voix conçue en anglais garde parfois un léger accent dans une autre langue : c'est le comportement du clonage de timbre. L'appli le dit dans le menu d'écoute (ⓘ), dans la fiche d'aide et dans la documentation (4 langues).</li>
+<li>Clonage avec émotion : Qwen3-TTS ne sait pas encore garder le timbre exact et jouer une émotion en même temps. Chaque moteur déclare ce qu'il sait faire (<code>cloneWithEmotion</code>) : dès qu'une version du modèle le permet, le mode Expressive garde le timbre exact, sans changer l'interface.</li><li>Calculer une nouvelle langue pour 600 voix prend du temps : la durée est mesurée et annoncée avant de lancer.</li></ul>
+</div></section>
+
+<script>
+document.querySelectorAll("#tabs button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#tabs button").forEach(x=>x.classList.toggle("on",x===b));document.querySelectorAll(".tab").forEach(t=>t.classList.toggle("on",t.id==="t-"+b.dataset.t))});
+document.querySelectorAll("#theme button").forEach(b=>b.onclick=()=>{document.querySelectorAll("#theme button").forEach(x=>x.classList.toggle("on",x===b));document.documentElement.dataset.theme=b.dataset.v});
+</script></body></html>

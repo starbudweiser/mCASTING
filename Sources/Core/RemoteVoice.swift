@@ -77,7 +77,7 @@ public enum VoiceServer {
     public static func speak(_ u: String, model: String, text: String, lang: Lang, voice: String? = nil, instruct: String? = nil, to out: URL) throws -> TimeInterval {
         let t0 = Date()
         var body: [String: Any] = ["model": model, "input": text, "response_format": "wav",
-                                   "lang_code": model.lowercased().contains("qwen3") ? lang.qwen : (model.lowercased().contains("kokoro") ? (lang == .fr ? "f" : "a") : lang.rawValue)]
+                                   "lang_code": model.lowercased().contains("qwen3") ? lang.qwen : (model.lowercased().contains("kokoro") ? (lang.kokoro ?? "a") : lang.rawValue)]
         if let voice { body["voice"] = voice }
         if let instruct { body["instruct"] = instruct; body["instructions"] = instruct }
         let d = try HTTP.call(base(u) + "/audio/speech", method: "POST", headers: headers, json: body, timeout: 600)
@@ -85,7 +85,7 @@ public enum VoiceServer {
         return Date().timeIntervalSince(t0)
     }
 
-    /// Ajoute les voix toutes prêtes d'un modèle du serveur à la bibliothèque, avec un extrait FR et EN fabriqué sur le serveur.
+    /// Ajoute les voix toutes prêtes d'un modèle du serveur à la bibliothèque, avec un extrait dans chaque langue des projets, fabriqué sur le serveur.
     public static func importVoices(_ u: String, model: String, progress: (Int, Int) -> Void) throws -> Int {
         var lib = try LibraryGenerator.ensureCatalog()
         let names = voices(u, model: model)
@@ -96,7 +96,7 @@ public enum VoiceServer {
             var v = lib.first { $0.id == id } ?? Voice(id: id, name: n, gender: guessGender(n), age: "adult", pitch: "medium", tone: "server voice",
                                                        recipe: "\(model) · \(n)", engine: "server", custom: true, source: u)
             v.remoteModel = model; v.remoteVoice = n
-            for l in Lang.allCases where v.samples[l.rawValue] == nil {
+            for l in LibraryGenerator.targetLangs() where v.samples[l.rawValue] == nil {
                 let rel = "srv/\(id).\(l.rawValue).m4a"
                 try speak(u, model: model, text: Catalog.sample(for: v, lang: l), lang: l, voice: n, to: Paths.audio.appendingPathComponent(rel))
                 v.samples[l.rawValue] = rel
