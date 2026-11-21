@@ -9,6 +9,7 @@ public enum Paths {
     }()
     public static var projects: URL { home.appendingPathComponent("projects.json") }
     public static var voices: URL { home.appendingPathComponent("voices.json") }
+    public static var favorites: URL { home.appendingPathComponent("favorites.json") }
     public static var audio: URL { home.appendingPathComponent("audio") }
     public static var engine: URL { home.appendingPathComponent("engine") }
     public static var lock: URL { home.appendingPathComponent("compute.lock") }

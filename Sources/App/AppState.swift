@@ -19,6 +19,8 @@ final class AppState: ObservableObject {
     @Published var fText = ""
     @Published var fAge: String? = nil
     @Published var fTone: String? = nil
+    @Published var fFav = false
+    @Published var favorites: Set<String> = DataStore.favorites()
     @Published var avg: Double = 5.6
     @Published var castTab = 0
     @Published var projectLang: Lang = .fr
@@ -42,7 +44,7 @@ final class AppState: ObservableObject {
     var filteredVoices: [Voice] {
         let q = fText.lowercased()
         return voices.filter { v in
-            (fGender == nil || v.gender == fGender) && (fLang == nil || v.samples[fLang!.rawValue] != nil) &&
+            (!fFav || favorites.contains(v.id)) && (fGender == nil || v.gender == fGender) && (fLang == nil || v.samples[fLang!.rawValue] != nil) &&
             (fAge == nil || v.age == fAge || (fAge == "senior" && v.age == "mature")) &&
             (fTone == nil || (fTone == "low" && v.pitch == "low") || (fTone == "high" && v.pitch == "high") || (fTone != "low" && fTone != "high" && v.tone.contains(fTone!))) &&
             (q.isEmpty || (v.name + " " + v.recipe + " " + v.tone + " " + (v.species ?? "")).lowercased().contains(q))
@@ -76,6 +78,11 @@ final class AppState: ObservableObject {
             guard let i = all.firstIndex(where: { $0.id == pid }) else { return }
             for c in cs where !all[i].characters.contains(where: { $0.name.lowercased() == c.name.lowercased() }) { all[i].characters.append(Character(name: c.name, role: c.role ?? "", lines: c.lines ?? [])) }
         }
+    }
+
+    func toggleFavorite(_ id: String) {
+        if favorites.contains(id) { favorites.remove(id) } else { favorites.insert(id) }
+        do { try DataStore.saveFavorites(favorites) } catch { self.error = error.localizedDescription }
     }
 
     func start() {

@@ -19,6 +19,8 @@ public enum DataStore {
     public static func projects() -> [Project] { load([Project].self, from: Paths.projects, default: []) }
     public static func saveProjects(_ p: [Project]) throws { try save(p, to: Paths.projects) }
     public static func voices() -> [Voice] { load([Voice].self, from: Paths.voices, default: []) }
+    public static func favorites() -> Set<String> { Set(load([String].self, from: Paths.favorites, default: [])) }
+    public static func saveFavorites(_ f: Set<String>) throws { try save(f.sorted(), to: Paths.favorites) }
     public static func saveVoices(_ v: [Voice]) throws { try save(v, to: Paths.voices) }
 
     /// Modification d'un projet sous verrou (lecture → modification → écriture) pour éviter les écrasements app/MCP.

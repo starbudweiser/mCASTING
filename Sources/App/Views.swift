@@ -412,6 +412,7 @@ struct FilterBox: View {
             HStack(spacing: 8) {
                 label(L.t("f.lang"))
                 ForEach(Lang.allCases, id: \.self) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
+                chip("★ " + L.t("f.fav"), s.fFav) { s.fFav.toggle() }
                 Spacer(minLength: 0)
                 Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count))
             }
@@ -431,6 +432,7 @@ struct VoiceCard: View {
     var onSelect: (() -> Void)? = nil
     @ObservedObject var s = AppState.shared
     var chosen: Bool { mode == .casting && s.character?.voiceID == v.id }
+    var fav: Bool { s.favorites.contains(v.id) }
     var body: some View {
         let lang = mode == .casting ? (s.project?.lang ?? .fr) : (s.fLang ?? .fr)
         let rel = v.samples[lang.rawValue] ?? v.samples.values.first
@@ -447,6 +449,9 @@ struct VoiceCard: View {
                 }
                 Spacer(minLength: 0)
                 if !v.samples.isEmpty { Tag(title: v.samples.keys.sorted().joined(separator: "/").uppercased()) }
+                Button { s.toggleFavorite(v.id) } label: {
+                    Image(systemName: fav ? "star.fill" : "star").font(.system(size: 13)).foregroundStyle(fav ? Flat.brand : Flat.text2).frame(width: 22, height: 22).contentShape(Rectangle())
+                }.buttonStyle(.plain).help(L.t(fav ? "fav.remove" : "fav.add"))
             }
             HStack(spacing: 8) { PlayButton(playing: playing, enabled: rel != nil) { s.play(rel: rel) }; Wave(seed: Double(v.id.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 97 }) / 7, bars: mode == .casting ? 34 : 26, playing: playing) }
             if mode == .casting {
