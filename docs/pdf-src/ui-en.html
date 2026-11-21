@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>mCASTING — User interface</title><link rel="stylesheet" href="style.css"></head>
+<body>
+
+<div class="cover">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></div>
+  <h1><span class="m">m</span>CASTING</h1>
+  <div class="kind">User interface</div>
+  <div class="sub">Flat Mat design, colours, typography, components, screens and behaviour of the app.</div>
+  <div class="rule"></div>
+  <div class="shot"><img src="../img/casting-light.jpg" alt=""></div>
+  <div class="meta"><b>Version 1.6.4</b> · November 21, 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>MIT License · github.com/starbudweiser/mCASTING</div>
+</div>
+
+<div class="toc">
+  <h2>Contents</h2>
+  <ol>
+    <li><span class="n">1</span>Flat Mat design principles</li>
+    <li><span class="n">2</span>Colours</li>
+    <li><span class="n">3</span>Typography and measurements</li>
+    <li><span class="n">4</span>Components</li>
+    <li><span class="n">5</span>Window structure</li>
+    <li><span class="n">6</span>Splash</li>
+    <li><span class="n">7</span>Projects</li>
+    <li><span class="n">8</span>Casting</li>
+    <li><span class="n">9</span>Character sheet</li>
+    <li><span class="n">10</span>Voice library</li>
+    <li><span class="n">11</span>Clone a voice, TTS models, Settings</li>
+    <li><span class="n">12</span>Getting started guide</li>
+    <li><span class="n">13</span>Behaviour, languages and accessibility</li>
+  </ol>
+</div>
+
+<section>
+<h2><span class="n">1</span>Flat Mat design principles</h2>
+<p>mCASTING follows the DESKTOP MAC TOOLKIT's <b>Flat Mat</b> design: matte, flat surfaces with no drop shadow, gloss or gradient. Hierarchy comes from solid colour, 1-pixel rules and typography, not from effects.</p>
+<div class="grid2">
+  <div class="box"><h4>Matte and flat</h4><p>Solid cards, 1 px rule, radius 12 for cards and 8 for buttons and fields. No blur, no shadow.</p></div>
+  <div class="box"><h4>Warm beige and deep dark</h4><p>Light theme on a warm beige (#f4f1ec), dark theme on a near-black (#131316). Both follow the system setting.</p></div>
+  <div class="box"><h4>The orange "m"</h4><p>Wherever the app name is written in the interface (top bar, splash, About), its lowercase "m" takes the logo's orange. Never inside a drop-down menu.</p></div>
+  <div class="box"><h4>The interface tells the truth</h4><p>Real states on screen (MCP server ready, engine installed, job running), measured durations and sizes, costs stated before any spending.</p></div>
+  <div class="box"><h4>One selection, one contrast</h4><p>The chosen element is always the most contrasted of its group: filled chip, tinted card, accent outline.</p></div>
+  <div class="box"><h4>Subtle watermark</h4><p>The icon's microphone appears very large and barely visible behind the content area.</p></div>
+</div>
+</section>
+
+<section>
+<h2><span class="n">2</span>Colours</h2>
+<h3>Base colours</h3>
+<p>Each colour has one value for the light theme and one for the dark theme (<code>Flat.dyn</code>).</p>
+<div class="sw">
+  <div><i style="background:linear-gradient(90deg,#f4f1ec 50%,#131316 50%)"></i><b>Background</b><span>#f4f1ec · #131316</span></div>
+  <div><i style="background:linear-gradient(90deg,#ffffff 50%,#232327 50%)"></i><b>Card</b><span>#ffffff · #232327</span></div>
+  <div><i style="background:linear-gradient(90deg,#ebe6de 50%,#2c2c31 50%)"></i><b>Control</b><span>#ebe6de · #2c2c31</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3ddd2 50%,#303035 50%)"></i><b>Rule</b><span>#e3ddd2 · #303035</span></div>
+  <div><i style="background:linear-gradient(90deg,#26231e 50%,#f5f5f7 50%)"></i><b>Text</b><span>#26231e · #f5f5f7</span></div>
+  <div><i style="background:linear-gradient(90deg,#7b756a 50%,#98989f 50%)"></i><b>Secondary text</b><span>#7b756a · #98989f</span></div>
+  <div><i style="background:linear-gradient(90deg,#26231e 50%,#0a84ff 50%)"></i><b>Accent (selection)</b><span>#26231e · #0a84ff</span></div>
+  <div><i style="background:linear-gradient(90deg,#d9622b 50%,#f08a52 50%)"></i><b>Brand ("m")</b><span>#d9622b · #f08a52</span></div>
+  <div><i style="background:linear-gradient(90deg,#3f8f5a 50%,#30d158 50%)"></i><b>Success</b><span>#3f8f5a · #30d158</span></div>
+  <div><i style="background:linear-gradient(90deg,#b7791f 50%,#ff9f0a 50%)"></i><b>Warning</b><span>#b7791f · #ff9f0a</span></div>
+  <div><i style="background:linear-gradient(90deg,#3f8f5a 50%,#2f7d52 50%)"></i><b>Create (green)</b><span>#3f8f5a · #2f7d52</span></div>
+  <div><i style="background:linear-gradient(90deg,#26231e 50%,#2c2c31 50%)"></i><b>Avatar</b><span>#26231e · #2c2c31</span></div>
+</div>
+<h3>Coloured panels of the Casting screen</h3>
+<p>The main panels of the Casting screen have their own background: a colour in the dark theme, a warm grey in the light theme.</p>
+<div class="sw">
+  <div><i style="background:linear-gradient(90deg,#ccc8c0 50%,#1d3350 50%)"></i><b>Character, identity</b><span>#ccc8c0 · #1d3350</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3e0da 50%,#3e2440 50%)"></i><b>Voice search</b><span>#e3e0da · #3e2440</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3e0da 50%,#1c3f2d 50%)"></i><b>Current voice</b><span>#e3e0da · #1c3f2d</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3e0da 50%,#36285a 50%)"></i><b>Sample lines</b><span>#e3e0da · #36285a</span></div>
+  <div><i style="background:linear-gradient(90deg,#ccc8c0 50%,#423a1c 50%)"></i><b>Delivery (sheet)</b><span>#ccc8c0 · #423a1c</span></div>
+</div>
+<h3>Tone-on-tone rule</h3>
+<p>On a coloured panel, elements do not keep the app's greys: they take the panel's tint, lightened or recessed. Only the selection is high-contrast.</p>
+<table>
+<tr><th>Element</th><th>Light theme</th><th>Dark theme</th></tr>
+<tr><td>Resting chip and counter</td><td>white 65%</td><td>white 9%</td></tr>
+<tr><td>Chip text</td><td>#26231e</td><td>white 88%</td></tr>
+<tr><td>Selection (active chip, Sample buttons)</td><td>#26231e, white text</td><td>white 94%, #15151a text</td></tr>
+<tr><td>Input field</td><td>white 75%, black 6% rule</td><td>black 22%, white 6% rule</td></tr>
+<tr><td>Description</td><td>#1d1b18 at 66%</td><td>white 68%</td></tr>
+<tr><td>Section headers</td><td>#1d1b18 at 55%</td><td>white 55%</td></tr>
+<tr><td>Separator, outline</td><td>black 8% · 6%</td><td>white 10% · 6%</td></tr>
+<tr><td>Avatar</td><td>black 72%</td><td>black 28%</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">3</span>Typography and measurements</h2>
+<p>System font (SF Pro), no embedded font. Sizes are fixed and identical from one screen to the next.</p>
+<table>
+<tr><th>Use</th><th>Size</th><th>Weight</th><th>Detail</th></tr>
+<tr><td>Page title</td><td>16 pt</td><td>semibold</td><td>"Projects", "Settings", project name.</td></tr>
+<tr><td>Guide question</td><td>24 pt</td><td>bold</td><td>One question per screen.</td></tr>
+<tr><td>Character or voice name</td><td>13 to 15 pt</td><td>semibold</td><td>Single line, truncated at the end with a tooltip.</td></tr>
+<tr><td>Body text</td><td>12 to 13 pt</td><td>regular</td><td>Descriptions, roles, hints.</td></tr>
+<tr><td>Section header</td><td>11 pt</td><td>semibold</td><td>Capitals, tracking 0.44.</td></tr>
+<tr><td>Chip</td><td>11.5 pt</td><td>regular, semibold when active</td><td>4 × 10 padding, capsule shape.</td></tr>
+<tr><td>Tag</td><td>11 pt</td><td>semibold</td><td>2 × 7 padding, state colour at 22%.</td></tr>
+<tr><td>App name (splash)</td><td>40 pt</td><td>800</td><td>Size shared by every app in the kit.</td></tr>
+</table>
+<h3>Measurements</h3>
+<ul>
+<li>Radii: 12 (cards, tiles), 8 (buttons, fields, avatars), capsule (chips, tags).</li>
+<li>Card padding: 11 to 14 px; spacing between cards: 10 to 12 px.</li>
+<li>Main window: 1200 × 740 on first launch, minimum 1000 × 640.</li>
+<li>Sidebar: 212 px; characters column: 280 px.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">4</span>Components</h2>
+<table>
+<tr><th>Component</th><th>Description</th></tr>
+<tr><td><b>Button</b></td><td>Control background, radius 8, 6 × 12 padding, medium weight. Hover: slight transparency; press: scaled to 98%.</td></tr>
+<tr><td><b>Primary button</b></td><td>Accent background (blue in dark, ink in light), contrasting text. One primary action per area ("Write casting.json", "Continue").</td></tr>
+<tr><td><b>Create button</b></td><td>Soft green, white text: "New project", "Add a character" (full width, 41 px high).</td></tr>
+<tr><td><b>Small button</b></td><td>3 × 9 padding, 11.5 pt text: "Character line", "Compare", "Choose", "Sample 1".</td></tr>
+<tr><td><b>Chip</b></td><td>Capsule; active = solid accent. Used for filters, emotions and exclusive choices (Faithful / Expressive).</td></tr>
+<tr><td><b>Tag</b></td><td>State pill: "7 characters", "1 cast" (green), "6 to cast" (orange), "reference", "installed".</td></tr>
+<tr><td><b>Card</b></td><td>Solid card, 1 px rule, radius 12; can take a panel tint (tone-on-tone rule).</td></tr>
+<tr><td><b>Tile</b></td><td>List row (character, voice, project); selection = accent background at 24%, no outline.</td></tr>
+<tr><td><b>Field</b></td><td>Control background, radius 8, 7 × 11 padding, no outline (subtle rule on a coloured panel).</td></tr>
+<tr><td><b>Waveform</b></td><td>2.5 px bars, 1.5 px apart, 22 px high; accent while playing.</td></tr>
+<tr><td><b>Play button</b></td><td>26 px circle, accent background, play or stop icon.</td></tr>
+<tr><td><b>Avatar</b></td><td>Rounded square with the character's initial, bold white text.</td></tr>
+<tr><td><b>Choice card (guide)</b></td><td>Radio button, title, help sentence; the chosen card gets an accent outline and reveals its options.</td></tr>
+</table>
+<div class="note">Accessibility rule: a button is never placed inside a card that is itself clickable. Secondary actions sit next to it or as an overlay, so every button stays reachable.</div>
+</section>
+
+<section>
+<h2><span class="n">5</span>Window structure</h2>
+<ul>
+<li><b>Top bar</b> (transparent title bar): app name with its orange "m", MCP server state (green dot, "MCP server ready"), engine state ("Qwen3-TTS · installed"), "Settings" button.</li>
+<li><b>Sidebar</b>: Navigation (Projects, Casting, Voice library, Clone a voice, TTS models), Project language (FR / EN), and at the bottom the compute state ("Compute: idle", or the running job with a progress bar and percentage).</li>
+<li><b>Content</b>: page title, actions on the right, then the page itself over the microphone watermark.</li>
+<li><b>Menu bar icon</b>: orange microphone; active project, running job, open mCASTING, Getting started, About, Quit.</li>
+</ul>
+<figure><img src="../img/casting-dark.jpg"><figcaption>Main window, dark theme: top bar, sidebar and Casting screen (interface shown in French).</figcaption></figure>
+</section>
+
+<section>
+<h2><span class="n">6</span>Splash</h2>
+<div class="dark-block"><img src="../img/splash.jpg" style="width:62%;display:block;margin:6px auto;border-radius:16px"></div>
+<p style="margin-top:8px">A dark 476 × 166 px card in a frameless 500 × 190 px window, centred exactly on the screen. The icon spins in, the letters of the name flip in one by one, then the orange rule draws and the subtitle ("AI voice casting") appears; the version sits at the bottom right.</p>
+<table>
+<tr><th>Time</th><th>Event</th></tr>
+<tr><td>0 s</td><td>Splash visible; the animation starts on first display.</td></tr>
+<tr><td>2 s</td><td>Main window opens (or as soon as it is ready).</td></tr>
+<tr><td>3 s</td><td>Exit starts (zoom out and fade, 600 ms).</td></tr>
+<tr><td>≈ 3.6 s</td><td>Splash closed. With "Reduce motion", a still splash with the same timing.</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">7</span>Projects</h2>
+<figure><img src="../img/projets-light.jpg"><figcaption>Projects page, light theme (filtered list).</figcaption></figure>
+<ul>
+<li>One card per project: name, language, number of characters and of cast characters, progress bar, <code>casting.json</code> file and state ("empty", "in progress").</li>
+<li>The active project is highlighted; a click opens it in Casting.</li>
+<li>Trash icon at the top right of each card: confirmation, then the project leaves mCASTING without touching its folder.</li>
+<li>Filter, "Import a project…" and "New project" (opens the guide); the last card reminds that an agent can create a project through MCP.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">8</span>Casting</h2>
+<figure><img src="../img/casting-light.jpg"><figcaption>Casting screen, light theme: panels in warm greys.</figcaption></figure>
+<ul>
+<li><b>Header</b>: project name, progress tags, "Folder", "Import…", "Write casting.json".</li>
+<li><b>Characters column</b>: avatar, name, chosen voice (or "no voice"), role; "Add a character". Right-click and multi-selection: random voices.</li>
+<li><b>Tabs</b> "Choose a voice" and "Character sheet".</li>
+<li><b>Character panel</b> (blue in dark): identity, current voice samples, delivery (emotion), Faithful or Expressive line mode.</li>
+<li><b>Search panel</b> (plum in dark): text search, gender, age, tone, language and favourites filters; filtered voice count.</li>
+<li><b>Voice cards</b>: name, gender and tone, available languages, star, waveform and play, "Character line", "Compare", "Choose".</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">9</span>Character sheet</h2>
+<figure><img src="../img/fiche-dark.jpg"><figcaption>Character sheet, dark theme.</figcaption></figure>
+<p>Two columns, nothing truncated: <b>Identity</b> (name, role and description, notes), the source project's <b>Current voice</b> with its samples, <b>Sample lines</b> (each with "Try", editable list) and the default <b>Delivery</b>. For a creature or an animal, voice effects and the cry are added.</p>
+</section>
+
+<section>
+<h2><span class="n">10</span>Voice library</h2>
+<figure><img src="../img/bibliotheque-dark.jpg"><figcaption>Library, dark theme: voice grid and the selected voice's card.</figcaption></figure>
+<ul>
+<li>Counter "600 recipes · 1,200 samples", free search ("gruff", "dragon", "child"…), "Library generation" button.</li>
+<li>Filters: gender, language, used or never used voices.</li>
+<li>Grid of voice cards; on the right, the voice card: recipe, engine, available samples, projects using it, and a trial on a free line with an emotion.</li>
+</ul>
+<figure><img src="../img/bibliotheque-light.jpg"><figcaption>Library, light theme.</figcaption></figure>
+</section>
+
+<section>
+<h2><span class="n">11</span>Clone a voice, TTS models, Settings</h2>
+<div class="grid2">
+  <figure><img src="../img/cloner-dark.jpg"><figcaption>Clone a voice: audio file or web link, then excerpt choice, transcript and consent.</figcaption></figure>
+  <figure><img src="../img/modeles-dark.jpg"><figcaption>TTS models: local engine and models, "installed" state, size, download bar.</figcaption></figure>
+</div>
+<h3>Settings</h3>
+<ul>
+<li><b>General</b>: interface language (automatic), library folder with "Show in Finder".</li>
+<li><b>Updates</b>: automatic install, installed version, manual check.</li>
+<li><b>MCP server</b>: stdio transport, ready-to-copy command to declare the server in an agent, list of tools.</li>
+<li><b>Agent call log</b>: time and name of every tool called.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">12</span>Getting started guide</h2>
+<p>Full-content window: top bar with the app name and "Getting started", steps on the left (number, green check once done), content centred in a column of 860 px at most, bottom bar with "Later", the step counter, "Back" and the primary action.</p>
+<div class="grid2">
+  <figure><img src="../img/guide-1-projet.jpg"><figcaption>1. Project: name, folder, voice language.</figcaption></figure>
+  <figure><img src="../img/guide-2-preparation.jpg"><figcaption>2. Preparation: the AI you already use, a local AI, or manual description.</figcaption></figure>
+  <figure><img src="../img/guide-3-dialogues.jpg"><figcaption>3. Dialogue: drop a JSON, CSV or text file.</figcaption></figure>
+  <figure><img src="../img/guide-4-voix.jpg"><figcaption>4. Voices on this Mac: models fit to the hardware, the recommended one marked.</figcaption></figure>
+  <figure><img src="../img/guide-4-serveur.jpg"><figcaption>4. Voices on another computer: address, optional key, "Test".</figcaption></figure>
+  <figure><img src="../img/guide-4-cloud.jpg"><figcaption>4. Online service: ElevenLabs key, balance, free voice import.</figcaption></figure>
+</div>
+<p>The following steps — Listening (the same lines spoken by every checked model), Creatures (suggested voices, effects, cries) and Library — use the same layout. Screens shown in French.</p>
+</section>
+
+<section>
+<h2><span class="n">13</span>Behaviour, languages and accessibility</h2>
+<ul>
+<li><b>Opening</b>: the main window opens centred on the pointer's screen, at the last size chosen (the position is never restored).</li>
+<li><b>Four languages</b>: French (written first), English, Spanish, Italian; same interface, same keys, language picked from the system (English as fallback).</li>
+<li><b>Themes</b>: light and dark following the system; every colour is defined for both.</li>
+<li><b>Motion</b>: "Reduce motion" makes the splash still; animations only use opacity and transforms.</li>
+<li><b>Accessibility</b>: actions never nested inside a clickable card, explicit labels on every button, tooltips on truncated names.</li>
+<li><b>Discretion</b>: a silent launch mode (<code>--silent</code>) opens the app without bringing it to the front, for automated testing.</li>
+</ul>
+</section>
+
+</body></html>

@@ -1,0 +1,420 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>mCASTING — Dossier de développement</title><link rel="stylesheet" href="style.css"></head>
+<body>
+
+<div class="cover">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></div>
+  <h1><span class="m">m</span>CASTING</h1>
+  <div class="kind">Dossier de développement</div>
+  <div class="sub">Architecture, modules, données, formats d'échange, serveur MCP, moteurs de voix, compilation et publication.</div>
+  <div class="rule"></div>
+  <div class="shot"><img src="../img/casting-dark.jpg" alt=""></div>
+  <div class="meta"><b>Version 1.6.4</b> · 21 novembre 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>Licence MIT · github.com/starbudweiser/mCASTING</div>
+</div>
+
+<div class="toc">
+  <h2>Sommaire</h2>
+  <ol>
+    <li><span class="n">1</span>Présentation</li>
+    <li><span class="n">2</span>Architecture générale</li>
+    <li><span class="n">3</span>Organisation du dépôt</li>
+    <li><span class="n">4</span>Données et stockage</li>
+    <li><span class="n">5</span>Modèle de données</li>
+    <li><span class="n">6</span>Moteur de synthèse local</li>
+    <li><span class="n">7</span>Bibliothèque de voix et modèle de jeu</li>
+    <li><span class="n">8</span>Clonage de voix</li>
+    <li><span class="n">9</span>Guide « Premiers pas »</li>
+    <li><span class="n">10</span>Assistants IA : skill, MCP, analyse des dialogues</li>
+    <li><span class="n">11</span>Créatures, animaux et bruitages</li>
+    <li><span class="n">12</span>Voix fabriquées ailleurs : serveur réseau et ElevenLabs</li>
+    <li><span class="n">13</span>Formats d'échange</li>
+    <li><span class="n">14</span>Serveur MCP</li>
+    <li><span class="n">15</span>Interface, langues et accessibilité</li>
+    <li><span class="n">16</span>Compilation, signature, publication, mise à jour</li>
+    <li><span class="n">17</span>Essais, limites connues et règles de sécurité</li>
+    <li><span class="n">18</span>Historique des versions</li>
+  </ol>
+</div>
+
+<section>
+<h2><span class="n">1</span>Présentation</h2>
+<p><b><span class="m">m</span>CASTING</b> est une application macOS de <b>casting de voix IA locales</b>. Pour tout projet qui a besoin de voix (jeu, vidéo, voix off, tutoriel, bande-annonce, livre audio), elle permet de décrire les personnages, d'écouter une bibliothèque d'environ 600 voix, de choisir une voix par personnage à l'oreille, puis de transmettre le résultat à un agent IA ou à un script de génération sous la forme d'un fichier <code>casting.json</code>.</p>
+<div class="grid2">
+  <div class="box"><h4>Ce qu'elle fait</h4><ul>
+    <li>Casting par projet, avec répliques d'exemple et langue (français ou anglais).</li>
+    <li>Bibliothèque de 600 recettes de voix, un extrait FR et un extrait EN chacune.</li>
+    <li>Clonage d'une voix à partir d'un fichier audio ou d'un lien web.</li>
+    <li>Guide « Premiers pas » adapté au matériel de l'utilisateur.</li>
+    <li>Voix de créatures et d'animaux : effets de voix et cris générés.</li>
+    <li>Serveur MCP intégré, pilotable par n'importe quel agent.</li>
+  </ul></div>
+  <div class="box"><h4>Principes</h4><ul>
+    <li><b>100 % local par défaut</b> : Apple Silicon, macOS 15 ou plus récent ; aucun envoi de données.</li>
+    <li><b>L'humain choisit</b> : un agent prépare et propose, la personne valide à l'oreille.</li>
+    <li><b>Un seul calcul lourd à la fois</b> (verrou partagé entre l'appli et le serveur MCP).</li>
+    <li><b>Rien de payant sans accord</b> : le coût ElevenLabs est affiché et confirmé à chaque génération.</li>
+    <li>Application publique, licence MIT, sans dépendance aux outils de l'auteur.</li>
+  </ul></div>
+</div>
+<p style="margin-top:10px">Elle fait partie du <b>DESKTOP MAC TOOLKIT</b>, la collection d'applications Mac de Starbudweiser. Code source et versions notarisées : <code>github.com/starbudweiser/mCASTING</code>.</p>
+</section>
+
+<section>
+<h2><span class="n">2</span>Architecture générale</h2>
+<p>Le code Swift est réparti en trois cibles. <b>Core</b> contient toute la logique métier et n'a aucune dépendance à l'interface : il est compilé à la fois dans l'application et dans le serveur MCP, qui travaillent donc sur les mêmes fichiers avec les mêmes règles.</p>
+<div class="arch">
+  <div class="col app"><h4>App (SwiftUI)</h4>Fenêtres, guide « Premiers pas », casting, bibliothèque, clonage, modèles, réglages, splash, mise à jour automatique, 4 langues.</div>
+  <div class="col core"><h4>Core (partagé)</h4>Modèles de données, stockage JSON, moteur de synthèse, bibliothèque, import et export, créatures, voix distantes, installation des agents.</div>
+  <div class="col mcp"><h4>MCP (exécutable)</h4><code>mcasting-mcp</code> : JSON-RPC sur stdio, 11 outils, une ressource, une invite. Embarqué dans le paquet de l'appli.</div>
+  <div class="col wide">Données : ~/Library/Application Support/mCASTING (JSON + audio) · Moteur : Python 3.12 isolé (uv) + mlx-audio · Modèles : Hugging Face</div>
+</div>
+<h3>Flux principal</h3>
+<div class="flowline"><span class="s">Projet</span><span class="a">→</span><span class="s">Personnages et répliques</span><span class="a">→</span><span class="s">Choix du modèle de voix</span><span class="a">→</span><span class="s">Bibliothèque</span><span class="a">→</span><span class="s">Casting à l'oreille</span><span class="a">→</span><span class="s">casting.json</span><span class="a">→</span><span class="s">Génération des répliques</span></div>
+<p>Les personnages arrivent de trois façons : saisis dans l'appli, importés (JSON <code>mcasting-project/1</code>, CSV, texte « NOM : réplique ») ou envoyés par un agent via le serveur MCP. Le casting écrit est relu par l'agent ou le script qui produit les répliques définitives.</p>
+<h3>Choix techniques</h3>
+<table>
+<tr><th>Sujet</th><th>Choix</th><th>Raison</th></tr>
+<tr><td>Langage</td><td>Swift 5, SwiftUI, compilé par <code>swiftc</code> sans projet Xcode</td><td>Build simple et reproductible par script.</td></tr>
+<tr><td>Stockage</td><td>Fichiers JSON lisibles</td><td>Partage direct entre appli, serveur MCP et agents ; lecture tolérante.</td></tr>
+<tr><td>Synthèse</td><td>mlx-audio dans un venv privé</td><td>Modèles MLX optimisés Apple Silicon, aucune installation système.</td></tr>
+<tr><td>Agents</td><td>Protocole MCP sur stdio</td><td>Compatible Claude Code, Codex, Cursor, Claude Desktop et autres.</td></tr>
+<tr><td>Calcul</td><td>Verrou <code>flock</code> sur <code>compute.lock</code></td><td>Une seule génération lourde à la fois, appli et MCP confondus.</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">3</span>Organisation du dépôt</h2>
+<pre>mCASTING/
+├── Sources/
+│   ├── Core/            logique partagée (appli + serveur MCP)
+│   │   ├── Models.swift          Voice, Character, Project, CurrentVoice
+│   │   ├── Paths.swift           emplacements des données
+│   │   ├── DataStore.swift       lecture / écriture JSON
+│   │   ├── Engine.swift          moteur mlx-audio, catalogue des modèles
+│   │   ├── Catalog.swift         600 recettes de voix
+│   │   ├── LibraryGenerator.swift  génération de la bibliothèque, essais
+│   │   ├── VoiceCloning.swift    clonage d'un extrait
+│   │   ├── ProjectImport.swift   import mcasting-project/1
+│   │   ├── CastingExport.swift   écriture de casting.json
+│   │   ├── Hardware.swift        puce, mémoire, disque, niveau
+│   │   ├── SetupState.swift      avancement du guide
+│   │   ├── AgentInstaller.swift  skill + MCP dans les agents
+│   │   ├── DialogueAnalyzer.swift  IA de texte locale, CSV, texte
+│   │   ├── Creatures.swift       espèces, suggestions, cris (SFX)
+│   │   ├── CreatureFX.swift      effets de voix AVAudioEngine
+│   │   └── RemoteVoice.swift     serveur réseau, ElevenLabs, Trousseau
+│   ├── App/             interface SwiftUI
+│   │   ├── App.swift, AppState.swift, Views.swift, Setup.swift
+│   │   ├── Theme.swift (Flat Mat), L10n.swift (4 langues)
+│   │   ├── SplashScreen.swift, About.swift, Updater.swift
+│   └── MCP/main.swift   serveur mcasting-mcp
+├── Resources/           Info.plist, skill/mcasting/SKILL.md
+├── assets/              icônes (appli, dossier)
+├── docs/                documentation, captures, PDF
+├── maquettes/           maquettes HTML validées
+├── build_app.sh         compilation, signature, installation
+└── release.sh           notarisation et publication GitHub</pre>
+</section>
+
+<section>
+<h2><span class="n">4</span>Données et stockage</h2>
+<p>Toutes les données vivent dans <code>~/Library/Application Support/mCASTING/</code>. L'édition de développement (identifiant <code>fr.stephan.mcasting.dev</code>) utilise <code>mCASTING-dev</code>, pour ne jamais toucher aux données réelles. La variable d'environnement <code>MCASTING_HOME</code> remplace ce dossier (essais, serveur MCP isolé).</p>
+<table>
+<tr><th>Fichier ou dossier</th><th>Contenu</th></tr>
+<tr><td><code>projects.json</code></td><td>Projets : nom, langue, dossier de sortie, personnages et casting.</td></tr>
+<tr><td><code>voices.json</code></td><td>Bibliothèque : recettes, extraits par langue, voix clonées, voix distantes.</td></tr>
+<tr><td><code>favorites.json</code></td><td>Extraits marqués d'une étoile.</td></tr>
+<tr><td><code>setup.json</code></td><td>Avancement et choix du guide « Premiers pas ».</td></tr>
+<tr><td><code>jobs.json</code></td><td>Travaux de génération en cours (reprise automatique).</td></tr>
+<tr><td><code>compute.lock</code></td><td>Verrou du calcul lourd, partagé avec le serveur MCP.</td></tr>
+<tr><td><code>audio/lib/</code></td><td>Extraits de la bibliothèque (<code>.m4a</code>).</td></tr>
+<tr><td><code>audio/preview/</code>, <code>audio/sfx/</code></td><td>Essais de répliques, effets appliqués, cris de créatures.</td></tr>
+<tr><td><code>audio/srv/</code>, <code>audio/el/</code></td><td>Extraits des voix d'un serveur réseau et d'ElevenLabs.</td></tr>
+<tr><td><code>engine/</code></td><td>uv, environnement Python privé (<code>venv</code>) et cache des modèles.</td></tr>
+</table>
+<div class="note"><b>Lecture tolérante.</b> Les structures sont décodées champ par champ (<code>decodeIfPresent</code>) : un champ ajouté par une version plus récente, ou absent d'un ancien fichier, ne fait jamais perdre les autres réglages. Les ajouts au modèle de données sont toujours facultatifs.</div>
+<p>Les secrets ne sont jamais écrits dans ces fichiers : la clé d'un serveur de voix et la clé ElevenLabs sont rangées dans le <b>Trousseau macOS</b> (service <code>mCASTING</code>, comptes <code>server</code> et <code>elevenlabs</code>). La clé ElevenLabs peut aussi venir de la variable d'environnement <code>ELEVENLABS_API_KEY</code>.</p>
+</section>
+
+<section>
+<h2><span class="n">5</span>Modèle de données</h2>
+<h3>Voice — une voix de la bibliothèque</h3>
+<table>
+<tr><th>Champ</th><th>Rôle</th></tr>
+<tr><td><code>id</code>, <code>name</code></td><td>Identifiant stable et nom affiché (« Lucien 1 »).</td></tr>
+<tr><td><code>gender</code>, <code>age</code>, <code>pitch</code>, <code>tone</code>, <code>species</code></td><td>Critères de recherche : homme, femme, enfant, animal, créature ; jeune, adulte, âgé ; grave, moyen, aigu ; ton (sec, chaleureux…) ; espèce pour les animaux et créatures.</td></tr>
+<tr><td><code>recipe</code></td><td>Description complète en anglais, utilisée par Qwen3-TTS VoiceDesign.</td></tr>
+<tr><td><code>engine</code></td><td><code>qwen3-voicedesign</code>, <code>qwen3-base</code> (voix clonée), <code>server</code> ou <code>elevenlabs</code>.</td></tr>
+<tr><td><code>samples</code></td><td>Un extrait par langue : <code>{"fr": "lib/….m4a", "en": "…"}</code>.</td></tr>
+<tr><td><code>refAudio</code>, <code>refText</code>, <code>source</code></td><td>Voix clonée : extrait de référence, sa transcription exacte, son origine.</td></tr>
+<tr><td><code>remoteModel</code>, <code>remoteVoice</code></td><td>Voix d'un serveur ou d'ElevenLabs : modèle et nom (ou identifiant) de la voix.</td></tr>
+</table>
+<h3>Character — un personnage d'un projet</h3>
+<table>
+<tr><th>Champ</th><th>Rôle</th></tr>
+<tr><td><code>id</code>, <code>key</code>, <code>name</code>, <code>role</code>, <code>notes</code></td><td>Identité. <code>key</code> est l'identifiant du projet source : il sert à fusionner les imports successifs.</td></tr>
+<tr><td><code>lines</code>, <code>altLines</code>, <code>lineCount</code></td><td>Répliques d'exemple dans la langue du projet, répliques par langue, nombre total de répliques.</td></tr>
+<tr><td><code>current</code></td><td>Voix déjà utilisée par le projet (description, moteur, extraits), pour comparer.</td></tr>
+<tr><td><code>voiceID</code>, <code>style</code></td><td>Voix choisie et consigne d'émotion par défaut (neutre, fatigué, joyeux, colère, ou texte libre).</td></tr>
+<tr><td><code>kind</code></td><td><code>human</code>, <code>creature</code> ou <code>animal</code>.</td></tr>
+<tr><td><code>fx</code>, <code>sfx</code></td><td>Effet de voix choisi et cri généré, pour les personnages non humains.</td></tr>
+</table>
+<h3>Project</h3>
+<p><code>id</code>, <code>name</code>, <code>lang</code> (<code>fr</code> ou <code>en</code>), <code>folder</code> (où écrire <code>casting.json</code>), <code>characters</code>. Supprimer un projet le retire de mCASTING sans toucher à son dossier ni à son fichier <code>casting.json</code>.</p>
+</section>
+
+<section>
+<h2><span class="n">6</span>Moteur de synthèse local</h2>
+<p>Au premier besoin, l'application télécharge <b>uv</b>, crée un environnement Python 3.12 privé dans <code>engine/venv</code> et y installe <b>mlx-audio</b> (ainsi que <code>yt-dlp</code> pour le clonage depuis un lien). Rien n'est installé dans le système. Les modèles sont téléchargés depuis Hugging Face à la demande, avec reprise et vérification des fichiers ; leur état est affiché dans la page <i>Modèles TTS</i>.</p>
+<h3>Catalogue des modèles</h3>
+<table>
+<tr><th>Modèle</th><th>Dépôt Hugging Face</th><th>Taille</th><th>Usage</th></tr>
+<tr><td>Qwen3-TTS VoiceDesign 1.7B 8 bits</td><td><code>mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-8bit</code></td><td>3,1 Go</td><td>Crée une voix d'après sa description : génère la bibliothèque.</td></tr>
+<tr><td>Qwen3-TTS CustomVoice</td><td><code>…-CustomVoice-8bit</code></td><td>3,1 Go</td><td>Voix prêtes pilotables par consigne.</td></tr>
+<tr><td>Qwen3-TTS Base</td><td><code>…-Base-8bit</code></td><td>3,1 Go</td><td>Clonage : « voix naturelle », modèle de jeu par défaut.</td></tr>
+<tr><td>Fish Audio Drama 3 (4 bits)</td><td><code>mlx-community/fish-audio-drama-3-4bit</code></td><td>22 Go</td><td>Clonage très expressif (« voix d'acteur »), indications de jeu en ligne.</td></tr>
+<tr><td>Chatterbox multilingue v3</td><td><code>mlx-community/chatterbox-multilingual-v3</code></td><td>2,7 Go</td><td>Clonage expressif réglable (exagération).</td></tr>
+<tr><td>OmniVoice 0.6B</td><td><code>mlx-community/OmniVoice-bfloat16</code></td><td>1,3 Go</td><td>Clonage léger pour les Mac modestes.</td></tr>
+<tr><td>Stable Audio 3 Small SFX</td><td><code>mlx-community/stable-audio-3-small-sfx</code></td><td>3,5 Go</td><td>Bruitages : cris de créatures et d'animaux.</td></tr>
+</table>
+<h3>Adaptation au matériel</h3>
+<p><code>Hardware</code> lit la puce, la mémoire et l'espace disque libre, puis classe le Mac en <b>Léger</b>, <b>Confort</b> ou <b>Studio</b>. Un modèle est <b>proposé</b> s'il demande moins de 50 % de la mémoire, <b>possible</b> jusqu'à 70 %, et masqué au-delà.</p>
+<h3>Arguments par famille</h3>
+<table>
+<tr><th>Famille</th><th>Langue</th><th>Particularités</th></tr>
+<tr><td>Qwen3</td><td><code>french</code> / <code>english</code></td><td><code>--instruct</code> pour la consigne d'émotion ; <code>--ref_audio</code> / <code>--ref_text</code> pour cloner.</td></tr>
+<tr><td>Fish Audio</td><td><code>fr</code> / <code>en</code></td><td>Indications en tête de réplique (<code>[angry] texte</code>) ; refuse <code>instruct</code>.</td></tr>
+<tr><td>Chatterbox</td><td><code>fr</code> / <code>en</code></td><td><code>--exaggeration</code> pour l'intensité.</td></tr>
+<tr><td>OmniVoice</td><td><code>fr</code> / <code>en</code></td><td>Extrait et texte de référence.</td></tr>
+<tr><td>Stable Audio SFX</td><td>—</td><td><code>python -m mlx_audio.music.generate --caption … --duration 4 --seed N</code></td></tr>
+</table>
+<div class="note">Toute génération passe par le verrou <code>compute.lock</code> : une seule à la fois, que la demande vienne de l'appli ou d'un agent. L'état du calcul est affiché en bas de la barre latérale.</div>
+</section>
+
+<section>
+<h2><span class="n">7</span>Bibliothèque de voix et modèle de jeu</h2>
+<p>La bibliothèque compte <b>600 recettes</b> construites par combinaison (genre × âge × registre × ton, plus des animaux et des créatures). Chaque recette est rendue une fois en français et une fois en anglais par <b>Qwen3-TTS VoiceDesign</b>, soit environ 1 200 extraits. La génération tourne en arrière-plan et reprend seule après une interruption.</p>
+<h3>Deux rôles distincts</h3>
+<div class="grid2">
+  <div class="box"><h4>Modèle « créateur »</h4><p>Seuls certains modèles savent créer une voix à partir d'une description (Qwen3 VoiceDesign). La bibliothèque est <b>toujours</b> fabriquée par ce modèle : chaque voix a ainsi un timbre fixe, entendu dans ses extraits.</p></div>
+  <div class="box"><h4>Modèle de jeu</h4><p>Le modèle choisi à l'écoute (Qwen3 Base, Fish Audio, Chatterbox, OmniVoice) <b>dit les répliques</b> en clonant l'extrait de la voix choisie. On peut changer de modèle de jeu sans régénérer la bibliothèque.</p></div>
+</div>
+<h3>Accent natif dans chaque langue</h3>
+<p>Pour dire une réplique en anglais, mCASTING clone l'extrait <b>anglais</b> de la voix ; pour le français, l'extrait français. Cloner un extrait dans une autre langue garde le timbre mais transporte aussi l'accent : l'extrait d'une autre langue ne sert qu'en dernier recours. Une recette n'est jamais régénérée par VoiceDesign pour une nouvelle réplique, car le modèle tirerait un nouveau timbre à chaque fois.</p>
+<h3>Essais de répliques</h3>
+<ul>
+<li><b>Fidèle</b> : timbre exact de l'extrait, sans émotion.</li>
+<li><b>Expressive</b> : la consigne d'émotion (neutre, fatigué, joyeux, colère ou texte libre) est appliquée par le modèle de jeu.</li>
+<li><b>Comparer</b> : écoute A/B de deux voix sur la même réplique.</li>
+</ul>
+</section>
+
+<section class="flow">
+<h2><span class="n">8</span>Clonage de voix</h2>
+<ol>
+<li>Source : un fichier audio ou vidéo (WAV, MP3, M4A, AIFF…) ou un lien web (YouTube et autres sites, audio seul, via <code>yt-dlp</code>).</li>
+<li>Choix d'un extrait de 5 à 15 secondes.</li>
+<li>Transcription automatique de l'extrait (reconnaissance vocale mlx-audio), corrigeable.</li>
+<li>Case obligatoire : l'utilisateur certifie avoir le droit d'utiliser cette voix.</li>
+<li>La voix est ajoutée à la bibliothèque avec <code>engine: "qwen3-base"</code>, <code>refAudio</code> et <code>refText</code>.</li>
+</ol>
+<div class="note warn">mCASTING ne vérifie pas l'origine des voix : l'utilisateur reste responsable des droits sur toute voix clonée ou importée.</div>
+</section>
+
+<section>
+<h2><span class="n">9</span>Guide « Premiers pas »</h2>
+<p>Le guide s'ouvre au premier lancement, à chaque nouveau projet et depuis le menu <i>Premiers pas…</i>. Une question par écran, le choix conseillé déjà sélectionné, « Plus tard » toujours possible. Son avancement est gardé dans <code>setup.json</code> (<code>SetupState</code>).</p>
+<table>
+<tr><th>Étape</th><th>Question</th><th>Ce qui se passe</th></tr>
+<tr><td>1. Projet</td><td>Comment s'appelle votre projet ?</td><td>Nom, dossier de sortie, langue des voix ; ou ouverture d'un projet existant.</td></tr>
+<tr><td>2. Préparation</td><td>Voulez-vous qu'une IA prépare votre projet ?</td><td>IA déjà utilisée (installation du skill et du MCP), IA locale (Ollama, LM Studio) ou description manuelle.</td></tr>
+<tr><td>3. Dialogues</td><td>Avez-vous déjà les répliques ?</td><td>Import JSON, CSV ou texte ; analyse facultative des personnages par l'IA locale.</td></tr>
+<tr><td>4. Voix</td><td>Où fabriquer les voix ?</td><td>Sur ce Mac (modèles adaptés au matériel), sur un autre ordinateur, ou avec un service en ligne.</td></tr>
+<tr><td>5. Écoute</td><td>Quel modèle préférez-vous ?</td><td>Téléchargement des modèles cochés, mêmes répliques dites par chacun, choix du modèle de jeu.</td></tr>
+<tr><td>Créatures</td><td>Quelles voix pour vos créatures ?</td><td>Affichée seulement s'il y a des créatures ou des animaux : voix suggérées, effets, cris.</td></tr>
+<tr><td>6. Bibliothèque</td><td>Fabriquer la bibliothèque ?</td><td>Génération des 600 voix en arrière-plan.</td></tr>
+</table>
+<p>Les étapes s'adaptent au mode choisi : <b>Mac</b> = toutes ; <b>serveur réseau</b> = sans écoute comparée ; <b>service en ligne</b> = ni écoute ni bibliothèque ; <b>projet rapide</b> = projet, préparation, dialogues (et créatures).</p>
+</section>
+
+<section>
+<h2><span class="n">10</span>Assistants IA : skill, MCP, analyse des dialogues</h2>
+<p>mCASTING distingue clairement deux rôles : l'<b>assistant IA</b> (du texte : il lit le projet, décrit les personnages, prépare les répliques) et le <b>modèle de voix</b> (de l'audio : il parle).</p>
+<h3>Installation dans les agents (AgentInstaller)</h3>
+<table>
+<tr><th>Agent</th><th>Skill</th><th>Serveur MCP</th></tr>
+<tr><td>Claude Code</td><td><code>~/.claude/skills/mcasting/SKILL.md</code></td><td><code>claude mcp add --scope user mcasting -- &lt;mcasting-mcp&gt;</code></td></tr>
+<tr><td>Codex</td><td><code>~/.codex/skills/mcasting/</code></td><td>Section <code>[mcp_servers.mcasting]</code> de <code>config.toml</code></td></tr>
+<tr><td>Cursor</td><td>—</td><td><code>~/.cursor/mcp.json</code></td></tr>
+<tr><td>Claude Desktop</td><td>—</td><td><code>mcpServers</code> de <code>claude_desktop_config.json</code></td></tr>
+</table>
+<p>Chaque fichier de configuration est sauvegardé avant modification (<code>&lt;fichier&gt;.mcasting-backup-&lt;date&gt;</code>), les entrées existantes sont conservées, et l'installation demande une confirmation. La variable <code>MCASTING_AGENT_HOME</code> redirige l'installation vers un dossier d'essai.</p>
+<h3>Le skill mcasting</h3>
+<p>Livré dans l'appli (<code>Resources/skill/mcasting/SKILL.md</code>, en anglais), il apprend à l'agent à structurer un projet : un personnage par voix qui parle, un rôle qui dit <i>comment</i> il doit sonner, le type (humain, créature, animal), 5 à 20 répliques variées par langue ; puis l'import par MCP, le casting laissé à l'humain et la génération à partir de <code>casting.json</code>.</p>
+<h3>Analyse par une IA locale (DialogueAnalyzer)</h3>
+<ul>
+<li>Découverte des serveurs de texte : Ollama (<code>127.0.0.1:11434</code>), LM Studio (<code>127.0.0.1:1234</code>), ou <code>MCASTING_LLM_BASE</code>, par l'API <code>/v1/models</code> ; les modèles audio sont écartés.</li>
+<li>Modèle conseillé : un modèle d'instructions récent (Qwen3, Qwen2.5, Mistral, Llama, Gemma).</li>
+<li>Analyse par lots de 12 personnages : genre, âge, type et une phrase de description de voix ; lecture tolérante des réponses JSON.</li>
+<li>Le résultat complète le rôle ou les notes ; le casting déjà fait n'est jamais touché.</li>
+</ul>
+<h3>Imports simples</h3>
+<p>CSV (<code>personnage ; réplique ; langue</code>, séparateur point-virgule, tabulation ou virgule, en-tête ignoré) et texte (<code>NOM : réplique</code>, les noms en capitales sont remis en forme) sont convertis au format <code>mcasting-project/1</code>.</p>
+</section>
+
+<section>
+<h2><span class="n">11</span>Créatures, animaux et bruitages</h2>
+<p>Un personnage de type <code>creature</code> ou <code>animal</code> (fourni par l'import ou déduit de son nom et de son rôle) reçoit un traitement dédié.</p>
+<ul>
+<li><b>Voix suggérées</b> : trois voix de la bibliothèque, choisies d'après l'espèce reconnue (dragon, troll, gobelin, fantôme, robot, chat…) et l'humeur décrite.</li>
+<li><b>Effets de voix</b> (<code>CreatureFX</code>) : trois préréglages par famille — gros (très grave, grondant, caverneux), petit (aigu, couinant, rusé), spectral (écho, murmure, grave), mécanique (métal, radio, grave) et intermédiaire. Rendu hors ligne par AVAudioEngine (hauteur, vitesse, distorsion, réverbération, écho).</li>
+<li><b>Cris</b> : bruitage sans paroles généré par Stable Audio 3 Small SFX (<code>audio/sfx/&lt;projet&gt;-&lt;perso&gt;-&lt;graine&gt;.m4a</code>), à rejouer ou à refaire avec une autre graine.</li>
+</ul>
+<p>Chaque effet a son équivalent <b>ffmpeg</b> (rééchantillonnage pour la hauteur, tempo compensé, écho, <code>acrusher</code> pour la distorsion), écrit dans <code>casting.json</code> (<code>fx_ffmpeg</code>) pour que les répliques définitives sonnent comme ce que la personne a choisi.</p>
+</section>
+
+<section class="flow">
+<h2><span class="n">12</span>Voix fabriquées ailleurs : serveur réseau et ElevenLabs</h2>
+<h3>Serveur du réseau (VoiceServer)</h3>
+<p>Tout serveur compatible avec l'API de synthèse d'OpenAI (mlx-audio server, LocalAI, Kokoro-FastAPI…) : <code>/v1/models</code>, <code>/v1/audio/voices</code>, <code>/v1/audio/speech</code>. Clé facultative dans le Trousseau.</p>
+<ul>
+<li><b>Bibliothèque fabriquée sur le serveur</b> : si le serveur a un modèle VoiceDesign, les 600 recettes y sont rendues.</li>
+<li><b>Voix toutes prêtes</b> : les voix d'un modèle (par exemple les 54 voix de Kokoro) sont importées avec un extrait FR et EN fabriqué sur le serveur ; identifiants <code>srv-&lt;hôte&gt;-&lt;voix&gt;</code>, genre déduit du préfixe (<code>af_</code>, <code>am_</code>).</li>
+<li>Le mode Fidèle (clonage) reste sur le Mac : ces serveurs ne reçoivent pas d'extrait audio par le réseau.</li>
+</ul>
+<h3>ElevenLabs (payant)</h3>
+<ul>
+<li>Appels gratuits : solde du compte (<code>/v1/user/subscription</code>) et liste des voix avec leurs extraits (<code>/v1/voices</code>) ; voix importées avec l'identifiant <code>el-&lt;voice_id&gt;</code>.</li>
+<li>Appel payant : <code>/v1/text-to-speech/{id}</code>, modèle <code>eleven_multilingual_v2</code>. Avant chaque génération, l'appli affiche le nombre de caractères et le coût estimé (0,4 crédit par caractère, mesuré) et attend une confirmation.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">13</span>Formats d'échange</h2>
+<h3>Import : <code>mcasting-project/1</code></h3>
+<pre><code>{
+  "format": "mcasting-project/1",
+  "name": "Mon jeu",
+  "lang": "fr",
+  "folder": "/chemin/du/projet",
+  "characters": [{
+    "id": "hero", "name": "Héros",
+    "role": "jeune aventurier pince-sans-rire, voix posée",
+    "kind": "human",
+    "notes": "accent, relations…",
+    "line_count": 383,
+    "lines": {"fr": ["…"], "en": ["…"]},
+    "current_voice": {"description": "…", "engine": "…",
+                      "samples": [{"file": "/…/sample.mp3", "text": "…"}]}
+  }]
+}</code></pre>
+<p>Réimporter est sans risque : les personnages sont rapprochés par <code>id</code> puis par nom, les nouveaux sont ajoutés, les existants mis à jour, et un casting déjà fait n'est jamais effacé. <code>dry_run</code> permet de prévisualiser.</p>
+<h3>Sortie : <code>casting.json</code> (<code>mcasting/1</code>)</h3>
+<pre><code>{
+  "format": "mcasting/1", "project": "Mon jeu", "lang": "fr",
+  "characters": { "hero": {
+    "name": "Héros", "voice_id": "man-adult-medium-1",
+    "engine": "qwen3-voicedesign", "recipe": "A French-speaking person…",
+    "style": "tired, low energy",
+    "samples": {"fr": "/…/lib/….fr.m4a", "en": "/…/lib/….en.m4a"},
+    "acting_model": "qwen3-base",
+    "lines_alt": {"en": ["…"]},
+    "sfx": "/…/sfx/….m4a", "fx": "big.deep", "fx_ffmpeg": "asetrate=…",
+    "remote_model": "…", "remote_voice": "…", "server": "http://…"
+  }}
+}</code></pre>
+<table>
+<tr><th>Champ</th><th>Usage par l'agent ou le script</th></tr>
+<tr><td><code>samples.&lt;langue&gt;</code> + <code>acting_model</code></td><td>Dire chaque réplique en clonant l'extrait de sa langue avec le modèle de jeu.</td></tr>
+<tr><td><code>ref_audio</code> / <code>ref_text</code></td><td>Voix clonée : extrait et transcription de référence.</td></tr>
+<tr><td><code>timbre_ref_audio</code></td><td>Dernier recours si aucun extrait n'existe dans la langue.</td></tr>
+<tr><td><code>engine: "server"</code></td><td>POST <code>&lt;server&gt;/v1/audio/speech</code> avec <code>remote_model</code> et <code>remote_voice</code>.</td></tr>
+<tr><td><code>engine: "elevenlabs"</code></td><td>Payant : annoncer le nombre de caractères et obtenir l'accord avant de générer.</td></tr>
+<tr><td><code>fx_ffmpeg</code></td><td><code>ffmpeg -i ligne.wav -af "&lt;fx_ffmpeg&gt;" sortie.wav</code> sur chaque réplique.</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">14</span>Serveur MCP</h2>
+<p><code>mcasting-mcp</code> est un exécutable JSON-RPC sur stdio, livré dans <code>mCASTING.app/Contents/MacOS/</code>. Il partage le code Core et les fichiers de données avec l'appli. Déclaration manuelle :</p>
+<pre><code>claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"</code></pre>
+<table>
+<tr><th>Outil</th><th>Rôle</th></tr>
+<tr><td><code>get_import_guide</code></td><td>Point de départ : format d'import et méthode pour le construire depuis les fichiers du projet.</td></tr>
+<tr><td><code>import_project</code></td><td>Importer ou mettre à jour un projet (<code>project_json</code> ou <code>path</code>, <code>dry_run</code>, <code>mode</code>).</td></tr>
+<tr><td><code>export_project</code></td><td>Exporter un projet au même format.</td></tr>
+<tr><td><code>list_projects</code>, <code>create_project</code></td><td>Lister les projets avec leur avancement ; créer un projet (langue, dossier).</td></tr>
+<tr><td><code>add_characters</code>, <code>list_characters</code></td><td>Ajouter des personnages ; les lister avec la voix choisie.</td></tr>
+<tr><td><code>search_voices</code></td><td>Chercher dans la bibliothèque (genre, âge, registre, ton, espèce, texte, langue).</td></tr>
+<tr><td><code>preview_voice</code></td><td>Faire dire une réplique à une voix (calcul local, lent) ; renvoie le chemin audio.</td></tr>
+<tr><td><code>set_casting</code></td><td>Proposer une voix (et une émotion) pour un personnage.</td></tr>
+<tr><td><code>write_casting</code></td><td>Écrire <code>casting.json</code> dans le dossier du projet.</td></tr>
+</table>
+<p>Le serveur expose aussi la ressource <code>mcasting://import-guide</code> et l'invite <code>import_project</code>. Les appels reçus sont listés dans le journal des Réglages.</p>
+</section>
+
+<section>
+<h2><span class="n">15</span>Interface, langues et accessibilité</h2>
+<p>L'interface suit le design <b>Flat Mat</b> (mat, plat, filets d'un pixel, rayons 12 et 8), décrit en détail dans le <i>dossier de l'interface graphique</i>. Elle est entièrement traduite en <b>français, anglais, espagnol et italien</b> (<code>L10n.swift</code>, mêmes clés dans les quatre tables, aucun texte écrit en dur) ; la langue suit celle du système, avec l'anglais par défaut.</p>
+<ul>
+<li>Thèmes clair et sombre ; option « Réduire les animations » respectée (splash fixe).</li>
+<li>Fenêtre principale ouverte centrée sur l'écran du pointeur, à la dernière taille choisie.</li>
+<li>Icône dans la barre de menus : projet actif, calcul en cours, ouvrir, Premiers pas, À propos, Quitter.</li>
+<li>Les boutons ne sont jamais imbriqués dans une carte cliquable, pour que VoiceOver et les outils d'accessibilité atteignent chaque action.</li>
+</ul>
+</section>
+
+<section class="flow">
+<h2><span class="n">16</span>Compilation, signature, publication, mise à jour</h2>
+<pre><code>./build_app.sh          # compile, signe et installe l'appli
+DEV=1 ./build_app.sh    # édition de développement (identifiant et données séparés)
+./release.sh "notes"    # notarisation Apple, zip, tag et release GitHub</code></pre>
+<ul>
+<li><code>build_app.sh</code> compile deux exécutables avec <code>swiftc</code> (appli et <code>mcasting-mcp</code>, cible <code>arm64-apple-macos15</code>), copie les ressources et le skill, puis signe avec un certificat stable pour que macOS garde les autorisations d'un build à l'autre.</li>
+<li><code>release.sh</code> refuse de publier si des modifications ne sont pas commitées ou si la version existe déjà ; la version vient de <code>CFBundleShortVersionString</code>.</li>
+<li><b>Mise à jour automatique</b> : recherche quotidienne dans les releases GitHub, vérification de la signature Developer ID, remplacement puis relance — jamais pendant un calcul. Réglages : case « installer automatiquement » et bouton de recherche manuelle.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">17</span>Essais, limites connues et règles de sécurité</h2>
+<h3>Vérifié</h3>
+<ul>
+<li>Clonage en français correct avec Fish Audio, Chatterbox multilingue, OmniVoice et Qwen3 (transcriptions Whisper).</li>
+<li>Écoute comparée de bout en bout, cris de créatures, suggestions de voix, rendu des effets et validité des filtres ffmpeg.</li>
+<li>Installation dans les quatre agents dans un dossier d'essai, avec sauvegardes, sans toucher aux vraies configurations.</li>
+<li>Analyse par une IA locale (serveur d'essai compatible OpenAI), conversion CSV et texte.</li>
+<li>Serveur réseau (mlx-audio server) : voix créée d'après sa description, 54 voix Kokoro, réplique française.</li>
+<li>ElevenLabs : appels gratuits seulement (solde, import de 38 voix).</li>
+</ul>
+<h3>Non vérifié ou limites</h3>
+<ul>
+<li>Génération payante ElevenLabs (non lancée pour ne dépenser aucun crédit).</li>
+<li>Ollama et LM Studio réels (le protocole est le même que celui testé).</li>
+<li>Le clonage ne passe pas par un serveur réseau : il reste local.</li>
+<li>Fish Audio Drama 3 pèse 22 Go et demande beaucoup de mémoire ; licence avec mention obligatoire pour un usage commercial.</li>
+</ul>
+<h3>Règles de sécurité</h3>
+<ul>
+<li>Aucun secret dans les fichiers ni dans le dépôt : Trousseau ou variable d'environnement.</li>
+<li>Aucune dépense sans confirmation chiffrée.</li>
+<li>Toute modification de la configuration d'un autre logiciel est sauvegardée et confirmée.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">18</span>Historique des versions</h2>
+<table>
+<tr><th>Version</th><th>Contenu</th></tr>
+<tr><td>1.0.0</td><td>Première version publique : bibliothèque de 600 recettes FR/EN, clonage depuis un fichier ou un lien, casting par projet, serveur MCP.</td></tr>
+<tr><td>1.1.x</td><td>Import des projets en cours (<code>get_import_guide</code>, <code>import_project</code>, <code>export_project</code>), voix actuelle écoutable, fiche du personnage, boutons explicites, favoris, comparaison A/B.</td></tr>
+<tr><td>1.2.0</td><td>Réplique fidèle ou expressive, voix choisie visible dans la liste, panneaux côte à côte, voix aléatoires.</td></tr>
+<tr><td>1.3.0</td><td>Répliques dites dans la langue du projet avec un accent natif.</td></tr>
+<tr><td>1.4.0</td><td>Guide « Premiers pas », modèles de jeu (Fish Audio, Chatterbox, OmniVoice), cris de créatures, suppression des projets.</td></tr>
+<tr><td>1.5.0</td><td>Skill et MCP installés dans les agents, analyse par IA locale, imports CSV et texte, effets de voix des créatures.</td></tr>
+<tr><td>1.6.0</td><td>Serveur de voix du réseau et ElevenLabs, icône de dossier.</td></tr>
+<tr><td>1.6.1 – 1.6.4</td><td>Splash animé, taille de fenêtre mémorisée, panneaux colorés « ton sur ton » (bleu et prune en sombre, gris chauds en clair).</td></tr>
+</table>
+</section>
+
+</body></html>

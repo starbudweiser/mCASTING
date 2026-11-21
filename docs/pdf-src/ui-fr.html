@@ -1,0 +1,239 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>mCASTING — Interface graphique</title><link rel="stylesheet" href="style.css"></head>
+<body>
+
+<div class="cover">
+  <div class="logo"><svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><rect x="8.5" y="2.5" width="7" height="12" rx="3.5" fill="#fff"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3.5"/></svg></div>
+  <h1><span class="m">m</span>CASTING</h1>
+  <div class="kind">Interface graphique</div>
+  <div class="sub">Design Flat Mat, couleurs, typographie, composants, écrans et comportements de l'application.</div>
+  <div class="rule"></div>
+  <div class="shot"><img src="../img/casting-light.jpg" alt=""></div>
+  <div class="meta"><b>Version 1.6.4</b> · 21 novembre 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>Licence MIT · github.com/starbudweiser/mCASTING</div>
+</div>
+
+<div class="toc">
+  <h2>Sommaire</h2>
+  <ol>
+    <li><span class="n">1</span>Principes du design Flat Mat</li>
+    <li><span class="n">2</span>Couleurs</li>
+    <li><span class="n">3</span>Typographie et mesures</li>
+    <li><span class="n">4</span>Composants</li>
+    <li><span class="n">5</span>Structure de la fenêtre</li>
+    <li><span class="n">6</span>Splash</li>
+    <li><span class="n">7</span>Projets</li>
+    <li><span class="n">8</span>Casting</li>
+    <li><span class="n">9</span>Fiche du personnage</li>
+    <li><span class="n">10</span>Bibliothèque de voix</li>
+    <li><span class="n">11</span>Cloner une voix, Modèles TTS, Réglages</li>
+    <li><span class="n">12</span>Guide « Premiers pas »</li>
+    <li><span class="n">13</span>Comportements, langues et accessibilité</li>
+  </ol>
+</div>
+
+<section>
+<h2><span class="n">1</span>Principes du design Flat Mat</h2>
+<p>mCASTING suit le design <b>Flat Mat</b> du DESKTOP MAC TOOLKIT : des surfaces mates et plates, sans ombre portée, sans reflet ni dégradé. La hiérarchie vient des aplats de couleur, des filets d'un pixel et de la typographie, pas des effets.</p>
+<div class="grid2">
+  <div class="box"><h4>Mat et plat</h4><p>Cartes en aplat, filet de 1 px, rayon 12 pour les cartes et 8 pour les boutons et les champs. Aucun flou, aucune ombre.</p></div>
+  <div class="box"><h4>Beige chaud et sombre profond</h4><p>Thème clair sur un beige chaud (#f4f1ec), thème sombre sur un quasi-noir (#131316). Les deux suivent le réglage du système.</p></div>
+  <div class="box"><h4>Le « m » orange</h4><p>Partout où le nom de l'appli est écrit dans l'interface (barre du haut, splash, À propos), son « m » minuscule prend l'orange du logo. Jamais dans un menu déroulant.</p></div>
+  <div class="box"><h4>L'interface dit vrai</h4><p>États réels affichés (serveur MCP prêt, moteur installé, calcul en cours), durées et tailles mesurées, coûts chiffrés avant toute dépense.</p></div>
+  <div class="box"><h4>Une sélection, un contraste</h4><p>L'élément choisi est toujours le plus contrasté de son groupe : puce pleine, carte teintée, contour d'accent.</p></div>
+  <div class="box"><h4>Filigrane discret</h4><p>Le micro de l'icône apparaît en très grand, à peine visible, au fond de la zone de contenu.</p></div>
+</div>
+</section>
+
+<section>
+<h2><span class="n">2</span>Couleurs</h2>
+<h3>Couleurs de base</h3>
+<p>Chaque couleur a une valeur pour le thème clair et une pour le thème sombre (<code>Flat.dyn</code>).</p>
+<div class="sw">
+  <div><i style="background:linear-gradient(90deg,#f4f1ec 50%,#131316 50%)"></i><b>Fond</b><span>#f4f1ec · #131316</span></div>
+  <div><i style="background:linear-gradient(90deg,#ffffff 50%,#232327 50%)"></i><b>Carte</b><span>#ffffff · #232327</span></div>
+  <div><i style="background:linear-gradient(90deg,#ebe6de 50%,#2c2c31 50%)"></i><b>Contrôle</b><span>#ebe6de · #2c2c31</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3ddd2 50%,#303035 50%)"></i><b>Filet</b><span>#e3ddd2 · #303035</span></div>
+  <div><i style="background:linear-gradient(90deg,#26231e 50%,#f5f5f7 50%)"></i><b>Texte</b><span>#26231e · #f5f5f7</span></div>
+  <div><i style="background:linear-gradient(90deg,#7b756a 50%,#98989f 50%)"></i><b>Texte secondaire</b><span>#7b756a · #98989f</span></div>
+  <div><i style="background:linear-gradient(90deg,#26231e 50%,#0a84ff 50%)"></i><b>Accent (sélection)</b><span>#26231e · #0a84ff</span></div>
+  <div><i style="background:linear-gradient(90deg,#d9622b 50%,#f08a52 50%)"></i><b>Marque (« m »)</b><span>#d9622b · #f08a52</span></div>
+  <div><i style="background:linear-gradient(90deg,#3f8f5a 50%,#30d158 50%)"></i><b>Succès</b><span>#3f8f5a · #30d158</span></div>
+  <div><i style="background:linear-gradient(90deg,#b7791f 50%,#ff9f0a 50%)"></i><b>Attention</b><span>#b7791f · #ff9f0a</span></div>
+  <div><i style="background:linear-gradient(90deg,#3f8f5a 50%,#2f7d52 50%)"></i><b>Création (vert)</b><span>#3f8f5a · #2f7d52</span></div>
+  <div><i style="background:linear-gradient(90deg,#26231e 50%,#2c2c31 50%)"></i><b>Avatar</b><span>#26231e · #2c2c31</span></div>
+</div>
+<h3>Panneaux colorés de l'écran Casting</h3>
+<p>Les panneaux principaux de l'écran Casting ont un fond propre : une couleur en thème sombre, un gris chaud en thème clair.</p>
+<div class="sw">
+  <div><i style="background:linear-gradient(90deg,#ccc8c0 50%,#1d3350 50%)"></i><b>Personnage, identité</b><span>#ccc8c0 · #1d3350</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3e0da 50%,#3e2440 50%)"></i><b>Recherche de voix</b><span>#e3e0da · #3e2440</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3e0da 50%,#1c3f2d 50%)"></i><b>Voix actuelle</b><span>#e3e0da · #1c3f2d</span></div>
+  <div><i style="background:linear-gradient(90deg,#e3e0da 50%,#36285a 50%)"></i><b>Répliques d'exemple</b><span>#e3e0da · #36285a</span></div>
+  <div><i style="background:linear-gradient(90deg,#ccc8c0 50%,#423a1c 50%)"></i><b>Interprétation (fiche)</b><span>#ccc8c0 · #423a1c</span></div>
+</div>
+<h3>Règle « ton sur ton »</h3>
+<p>Sur un panneau coloré, les éléments ne gardent pas les gris de l'appli : ils prennent la teinte du panneau, éclaircie ou creusée. Seule la sélection est très contrastée.</p>
+<table>
+<tr><th>Élément</th><th>Thème clair</th><th>Thème sombre</th></tr>
+<tr><td>Puce et compteur au repos</td><td>blanc 65 %</td><td>blanc 9 %</td></tr>
+<tr><td>Texte des puces</td><td>#26231e</td><td>blanc 88 %</td></tr>
+<tr><td>Sélection (puce active, boutons Extrait)</td><td>#26231e, texte blanc</td><td>blanc 94 %, texte #15151a</td></tr>
+<tr><td>Champ de saisie</td><td>blanc 75 %, filet noir 6 %</td><td>noir 22 %, filet blanc 6 %</td></tr>
+<tr><td>Description</td><td>#1d1b18 à 66 %</td><td>blanc 68 %</td></tr>
+<tr><td>En-têtes de section</td><td>#1d1b18 à 55 %</td><td>blanc 55 %</td></tr>
+<tr><td>Filet de séparation, contour</td><td>noir 8 % · 6 %</td><td>blanc 10 % · 6 %</td></tr>
+<tr><td>Avatar</td><td>noir 72 %</td><td>noir 28 %</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">3</span>Typographie et mesures</h2>
+<p>Police du système (SF Pro), aucune police embarquée. Les tailles sont fixes et identiques d'un écran à l'autre.</p>
+<table>
+<tr><th>Usage</th><th>Taille</th><th>Graisse</th><th>Détail</th></tr>
+<tr><td>Titre de page</td><td>16 pt</td><td>semi-gras</td><td>« Projets », « Réglages », nom du projet.</td></tr>
+<tr><td>Question du guide</td><td>24 pt</td><td>gras</td><td>Une question par écran.</td></tr>
+<tr><td>Nom d'un personnage, d'une voix</td><td>13 à 15 pt</td><td>semi-gras</td><td>Une seule ligne, troncature en fin avec infobulle.</td></tr>
+<tr><td>Texte courant</td><td>12 à 13 pt</td><td>normal</td><td>Descriptions, rôles, aides.</td></tr>
+<tr><td>En-tête de section</td><td>11 pt</td><td>semi-gras</td><td>Capitales, interlettrage 0,44.</td></tr>
+<tr><td>Puce</td><td>11,5 pt</td><td>normal, semi-gras si active</td><td>Marges 4 × 10, forme capsule.</td></tr>
+<tr><td>Étiquette (tag)</td><td>11 pt</td><td>semi-gras</td><td>Marges 2 × 7, couleur d'état à 22 %.</td></tr>
+<tr><td>Nom de l'appli (splash)</td><td>40 pt</td><td>800</td><td>Taille commune à toutes les applis du kit.</td></tr>
+</table>
+<h3>Mesures</h3>
+<ul>
+<li>Rayons : 12 (cartes, tuiles), 8 (boutons, champs, avatars), capsule (puces, étiquettes).</li>
+<li>Marges intérieures des cartes : 11 à 14 px ; espacement entre cartes : 10 à 12 px.</li>
+<li>Fenêtre principale : 1200 × 740 au premier lancement, minimum 1000 × 640.</li>
+<li>Barre latérale : 212 px ; colonne des personnages : 280 px.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">4</span>Composants</h2>
+<table>
+<tr><th>Composant</th><th>Description</th></tr>
+<tr><td><b>Bouton</b></td><td>Fond contrôle, rayon 8, marges 6 × 12, graisse moyenne. Survol : légère transparence ; appui : réduction à 98 %.</td></tr>
+<tr><td><b>Bouton principal</b></td><td>Fond accent (bleu en sombre, encre en clair), texte contrasté. Une seule action principale par zone (« Écrire casting.json », « Continuer »).</td></tr>
+<tr><td><b>Bouton de création</b></td><td>Vert doux, texte blanc : « Nouveau projet », « Ajouter un personnage » (pleine largeur, 41 px de haut).</td></tr>
+<tr><td><b>Petit bouton</b></td><td>Marges 3 × 9, texte 11,5 pt : « Réplique du perso », « Comparer », « Choisir », « Extrait 1 ».</td></tr>
+<tr><td><b>Puce</b></td><td>Capsule ; active = aplat d'accent. Sert aux filtres, aux émotions, aux choix exclusifs (Fidèle / Expressive).</td></tr>
+<tr><td><b>Étiquette</b></td><td>Pastille d'état : « 7 personnages », « 1 castés » (vert), « 6 à caster » (orange), « référence », « installé ».</td></tr>
+<tr><td><b>Carte</b></td><td>Aplat carte, filet 1 px, rayon 12 ; peut recevoir une teinte de panneau (règle « ton sur ton »).</td></tr>
+<tr><td><b>Tuile</b></td><td>Ligne de liste (personnage, voix, projet) ; sélection = fond d'accent à 24 %, sans contour.</td></tr>
+<tr><td><b>Champ</b></td><td>Fond contrôle, rayon 8, marges 7 × 11, sans contour (filet discret sur panneau coloré).</td></tr>
+<tr><td><b>Onde</b></td><td>Barres de 2,5 px espacées de 1,5, hauteur 22 ; accent pendant la lecture.</td></tr>
+<tr><td><b>Bouton lecture</b></td><td>Rond de 26 px, fond accent, icône lecture ou arrêt.</td></tr>
+<tr><td><b>Avatar</b></td><td>Carré arrondi avec l'initiale du personnage, texte blanc gras.</td></tr>
+<tr><td><b>Carte de choix (guide)</b></td><td>Bouton radio, titre, phrase d'aide ; la carte choisie a un contour d'accent et révèle ses options.</td></tr>
+</table>
+<div class="note">Règle d'accessibilité : un bouton n'est jamais placé à l'intérieur d'une carte elle-même cliquable. Les actions secondaires sont posées à côté ou en surimpression, pour que chaque bouton reste atteignable.</div>
+</section>
+
+<section>
+<h2><span class="n">5</span>Structure de la fenêtre</h2>
+<ul>
+<li><b>Barre du haut</b> (barre de titre transparente) : nom de l'appli avec son « m » orange, état du serveur MCP (point vert « Serveur MCP prêt »), état du moteur (« Qwen3-TTS · installé »), bouton « Réglages ».</li>
+<li><b>Barre latérale</b> : Navigation (Projets, Casting, Bibliothèque de voix, Cloner une voix, Modèles TTS), Langue du projet (FR / EN), et en bas l'état du calcul (« Calcul : libre », ou la tâche en cours avec une barre de progression et un pourcentage).</li>
+<li><b>Contenu</b> : titre de page, barre d'actions à droite, puis la page elle-même, sur le filigrane du micro.</li>
+<li><b>Icône de barre de menus</b> : micro orange ; projet actif, calcul en cours, ouvrir mCASTING, Premiers pas, À propos, Quitter.</li>
+</ul>
+<figure><img src="../img/casting-dark.jpg"><figcaption>Fenêtre principale, thème sombre : barre du haut, barre latérale et écran Casting.</figcaption></figure>
+</section>
+
+<section>
+<h2><span class="n">6</span>Splash</h2>
+<div class="dark-block"><img src="../img/splash.jpg" style="width:62%;display:block;margin:6px auto;border-radius:16px"></div>
+<p style="margin-top:8px">Carte sombre de 476 × 166 px dans une fenêtre de 500 × 190 px sans cadre, centrée exactement sur l'écran. L'icône arrive en tourbillon, les lettres du nom se retournent une à une, puis le filet orange se trace et le sous-titre « Casting de voix IA » apparaît ; la version est indiquée en bas à droite.</p>
+<table>
+<tr><th>Instant</th><th>Événement</th></tr>
+<tr><td>0 s</td><td>Splash visible ; l'animation démarre au premier affichage.</td></tr>
+<tr><td>2 s</td><td>Ouverture de la fenêtre principale (ou dès qu'elle est prête).</td></tr>
+<tr><td>3 s</td><td>Début de la sortie (zoom arrière et fondu, 600 ms).</td></tr>
+<tr><td>≈ 3,6 s</td><td>Splash fermé. Avec « Réduire les animations », splash fixe et mêmes durées.</td></tr>
+</table>
+</section>
+
+<section>
+<h2><span class="n">7</span>Projets</h2>
+<figure><img src="../img/projets-light.jpg"><figcaption>Page Projets, thème clair (liste filtrée).</figcaption></figure>
+<ul>
+<li>Une carte par projet : nom, langue, nombre de personnages et de personnages castés, barre d'avancement, fichier <code>casting.json</code> et état (« vide », « en cours »).</li>
+<li>Le projet actif est en surbrillance ; un clic l'ouvre dans Casting.</li>
+<li>Corbeille en haut à droite de chaque carte : confirmation, puis le projet disparaît de mCASTING sans toucher à son dossier.</li>
+<li>Filtre, « Importer un projet… » et « Nouveau projet » (ouvre le guide) ; la dernière carte rappelle qu'un agent peut créer un projet par MCP.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">8</span>Casting</h2>
+<figure><img src="../img/casting-light.jpg"><figcaption>Écran Casting, thème clair : panneaux en gris chauds.</figcaption></figure>
+<ul>
+<li><b>En-tête</b> : nom du projet, étiquettes d'avancement, « Dossier », « Importer… », « Écrire casting.json ».</li>
+<li><b>Colonne Personnages</b> : avatar, nom, voix choisie (ou « sans voix »), rôle ; « Ajouter un personnage ». Clic droit et sélection multiple : voix aléatoires.</li>
+<li><b>Onglets</b> « Choisir une voix » et « Fiche du personnage ».</li>
+<li><b>Panneau du personnage</b> (bleu en sombre) : identité, extraits de la voix actuelle, interprétation (émotion), mode de réplique Fidèle ou Expressive.</li>
+<li><b>Panneau de recherche</b> (prune en sombre) : recherche texte, filtres genre, âge, ton, langue, favoris ; nombre de voix filtrées.</li>
+<li><b>Cartes de voix</b> : nom, genre et ton, langues disponibles, étoile, onde et lecture, « Réplique du perso », « Comparer », « Choisir ».</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">9</span>Fiche du personnage</h2>
+<figure><img src="../img/fiche-dark.jpg"><figcaption>Fiche du personnage, thème sombre.</figcaption></figure>
+<p>Deux colonnes, rien de tronqué : <b>Identité</b> (nom, rôle et description, notes), <b>Voix actuelle</b> du projet source avec ses extraits, <b>Répliques d'exemple</b> (chacune avec « Essayer », liste modifiable) et <b>Interprétation</b> par défaut. Pour une créature ou un animal, les effets de voix et le cri s'ajoutent.</p>
+</section>
+
+<section>
+<h2><span class="n">10</span>Bibliothèque de voix</h2>
+<figure><img src="../img/bibliotheque-dark.jpg"><figcaption>Bibliothèque, thème sombre : grille de voix et fiche de la voix sélectionnée.</figcaption></figure>
+<ul>
+<li>Compteur « 600 recettes · 1 200 échantillons », recherche libre (« bourru », « dragon », « enfant »…), bouton « Génération de la bibliothèque ».</li>
+<li>Filtres : genre, langue, voix utilisées ou jamais utilisées.</li>
+<li>Grille de cartes de voix ; à droite, la fiche de la voix : recette, moteur, échantillons disponibles, projets qui l'utilisent, et un essai sur une réplique libre avec émotion.</li>
+</ul>
+<figure><img src="../img/bibliotheque-light.jpg"><figcaption>Bibliothèque, thème clair.</figcaption></figure>
+</section>
+
+<section>
+<h2><span class="n">11</span>Cloner une voix, Modèles TTS, Réglages</h2>
+<div class="grid2">
+  <figure><img src="../img/cloner-dark.jpg"><figcaption>Cloner une voix : fichier audio ou lien web, puis choix de l'extrait, transcription et consentement.</figcaption></figure>
+  <figure><img src="../img/modeles-dark.jpg"><figcaption>Modèles TTS : moteur local et modèles, état « installé », taille, barre de téléchargement.</figcaption></figure>
+</div>
+<h3>Réglages</h3>
+<ul>
+<li><b>Général</b> : langue de l'interface (automatique), dossier de la bibliothèque avec « Ouvrir dans le Finder ».</li>
+<li><b>Mises à jour</b> : installation automatique, version installée, recherche manuelle.</li>
+<li><b>Serveur MCP</b> : transport stdio, commande prête à copier pour déclarer le serveur dans un agent, liste des outils.</li>
+<li><b>Journal des appels agent</b> : heure et nom de chaque outil appelé.</li>
+</ul>
+</section>
+
+<section>
+<h2><span class="n">12</span>Guide « Premiers pas »</h2>
+<p>Fenêtre plein contenu : barre du haut avec le nom de l'appli et « Premiers pas », étapes à gauche (numéro, coche verte une fois faites), contenu centré dans une colonne de 860 px maximum, barre du bas avec « Plus tard », le compteur d'étapes, « Retour » et l'action principale.</p>
+<div class="grid2">
+  <figure><img src="../img/guide-1-projet.jpg"><figcaption>1. Projet : nom, dossier, langue des voix.</figcaption></figure>
+  <figure><img src="../img/guide-2-preparation.jpg"><figcaption>2. Préparation : IA déjà utilisée, IA locale ou description manuelle.</figcaption></figure>
+  <figure><img src="../img/guide-3-dialogues.jpg"><figcaption>3. Dialogues : dépôt d'un fichier JSON, CSV ou texte.</figcaption></figure>
+  <figure><img src="../img/guide-4-voix.jpg"><figcaption>4. Voix sur ce Mac : modèles adaptés au matériel, le conseillé est marqué.</figcaption></figure>
+  <figure><img src="../img/guide-4-serveur.jpg"><figcaption>4. Voix sur un autre ordinateur : adresse, clé facultative, « Tester ».</figcaption></figure>
+  <figure><img src="../img/guide-4-cloud.jpg"><figcaption>4. Service en ligne : clé ElevenLabs, solde, import gratuit des voix.</figcaption></figure>
+</div>
+<p>Les étapes suivantes — Écoute (mêmes répliques dites par chaque modèle coché), Créatures (voix suggérées, effets, cris) et Bibliothèque — reprennent la même mise en page.</p>
+</section>
+
+<section>
+<h2><span class="n">13</span>Comportements, langues et accessibilité</h2>
+<ul>
+<li><b>Ouverture</b> : la fenêtre principale s'ouvre centrée sur l'écran du pointeur, à la dernière taille choisie (la position n'est jamais restaurée).</li>
+<li><b>Quatre langues</b> : français (rédigé en premier), anglais, espagnol, italien ; même interface, mêmes clés, langue choisie d'après le système (anglais par défaut).</li>
+<li><b>Thèmes</b> : clair et sombre selon le système ; chaque couleur est définie pour les deux.</li>
+<li><b>Mouvement</b> : « Réduire les animations » rend le splash fixe ; les animations n'utilisent que l'opacité et les transformations.</li>
+<li><b>Accessibilité</b> : actions jamais imbriquées dans une carte cliquable, libellés explicites sur chaque bouton, infobulles sur les noms tronqués.</li>
+<li><b>Discrétion</b> : un mode de lancement silencieux (<code>--silent</code>) ouvre l'appli sans la mettre au premier plan, pour les essais automatisés.</li>
+</ul>
+</section>
+
+</body></html>

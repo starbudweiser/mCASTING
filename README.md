@@ -6,6 +6,10 @@ Local AI voice casting for production projects: a library of ready-made voices, 
 
 mCASTING is part of the **DESKTOP MAC TOOLKIT**. Made by Starbudweiser & Claude Code (Anthropic). MIT License. Provided as is, without warranty: only use voices you have the right to use. See *About mCASTING* in the app menu.
 
+## Documentation
+
+Full documentation, development guide and user interface guide, in French and English: [docs/](docs/README.md).
+
 ## What it does
 
 - **Casting per project.** A project (a game, a video, a voice-over…) is a list of characters with a role, sample lines and a language (French or English). You listen to the library and pick each character's voice.
