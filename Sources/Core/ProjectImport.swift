@@ -82,9 +82,10 @@ public enum ProjectImport {
                 (k != nil && c.key == k) || c.name.lowercased() == it.name.lowercased()
             }
             var lines: [String]? = nil
+            var alt: [String: [String]]? = nil
             switch it.lines {
             case .list(let a): lines = a
-            case .byLang(let m): lines = m[plang.rawValue] ?? m.values.first
+            case .byLang(let m): lines = m[plang.rawValue] ?? m.values.first; alt = m.filter { !$0.value.isEmpty }   // toutes les langues, pour passer de l'une à l'autre
             case nil: break
             }
             let cur = it.current_voice.map { CurrentVoice(description: $0.description, engine: $0.engine, samples: ($0.samples ?? []).map { .init(file: $0.file, text: $0.text) }) }
@@ -96,12 +97,14 @@ public enum ProjectImport {
                 if let n = it.notes { c.notes = n }
                 if let n = it.line_count { c.lineCount = n }
                 if let l = lines { c.lines = l }
+                if let a = alt { c.altLines = a }
                 if let cur { c.current = cur }
                 if c == before { rep.unchanged.append(it.name) } else { work[i].characters[ci] = c; rep.updated.append(it.name) }
                 seen.insert(c.id)
             } else {
                 let c = Character(key: k, name: it.name, role: it.role ?? "", lines: lines ?? [], lineCount: it.line_count, notes: it.notes, current: cur)
-                work[i].characters.append(c); rep.created.append(it.name); seen.insert(c.id)
+                var c2 = c; c2.altLines = alt
+                work[i].characters.append(c2); rep.created.append(it.name); seen.insert(c.id)
             }
         }
         if mode == .replace {

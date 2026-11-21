@@ -30,6 +30,14 @@ mCASTING is part of the **DESKTOP MAC TOOLKIT**. Made by Starbudweiser & Claude 
 
 Cloned voices carry `engine: "qwen3-base"`, `ref_audio` and `ref_text` instead of a recipe.
 
+**Several languages, same voice.** A library voice carries its own sample for each language in `samples`. To speak a
+language, clone *that language's* sample with the Qwen3-TTS Base model (sample audio as reference, the sample text from the
+catalog as reference text): the accent stays native and the voice matches what you heard in the library. Cloning a sample
+into another language keeps the timbre but also carries its accent, so `timbre_ref_audio` / `timbre_ref_text` are only a
+fallback when no sample exists in the target language. Never re-run VoiceDesign for this (it draws a new timbre every time).
+`lines_alt` holds the lines in the other languages when the imported project provides
+them (`"lines": {"fr": [...], "en": [...]}`).
+
 ## MCP server
 
 *Settings → MCP server* shows the exact command, for example:

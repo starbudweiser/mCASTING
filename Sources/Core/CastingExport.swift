@@ -6,10 +6,15 @@ public enum CastingExport {
         public var voice_id: String, engine: String, recipe: String, style: String, sample: String?
         public var name: String, role: String
         public var ref_audio: String?, ref_text: String?
+        public var samples: [String: String]?          // échantillon de la voix de bibliothèque, par langue
+        public var timbre_ref_audio: String?           // échantillon de la langue du projet : référence de timbre pour les autres langues
+        public var timbre_ref_text: String?
+        public var lines_alt: [String: [String]]?      // répliques dans les autres langues, si le projet source les fournit
     }
     public struct File: Codable {
         public var format = "mcasting/1"
         public var project: String, lang: String
+        public var languages = ["fr", "en"]            // langues pour lesquelles ce casting est utilisable (clonage du timbre entre langues)
         public var characters: [String: Entry]
     }
 
@@ -20,7 +25,11 @@ public enum CastingExport {
             out[c.id] = Entry(voice_id: v.id, engine: v.engine, recipe: v.recipe, style: c.style,
                               sample: v.samples[p.lang.rawValue].map { Paths.audio.appendingPathComponent($0).path },
                               name: c.name, role: c.role,
-                              ref_audio: v.refAudio.map { Paths.audio.appendingPathComponent($0).path }, ref_text: v.refText)
+                              ref_audio: v.refAudio.map { Paths.audio.appendingPathComponent($0).path }, ref_text: v.refText,
+                              samples: v.samples.mapValues { Paths.audio.appendingPathComponent($0).path },
+                              timbre_ref_audio: v.refAudio == nil ? v.samples[v.timbreLang.rawValue].map { Paths.audio.appendingPathComponent($0).path } : nil,
+                              timbre_ref_text: v.refAudio == nil ? Catalog.sample(for: v, lang: v.timbreLang) : nil,
+                              lines_alt: c.altLines)
         }
         return File(project: p.name, lang: p.lang.rawValue, characters: out)
     }

@@ -405,13 +405,13 @@ struct CharacterSheet: View {
             } else if c.lines.isEmpty {
                 Text(L.t("char.nolines")).font(.system(size: 13)).foregroundStyle(Flat.text2)
             } else {
-                ForEach(Array(c.lines.enumerated()), id: \.offset) { i, l in
+                ForEach(Array((c.lines(in: s.project?.lang ?? .fr) ?? c.lines).enumerated()), id: \.offset) { i, l in
                     HStack(alignment: .top, spacing: 10) {
                         Text(l).font(.system(size: 13)).fixedSize(horizontal: false, vertical: true).frame(maxWidth: .infinity, alignment: .leading).textSelection(.enabled)
-                        Button(L.t("char.lines.try")) { if let v = voice { s.preview(voice: v, text: l, style: c.style) } }.buttonStyle(FlatButton(small: true))
+                        Button(L.t("char.lines.try")) { if let v = voice { s.preview(voice: v, text: s.spokenLine(c, i, voice: v), style: c.style) } }.buttonStyle(FlatButton(small: true))
                             .disabled(voice == nil || s.busy || !s.engineInstalled).help(voice == nil ? L.t("char.pickvoice") : "")
                     }
-                    if i < c.lines.count - 1 { Divider().overlay(Flat.line) }
+                    if i < (c.lines(in: s.project?.lang ?? .fr) ?? c.lines).count - 1 { Divider().overlay(Flat.line) }
                 }
             }
         } }
@@ -532,7 +532,7 @@ struct VoiceCard: View {
         .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: chosen ? Flat.ok : (isB ? Flat.acc : nil), dashed: isB && !chosen, selected: selected)
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
     }
-    func tryLine() { if let l = s.character?.lines.first { s.preview(voice: v, text: l, style: s.character?.style ?? "") } }
+    func tryLine() { if let c = s.character, !c.lines.isEmpty { s.preview(voice: v, text: s.spokenLine(c, 0, voice: v), style: c.style) } }
 }
 
 /// Comparaison A / B : voix choisie (A) contre la voix mise de côté (B), même réplique.

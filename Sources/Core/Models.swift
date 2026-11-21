@@ -23,6 +23,8 @@ public struct Voice: Codable, Identifiable, Hashable {
     public var refAudio: String?    // voix clonée : extrait de référence (relatif à audio/)
     public var refText: String?     // transcription exacte de l'extrait
     public var source: String?      // origine : nom de fichier ou lien
+    /// Langue de référence du timbre : le français d'abord (casting rédigé en français), sinon la première langue disponible.
+    public var timbreLang: Lang { samples["fr"] != nil ? .fr : (samples.keys.compactMap { Lang(rawValue: $0) }.first ?? .fr) }
     public init(id: String, name: String, gender: Gender, age: String, pitch: String, tone: String, species: String? = nil,
                 recipe: String, engine: String = "qwen3-voicedesign", samples: [String: String] = [:], custom: Bool = false,
                 refAudio: String? = nil, refText: String? = nil, source: String? = nil) {
@@ -47,6 +49,9 @@ public struct Character: Codable, Identifiable, Hashable {
     public var name: String
     public var role: String
     public var lines: [String]      // répliques d'exemple (langue du projet)
+    public var altLines: [String: [String]]?   // répliques par langue fournies par le projet source (« fr » / « en » → [...])
+    /// Répliques à afficher et à dire dans une langue : celles de cette langue si le projet source les fournit, sinon `lines`.
+    public func lines(in lang: Lang) -> [String]? { altLines?[lang.rawValue].flatMap { $0.isEmpty ? nil : $0 } }
     public var lineCount: Int?      // nombre total de répliques du personnage dans le projet source
     public var notes: String?
     public var current: CurrentVoice?

@@ -208,11 +208,21 @@ final class AppState: ObservableObject {
         }
     }
     func cancel() { cancelRequested = true }
+    private var warnedNoAlt = false
+    /// Réplique à dire dans la langue du projet : le texte d'origine en FR ; en EN, la réplique anglaise du même rang si l'import
+    /// l'a fournie, sinon la phrase type de la bibliothèque (avec un avertissement, une fois).
+    func spokenLine(_ c: Character, _ i: Int, voice: Voice) -> String {
+        let pl = project?.lang ?? .fr
+        if let a = c.lines(in: pl) { return a.indices.contains(i) ? a[i] : a[0] }
+        if pl == .fr { return c.lines.indices.contains(i) ? c.lines[i] : (c.lines.first ?? "") }
+        if !warnedNoAlt { warnedNoAlt = true; info = L.t("alt.missing") }
+        return Catalog.sample(for: voice, lang: pl)
+    }
     func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil) {
         let expr = expressive ?? self.expressive
         let lang = project?.lang ?? .fr
         run("preview") { log in
-            let u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style, expressive: expr)
+            let u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style, expressive: expr, timbreFrom: voice.samples[lang.rawValue] != nil ? lang : voice.timbreLang)
             Task { @MainActor in AppState.shared.play(rel: u.path) }
         }
     }
