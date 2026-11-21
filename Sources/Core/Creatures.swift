@@ -30,7 +30,7 @@ public enum Creatures {
         let t = " " + text(c).replacingOccurrences(of: ",", with: " ").replacingOccurrences(of: "'", with: " ") + " "
         return words.first { t.contains(" " + $0.0 + " ") || t.contains(" " + $0.0 + "s ") }?.1
     }
-    public static func isAnimal(_ c: Character) -> Bool { species(c).map { Catalog.animals.contains($0) } ?? text(c).contains("animal") }
+    public static func isAnimal(_ c: Character) -> Bool { c.kind == "animal" || (species(c).map { Catalog.animals.contains($0) } ?? text(c).contains("animal")) }
 
     /// Les 3 voix de la bibliothèque les plus proches : même espèce et ton d'abord, puis même famille (animal / créature).
     public static func suggestions(for c: Character, in voices: [Voice], count: Int = 3) -> [Voice] {

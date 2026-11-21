@@ -28,6 +28,7 @@ public enum ProjectImport {
             var key: String?
             var name: String
             var role: String?
+            var kind: String?
             var notes: String?
             var line_count: Int?
             var lines: Lines?
@@ -94,6 +95,7 @@ public enum ProjectImport {
                 var c = work[i].characters[ci]; let before = c
                 c.key = k ?? c.key; c.name = it.name
                 if let r = it.role { c.role = r }
+                if let kd = it.kind { c.kind = kd }
                 if let n = it.notes { c.notes = n }
                 if let n = it.line_count { c.lineCount = n }
                 if let l = lines { c.lines = l }
@@ -103,7 +105,7 @@ public enum ProjectImport {
                 seen.insert(c.id)
             } else {
                 let c = Character(key: k, name: it.name, role: it.role ?? "", lines: lines ?? [], lineCount: it.line_count, notes: it.notes, current: cur)
-                var c2 = c; c2.altLines = alt
+                var c2 = c; c2.altLines = alt; c2.kind = it.kind
                 work[i].characters.append(c2); rep.created.append(it.name); seen.insert(c.id)
             }
         }
@@ -155,6 +157,7 @@ public enum ProjectImport {
           "id": "hero",                         // stable identifier in the source project (recommended)
           "name": "Hero",                       // required
           "role": "young deadpan adventurer",   // short description of who they are and how they should sound
+          "kind": "human" | "creature" | "animal", // optional; non-human characters get creature voices and generated cries
           "notes": "free text (age, accent, relationships…)",
           "line_count": 383,                    // total number of lines the character speaks (optional)
           "lines": ["a few representative lines", "…"]   // or {"fr": [...], "en": [...]} ; 5–20 varied lines are plenty

@@ -15,8 +15,13 @@ final class SetupModel: ObservableObject {
     @Published var projectID: String?
     // 2 · Préparation
     @Published var assistant = "cloud"
-    @Published var agents: [String] = []
-    @Published var ollama = false
+    @Published var agents: [AgentInstaller.Agent] = []
+    @Published var llm: DialogueAnalyzer.Server?
+    @Published var llmModel = ""
+    @Published var confirmInstall = false
+    @Published var analyzing = false
+    @Published var analyzeStatus = ""
+    @Published var analyzed = false
     // 3 · Dialogues
     @Published var imported: String?
     @Published var importInfo = ""
@@ -38,6 +43,7 @@ final class SetupModel: ObservableObject {
     var recommended: String { hw.fit(ramGB: TTSModel.find("qwen3-base")!.ramGB) == .proposed ? "qwen3-base" : "omnivoice" }
 
     static func isCreature(_ c: Character) -> Bool {
+        if let k = c.kind { return k != "human" }
         if Creatures.species(c) != nil { return true }
         let t = (c.name + " " + c.role + " " + (c.notes ?? "")).lowercased()
         return ["creature", "créature", "monster", "monstre", "dragon", "goblin", "gobelin", "troll", "ogre", "ghost", "fantôme", "spectre",
@@ -54,14 +60,43 @@ final class SetupModel: ObservableObject {
     }
 
     func detect() {
-        let home = FileManager.default.homeDirectoryForCurrentUser
-        agents = [("Claude", ".claude"), ("ChatGPT", ".codex"), ("Cursor", ".cursor")]
-            .filter { FileManager.default.fileExists(atPath: home.appendingPathComponent($0.1).path) }.map(\.0)
-        var r = URLRequest(url: URL(string: "http://127.0.0.1:11434/api/tags")!); r.timeoutInterval = 1
-        URLSession.shared.dataTask(with: r) { _, resp, _ in
-            let ok = (resp as? HTTPURLResponse)?.statusCode == 200
-            Task { @MainActor in SetupModel.shared.ollama = ok }
-        }.resume()
+        agents = AgentInstaller.detect().filter(\.present)
+        DispatchQueue.global().async {
+            let found = DialogueAnalyzer.discover().first
+            Task { @MainActor in let m = SetupModel.shared; m.llm = found; m.llmModel = found.map { DialogueAnalyzer.preferred($0) } ?? "" }
+        }
+    }
+    /// Installe le skill et le serveur MCP dans les agents présents (après confirmation dans la vue).
+    func installAgents() {
+        var notes: [String] = [], errors: [String] = []
+        for a in agents where !a.installed {
+            do { if let n = try AgentInstaller.install(a.id) { notes.append(a.name + " : " + n) } } catch { errors.append(a.name + " : " + error.localizedDescription) }
+        }
+        agents = AgentInstaller.detect().filter(\.present)
+        if !errors.isEmpty { AppState.shared.error = errors.joined(separator: "\n") }
+        else { AppState.shared.info = L.t("su.a.installed") + (notes.isEmpty ? "" : "\n\n" + L.t("su.a.manual") + "\n" + notes.joined(separator: "\n")) }
+    }
+    /// Analyse des personnages par l'IA locale ; complète type et description de voix.
+    func analyze() {
+        guard let srv = llm, let pid = projectID, !analyzing else { return }
+        let chars = project?.characters ?? [], model = llmModel
+        analyzing = true; analyzeStatus = L.t("su.d.analyzing", srv.name)
+        DispatchQueue.global(qos: .userInitiated).async {
+            do {
+                let rs = try DialogueAnalyzer.analyze(chars, server: srv, model: model) { n, t in
+                    Task { @MainActor in SetupModel.shared.analyzeStatus = L.t("su.d.analyzing", srv.name) + " \(n)/\(t)" }
+                }
+                Task { @MainActor in
+                    AppState.shared.mutate { all in
+                        guard let i = all.firstIndex(where: { $0.id == pid }) else { return }
+                        for j in all[i].characters.indices { DialogueAnalyzer.apply(rs, to: &all[i].characters[j]) }
+                    }
+                    let m = SetupModel.shared; m.analyzing = false; m.analyzed = true
+                }
+            } catch {
+                Task { @MainActor in let m = SetupModel.shared; m.analyzing = false; AppState.shared.error = error.localizedDescription }
+            }
+        }
     }
 
     var index: Int { steps.firstIndex(of: step) ?? 0 }
@@ -88,6 +123,12 @@ final class SetupModel: ObservableObject {
     /// Importe un fichier de répliques dans le projet du guide (le nom du fichier ne crée pas un autre projet).
     func importDialogues(_ url: URL) {
         guard let pid = projectID, var data = try? Data(contentsOf: url) else { return }
+        let ext = url.pathExtension.lowercased()
+        if ext != "json" {
+            guard let t = String(data: data, encoding: .utf8), let d = DialogueAnalyzer.convert(t, ext: ext) else { AppState.shared.error = L.t("su.d.unreadable"); return }
+            data = d
+        }
+        analyzed = false
         let nm = project?.name ?? name
         if var o = (try? JSONSerialization.jsonObject(with: data)) as? [String: Any] {
             o["name"] = nm; if o["folder"] == nil, let f = folder { o["folder"] = f }; o["lang"] = lang.rawValue
@@ -228,7 +269,7 @@ struct SetupWizard: View {
             VStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
                     VStack(alignment: .leading, spacing: 16) { page }.padding(.horizontal, 30).padding(.top, 24).padding(.bottom, 20)
-                        .frame(maxWidth: 860, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
+                        .frame(maxWidth: 860, alignment: .leading).frame(maxWidth: .infinity, alignment: .center)
                 }
                 HStack(spacing: 10) {
                     Button(L.t("su.later")) { m.open = false }.buttonStyle(.plain).foregroundStyle(Flat.text2)
@@ -270,18 +311,21 @@ struct SetupWizard: View {
         }
     }
     func choice(_ on: Bool, _ icon: String, _ title: String, _ detail: String, enabled: Bool = true, action: @escaping () -> Void, @ViewBuilder extra: () -> some View = { EmptyView() }) -> some View {
-        Button(action: action) {
-            HStack(alignment: .top, spacing: 14) {
-                Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.system(size: 18)).foregroundStyle(on ? Flat.acc : Flat.text2)
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) { Image(systemName: icon).frame(width: 20); Text(title).font(.system(size: 15, weight: .semibold)) }
-                    Text(detail).font(.system(size: 12.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
-                    extra()
-                }
-                Spacer(minLength: 0)
-            }.padding(16).contentShape(Rectangle())
-            .tile(pad: EdgeInsets(), outline: on ? Flat.acc : nil)
-        }.buttonStyle(.plain).disabled(!enabled).opacity(enabled ? 1 : 0.55)
+        // La carte n'est pas un bouton : seul son en-tête l'est, pour que les boutons du contenu restent cliquables à part.
+        VStack(alignment: .leading, spacing: 0) {
+            Button(action: action) {
+                HStack(alignment: .top, spacing: 14) {
+                    Image(systemName: on ? "checkmark.circle.fill" : "circle").font(.system(size: 18)).foregroundStyle(on ? Flat.acc : Flat.text2)
+                    VStack(alignment: .leading, spacing: 4) {
+                        HStack(spacing: 8) { Image(systemName: icon).frame(width: 20); Text(title).font(.system(size: 15, weight: .semibold)) }
+                        Text(detail).font(.system(size: 12.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                    }
+                    Spacer(minLength: 0)
+                }.contentShape(Rectangle())
+            }.buttonStyle(.plain).disabled(!enabled)
+            extra().padding(.leading, 32)
+        }.padding(16)
+        .tile(pad: EdgeInsets(), outline: on ? Flat.acc : nil).opacity(enabled ? 1 : 0.55)
     }
 
     // 1
@@ -306,7 +350,7 @@ struct SetupWizard: View {
                         HStack(spacing: 5) { ForEach(Lang.allCases, id: \.self) { l in Button { m.lang = l } label: { Chip(title: l == .fr ? "Français" : "English", on: m.lang == l) }.buttonStyle(.plain) } }
                     }
                 }
-            }.frame(maxWidth: 720)
+            }.frame(maxWidth: .infinity)
             HStack(spacing: 18) {
                 Button(L.t("su.p.open")) { m.open = false; s.screen = .projects }.buttonStyle(.plain).foregroundStyle(Flat.text2)
             }
@@ -322,18 +366,28 @@ struct SetupWizard: View {
             question(L.t("su.a.q"), L.t("su.a.l"))
             VStack(spacing: 10) {
                 choice(m.assistant == "cloud", "bubble.left.and.bubble.right", L.t("su.a.cloud"), L.t("su.a.cloud.d"), action: { m.assistant = "cloud" }) {
-                    HStack(spacing: 6) {
-                        ForEach(["Claude", "ChatGPT", "Cursor"], id: \.self) { a in Tag(title: m.agents.contains(a) ? a + " ✓" : a, color: m.agents.contains(a) ? Flat.ok : nil) }
+                    VStack(alignment: .leading, spacing: 8) {
+                        if m.agents.isEmpty { Text(L.t("su.a.noagent")).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
+                        Flow(spacing: 6) { ForEach(m.agents) { a in Tag(title: a.name + (a.installed ? " ✓" : ""), color: a.installed ? Flat.ok : nil) } }
+                        if m.assistant == "cloud" {
+                            HStack(spacing: 8) {
+                                if m.agents.contains(where: { !$0.installed }) {
+                                    Button(L.t("su.a.install")) { m.confirmInstall = true }.buttonStyle(FlatButton(small: true, green: true))
+                                } else if !m.agents.isEmpty { Tag(title: L.t("su.a.ready"), color: Flat.ok) }
+                                Button(L.t("su.a.copy")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(ProjectImport.guide, forType: .string); s.info = L.t("su.a.copied") }
+                                    .buttonStyle(FlatButton(small: true))
+                            }
+                        }
                     }.padding(.top, 8)
-                    if m.assistant == "cloud" {
-                        Button(L.t("su.a.copy")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(ProjectImport.guide, forType: .string); s.info = L.t("su.a.copied") }
-                            .buttonStyle(FlatButton(small: true)).padding(.top, 8)
-                    }
                 }
-                choice(m.assistant == "local", "lock.shield", L.t("su.a.local"), L.t(m.ollama ? "su.a.local.ok" : "su.a.local.no"), action: { m.assistant = "local" })
+                choice(m.assistant == "local", "lock.shield", L.t("su.a.local"), m.llm.map { L.t("su.a.local.ok", $0.name, m.llmModel) } ?? L.t("su.a.local.no"), action: { m.assistant = "local" })
                 choice(m.assistant == "none", "pencil", L.t("su.a.none"), L.t("su.a.none.d"), action: { m.assistant = "none" })
-            }.frame(maxWidth: 760)
+            }.frame(maxWidth: .infinity)
         }
+        .alert(L.t("su.a.confirm.q"), isPresented: $m.confirmInstall) {
+            Button(L.t("btn.cancel"), role: .cancel) {}
+            Button(L.t("su.a.install")) { m.installAgents() }
+        } message: { Text(L.t("su.a.confirm.msg", m.agents.filter { !$0.installed }.map(\.name).joined(separator: ", "))) }
     }
 
     // 3
@@ -345,10 +399,10 @@ struct SetupWizard: View {
                 Text(L.t("su.d.drop")).font(.system(size: 14, weight: .semibold))
                 Text(L.t("su.d.formats")).foregroundStyle(Flat.text2)
                 Button(L.t("su.d.choose")) {
-                    let o = NSOpenPanel(); o.allowedContentTypes = [.json]
+                    let o = NSOpenPanel(); o.allowedContentTypes = [.json, .commaSeparatedText, .tabSeparatedText, .plainText]
                     if o.runModal() == .OK, let u = o.url { m.importDialogues(u) }
                 }.buttonStyle(FlatButton(small: true)).padding(.top, 6)
-            }.frame(maxWidth: 760).padding(28)
+            }.frame(maxWidth: .infinity).padding(28)
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.ctl, style: StrokeStyle(lineWidth: 2, dash: [6, 4])))
             .onDrop(of: [.fileURL], isTargeted: nil) { items in
                 items.first?.loadItem(forTypeIdentifier: UTType.fileURL.identifier) { d, _ in
@@ -360,12 +414,19 @@ struct SetupWizard: View {
                 Card(pad: 16) {
                     VStack(alignment: .leading, spacing: 12) {
                         HStack { Text("✓ " + f).font(.system(size: 14, weight: .semibold)); Spacer(); Text(m.importInfo).foregroundStyle(Flat.text2) }
+                        if m.llm != nil, m.assistant == "local" {
+                            HStack(spacing: 8) {
+                                if m.analyzing { ProgressView().controlSize(.small); Text(m.analyzeStatus).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
+                                else if m.analyzed { Tag(title: L.t("su.d.analyzed"), color: Flat.ok); Button(L.t("su.e.again")) { m.analyze() }.buttonStyle(FlatButton(small: true)) }
+                                else { Button(L.t("su.d.analyze", m.llm!.name)) { m.analyze() }.buttonStyle(FlatButton(small: true, green: true)) }
+                            }
+                        }
                         Flow(spacing: 6) {
-                            ForEach((m.project?.characters ?? []).prefix(8)) { c in Tag(title: c.name) }
+                            ForEach((m.project?.characters ?? []).prefix(8)) { c in Tag(title: c.name + (c.kind == "creature" ? " · " + L.t("su.k.creature") : c.kind == "animal" ? " · " + L.t("su.k.animal") : ""), color: c.kind != nil && c.kind != "human" ? Flat.warn : nil) }
                             if (m.project?.characters.count ?? 0) > 8 { Tag(title: L.t("su.d.more", (m.project?.characters.count ?? 0) - 8)) }
                         }
                     }
-                }.frame(maxWidth: 760).overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.ok, lineWidth: 2))
+                }.frame(maxWidth: .infinity).overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.ok, lineWidth: 2))
             }
         }
     }
@@ -394,7 +455,7 @@ struct SetupWizard: View {
                 }
                 choice(false, "desktopcomputer", L.t("su.v.server"), L.t("su.v.server.d"), enabled: false, action: {}) { Tag(title: L.t("su.soon")).padding(.top, 6) }
                 choice(false, "cloud", L.t("su.v.cloud"), L.t("su.v.cloud.d"), enabled: false, action: {}) { Tag(title: L.t("su.soon")).padding(.top, 6) }
-            }.frame(maxWidth: 780)
+            }.frame(maxWidth: .infinity)
         }
     }
 
@@ -420,7 +481,7 @@ struct SetupWizard: View {
                             .buttonStyle(FlatButton(primary: sel)).disabled(m.results[id]?.count != m.lines.count)
                     }.padding(16).tile(pad: EdgeInsets(), outline: sel ? Flat.acc : nil)
                 }
-            }.frame(maxWidth: 860).onAppear { if m.lines.isEmpty { m.prepareLines() } }
+            }.frame(maxWidth: .infinity).onAppear { if m.lines.isEmpty { m.prepareLines() } }
             HStack(spacing: 10) {
                 if m.running {
                     ProgressView().controlSize(.small)
@@ -448,12 +509,12 @@ struct SetupWizard: View {
                 if m.sfxRunning { HStack(spacing: 6) { ProgressView().controlSize(.small); Text(m.sfxStatus).font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1) }.frame(maxWidth: 260, alignment: .trailing) }
                 else { Button(L.t(m.creatures.contains { $0.sfx != nil } ? "su.c.sfx.again" : "su.c.sfx.go") + (m.sfxModel.installed ? "" : " · " + L.t("su.c.size", m.sfxModel.sizeGB))) { m.generateSFX() }
                         .buttonStyle(FlatButton(green: true)).disabled(s.busy) }
-            }.padding(14).tile(pad: EdgeInsets(), outline: Flat.brand.opacity(0.5)).frame(maxWidth: 860)
+            }.padding(14).tile(pad: EdgeInsets(), outline: Flat.brand.opacity(0.5)).frame(maxWidth: .infinity)
             VStack(spacing: 8) {
                 HStack { Text(L.t("su.c.col.char")).frame(width: 190, alignment: .leading); Text(L.t("su.c.col.voice")).frame(maxWidth: .infinity, alignment: .leading); Text(L.t("su.c.col.sfx")).frame(width: 110, alignment: .leading) }
                     .font(.system(size: 11, weight: .semibold)).foregroundStyle(Flat.text2).padding(.horizontal, 12)
                 ForEach(m.creatures) { c in creatureRow(c) }
-            }.frame(maxWidth: 860)
+            }.frame(maxWidth: .infinity)
             Text(L.t("su.c.hint")).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
         }
     }
@@ -504,7 +565,7 @@ struct SetupWizard: View {
                     }
                     Text(L.t("su.l.note")).font(.system(size: 12.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
                 }
-            }.frame(maxWidth: 640)
+            }.frame(maxWidth: .infinity)
         }
     }
     func stat(_ v: String, _ l: String) -> some View { VStack(alignment: .leading, spacing: 2) { Text(v).font(.system(size: 24, weight: .bold)); Text(l).font(.system(size: 11.5)).foregroundStyle(Flat.text2) } }

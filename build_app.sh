@@ -11,6 +11,7 @@ rm -rf "$APP" build; mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources" bu
 swiftc -O -swift-version 5 -parse-as-library -target arm64-apple-macos15 -o "$APP/Contents/MacOS/mCASTING" Sources/Core/*.swift Sources/App/*.swift
 swiftc -O -swift-version 5 -target arm64-apple-macos15 -o "$APP/Contents/MacOS/mcasting-mcp" Sources/Core/*.swift Sources/MCP/main.swift
 cp assets/AppIcon.icns "$APP/Contents/Resources/AppIcon.icns"
+mkdir -p "$APP/Contents/Resources/skill/mcasting" && cp Resources/skill/mcasting/SKILL.md "$APP/Contents/Resources/skill/mcasting/"
 cp Resources/Info.plist "$APP/Contents/Info.plist"
 /usr/libexec/PlistBuddy -c "Set :CFBundleIdentifier $BID" -c "Set :CFBundleDisplayName $NAME" -c "Set :CFBundleName $NAME" "$APP/Contents/Info.plist"
 for l in fr en es it; do mkdir -p "$APP/Contents/Resources/$l.lproj"; cp "Resources/$l.lproj/InfoPlist.strings" "$APP/Contents/Resources/$l.lproj/"; done
