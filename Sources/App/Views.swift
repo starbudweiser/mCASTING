@@ -20,13 +20,43 @@ struct ContentView: View {
                     case .models: ModelsView()
                     case .settings: SettingsView()
                     }
-                }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading).clipped()
+                }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
+                .background(alignment: .bottomTrailing) { Watermark() }.clipped()
             }
         }
         .ignoresSafeArea(.container, edges: .top)
         .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
         .alert(L.t("err.title"), isPresented: Binding(get: { s.error != nil }, set: { if !$0 { s.error = nil } })) { Button("OK") { s.error = nil } } message: { Text(s.error ?? "") }
         .alert(L.t("info.title"), isPresented: Binding(get: { s.info != nil }, set: { if !$0 { s.info = nil } })) { Button("OK") { s.info = nil } } message: { Text(s.info ?? "") }
+    }
+}
+
+/// Micro de l'icône (sans le carré de fond), tracé dans le repère 1024 px de l'icône.
+struct MicShape: Shape {
+    func path(in r: CGRect) -> Path {
+        // Boîte du dessin dans le repère de l'icône : x 319…705, y 202…665 (haut = 0).
+        let box = CGRect(x: 319, y: 202, width: 386, height: 463)
+        let k = min(r.width / box.width, r.height / box.height)
+        let ox = r.midX - box.width * k / 2, oy = r.midY - box.height * k / 2
+        func pt(_ x: CGFloat, _ y: CGFloat) -> CGPoint { CGPoint(x: ox + (x - box.minX) * k, y: oy + (y - box.minY) * k) }
+        var p = Path()
+        p.addRoundedRect(in: CGRect(x: ox + (407 - box.minX) * k, y: oy + (202 - box.minY) * k, width: 210 * k, height: 330 * k), cornerSize: CGSize(width: 105 * k, height: 105 * k))
+        var arc = Path()
+        arc.addArc(center: pt(512, 442), radius: 175 * k, startAngle: .degrees(0), endAngle: .degrees(180), clockwise: false)
+        arc.move(to: pt(512, 577)); arc.addLine(to: pt(512, 647))
+        arc.move(to: pt(422, 647)); arc.addLine(to: pt(602, 647))
+        p.addPath(arc.strokedPath(StrokeStyle(lineWidth: 36 * k, lineCap: .round)))
+        return p
+    }
+}
+
+/// Micro de l'icône en filigrane très léger au fond de l'interface (derrière les cartes, sans gêner la lecture).
+struct Watermark: View {
+    @Environment(\.colorScheme) var scheme
+    var body: some View {
+        MicShape().fill(Flat.brand).frame(width: 420, height: 490)
+            .opacity(scheme == .dark ? 0.025 : 0.03)
+            .padding(.trailing, 48).padding(.bottom, 52).allowsHitTesting(false).accessibilityHidden(true)
     }
 }
 
