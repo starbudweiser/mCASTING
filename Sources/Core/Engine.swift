@@ -28,6 +28,8 @@ public struct TTSModel: Identifiable, Hashable {
               family: "chatterbox", acting: true, nameKey: "mdl.expressive", ramGB: 4, license: "MIT"),
         .init(id: "omnivoice", repo: "mlx-community/OmniVoice-bfloat16", title: "OmniVoice (0.6B)", notes: "cloning_light", sizeGB: 1.3, reference: false,
               family: "omnivoice", acting: true, nameKey: "mdl.fast", ramGB: 2),
+        .init(id: "sfx-stable-audio", repo: "mlx-community/stable-audio-3-small-sfx", title: "Stable Audio 3 Small SFX", notes: "sound_effects", sizeGB: 3.5, reference: false,
+              family: "sfx", nameKey: "mdl.sfx", ramGB: 5, license: "Stability AI Community"),
         .init(id: "chatterbox", repo: "mlx-community/chatterbox-fp16", title: "Chatterbox (anglais, fp16)", notes: "cloning_expressive", sizeGB: 3.1, reference: false, family: "chatterbox", license: "MIT"),
     ]
     public static var acting: [TTSModel] { catalog.filter(\.acting) }
@@ -152,6 +154,22 @@ public enum Engine {
             try FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
             try? FileManager.default.removeItem(at: out)
             try run(URL(fileURLWithPath: "/usr/bin/afconvert"), ["-f", "m4af", "-d", "aac", tmp.appendingPathComponent(wav).path, out.path])
+            return Date().timeIntervalSince(t0)
+        }
+    }
+
+    /// Bruitage d'après une description en anglais (modèle Stable Audio 3, sans paroles). Sortie .m4a.
+    @discardableResult
+    public static func generateSFX(model: TTSModel, caption: String, seconds: Int, seed: Int, to out: URL) throws -> TimeInterval {
+        guard installed else { throw EngineError.notInstalled }
+        return try withComputeLock {
+            let t0 = Date()
+            let wav = FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-sfx-\(UUID().uuidString).wav")
+            defer { try? FileManager.default.removeItem(at: wav) }
+            try run(python, ["-m", "mlx_audio.music.generate", "--model", model.repo, "--caption", caption, "--duration", String(seconds), "--seed", String(seed), "--output", wav.path])
+            try FileManager.default.createDirectory(at: out.deletingLastPathComponent(), withIntermediateDirectories: true)
+            try? FileManager.default.removeItem(at: out)
+            try run(URL(fileURLWithPath: "/usr/bin/afconvert"), ["-f", "m4af", "-d", "aac", wav.path, out.path])
             return Date().timeIntervalSince(t0)
         }
     }

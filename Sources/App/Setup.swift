@@ -38,6 +38,7 @@ final class SetupModel: ObservableObject {
     var recommended: String { hw.fit(ramGB: TTSModel.find("qwen3-base")!.ramGB) == .proposed ? "qwen3-base" : "omnivoice" }
 
     static func isCreature(_ c: Character) -> Bool {
+        if Creatures.species(c) != nil { return true }
         let t = (c.name + " " + c.role + " " + (c.notes ?? "")).lowercased()
         return ["creature", "créature", "monster", "monstre", "dragon", "goblin", "gobelin", "troll", "ogre", "ghost", "fantôme", "spectre",
                 "demon", "démon", "robot", "animal", "cat ", "chat ", "dog", "chien", "wolf", "loup", "bird", "oiseau", "beast", "bête", "lutin", "géant", "giant"]
@@ -143,6 +144,38 @@ final class SetupModel: ObservableObject {
             Task { @MainActor in let m = SetupModel.shared; m.running = false; m.status = ""; if m.chosen == nil || !ids.contains(m.chosen!) { m.chosen = ids.first } }
         }
     }
+    @Published var sfxRunning = false
+    @Published var sfxStatus = ""
+    var sfxModel: TTSModel { TTSModel.find("sfx-stable-audio")! }
+
+    func assign(_ voiceID: String, to c: Character) {
+        let pid = projectID
+        AppState.shared.mutate { all in
+            guard let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == c.id }) else { return }
+            all[i].characters[j].voiceID = all[i].characters[j].voiceID == voiceID ? nil : voiceID
+        }
+    }
+    /// Cris des créatures par le modèle de bruitage (téléchargé au premier usage), un fichier par personnage.
+    func generateSFX(only one: Character? = nil) {
+        guard !sfxRunning, !AppState.shared.busy, let pid = projectID else { return }
+        let list = one.map { [$0] } ?? creatures, m = sfxModel
+        sfxRunning = true
+        AppState.shared.run("sfx") { log in
+            func say(_ t: String) { Task { @MainActor in SetupModel.shared.sfxStatus = t } }
+            if !Engine.installed { say(L.t("su.ec.engine")); try Engine.install(log: log) }
+            if !m.installed { say(L.t("su.ec.dl", L.t("mdl.sfx"))); try Engine.download(m, log: log) }
+            for c in list {
+                say(L.t("su.c.making", c.name))
+                let seed = c.sfx == nil ? 7 : Int.random(in: 1...9999)
+                let rel = try Creatures.generateSFX(for: c, projectID: pid, seed: seed)
+                try DataStore.updateProjects { all in
+                    if let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == c.id }) { all[i].characters[j].sfx = rel }
+                }
+            }
+            Task { @MainActor in let s = SetupModel.shared; s.sfxRunning = false; s.sfxStatus = "" }
+        }
+    }
+
     static let demoFR = ["Hé hé hé ! Vous croyiez vraiment m'échapper ?", "Qui ose entrer dans mon château à cette heure-ci ?", "Approchez, voyageur. La Reine vous attend depuis longtemps."]
     static let demoEN = ["Hee hee hee! Did you really think you could escape me?", "Who dares to enter my castle at this hour?", "Come closer, traveller. The Queen has been waiting for you."]
 
@@ -162,9 +195,21 @@ struct SetupWizard: View {
     static let titles = ["su.s.project", "su.s.prep", "su.s.dialogues", "su.s.voice", "su.s.listen", "su.s.creatures", "su.s.library"]
 
     var body: some View {
+        VStack(spacing: 0) {
+            HStack(spacing: 10) {
+                BrandName().padding(.leading, 104)
+                Spacer()
+                Text(L.t("su.title")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+            }.frame(height: 52).padding(.trailing, 18)
+            .overlay(alignment: .bottom) { Rectangle().fill(Flat.line).frame(height: 1) }
+            content
+        }
+        .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
+    }
+
+    var content: some View {
         HStack(spacing: 0) {
             VStack(alignment: .leading, spacing: 3) {
-                BrandName().padding(.horizontal, 10).padding(.bottom, 14)
                 ForEach(Array(m.steps.enumerated()), id: \.offset) { k, st in
                     HStack(spacing: 10) {
                         Text(k < m.index ? "✓" : "\(k + 1)").font(.system(size: 11, weight: .semibold)).frame(width: 22, height: 22)
@@ -177,12 +222,12 @@ struct SetupWizard: View {
                     .foregroundStyle(k == m.index ? Flat.text : Flat.text2).fontWeight(k == m.index ? .semibold : .regular)
                 }
                 Spacer()
-            }.padding(.horizontal, 12).padding(.top, 44).padding(.bottom, 18).frame(width: 230)
+            }.padding(.horizontal, 12).padding(.top, 18).padding(.bottom, 18).frame(width: 230)
             .overlay(alignment: .trailing) { Rectangle().fill(Flat.line).frame(width: 1) }
 
             VStack(spacing: 0) {
                 ScrollView(showsIndicators: false) {
-                    VStack(alignment: .leading, spacing: 16) { page }.padding(.horizontal, 30).padding(.top, 44).padding(.bottom, 20)
+                    VStack(alignment: .leading, spacing: 16) { page }.padding(.horizontal, 30).padding(.top, 24).padding(.bottom, 20)
                         .frame(maxWidth: 860, alignment: .leading).frame(maxWidth: .infinity, alignment: .leading)
                 }
                 HStack(spacing: 10) {
@@ -195,7 +240,6 @@ struct SetupWizard: View {
                 }.padding(.horizontal, 26).padding(.vertical, 12).overlay(alignment: .top) { Rectangle().fill(Flat.line).frame(height: 1) }
             }
         }
-        .background(Flat.bg).foregroundStyle(Flat.text).font(.system(size: 13)).tint(Flat.acc)
     }
 
     var nextTitle: String {
@@ -392,18 +436,58 @@ struct SetupWizard: View {
 
     // 6
     var creatures: some View {
-        VStack(alignment: .leading, spacing: 16) {
+        VStack(alignment: .leading, spacing: 14) {
             question(L.t("su.c.q"), L.t("su.c.l", m.creatures.count))
-            VStack(spacing: 6) {
-                ForEach(m.creatures.prefix(8)) { c in
-                    HStack(spacing: 12) { Avatar(letter: String(c.name.prefix(1))); VStack(alignment: .leading) { Text(c.name).fontWeight(.semibold); Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1) }; Spacer() }
-                        .tile()
+            HStack(alignment: .top, spacing: 14) {
+                Image(systemName: "waveform.badge.plus").font(.system(size: 18)).foregroundStyle(Flat.brand).frame(width: 22)
+                VStack(alignment: .leading, spacing: 4) {
+                    HStack(spacing: 8) { Text(L.t("su.c.sfx")).font(.system(size: 14, weight: .semibold)); Tag(title: L.t("su.c.sfx.model")) }
+                    Text(L.t("su.c.sfx.d")).font(.system(size: 12)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
                 }
-                if m.creatures.count > 8 { Text(L.t("su.d.more", m.creatures.count - 8)).foregroundStyle(Flat.text2) }
-            }.frame(maxWidth: 820)
-            Text(L.t("su.c.soon")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).padding(.horizontal, 10).padding(.vertical, 7)
-                .background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+                Spacer(minLength: 8)
+                if m.sfxRunning { HStack(spacing: 6) { ProgressView().controlSize(.small); Text(m.sfxStatus).font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1) }.frame(maxWidth: 260, alignment: .trailing) }
+                else { Button(L.t(m.creatures.contains { $0.sfx != nil } ? "su.c.sfx.again" : "su.c.sfx.go") + (m.sfxModel.installed ? "" : " · " + L.t("su.c.size", m.sfxModel.sizeGB))) { m.generateSFX() }
+                        .buttonStyle(FlatButton(green: true)).disabled(s.busy) }
+            }.padding(14).tile(pad: EdgeInsets(), outline: Flat.brand.opacity(0.5)).frame(maxWidth: 860)
+            VStack(spacing: 8) {
+                HStack { Text(L.t("su.c.col.char")).frame(width: 190, alignment: .leading); Text(L.t("su.c.col.voice")).frame(maxWidth: .infinity, alignment: .leading); Text(L.t("su.c.col.sfx")).frame(width: 110, alignment: .leading) }
+                    .font(.system(size: 11, weight: .semibold)).foregroundStyle(Flat.text2).padding(.horizontal, 12)
+                ForEach(m.creatures) { c in creatureRow(c) }
+            }.frame(maxWidth: 860)
+            Text(L.t("su.c.hint")).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
         }
+    }
+    func creatureRow(_ c: Character) -> some View {
+        let sug = Creatures.suggestions(for: c, in: s.voices), lg = m.lang.rawValue
+        return HStack(spacing: 12) {
+            HStack(spacing: 10) {
+                Avatar(letter: Self.initial(c.name))
+                VStack(alignment: .leading, spacing: 1) { Text(c.name).fontWeight(.semibold).rowName(c.name); Text(c.role).font(.system(size: 11)).foregroundStyle(Flat.text2).rowName(c.role) }
+            }.frame(width: 190, alignment: .leading)
+            HStack(spacing: 6) {
+                ForEach(sug) { v in
+                    let on = c.voiceID == v.id, rel = v.samples[lg] ?? v.samples.values.first
+                    HStack(spacing: 6) {
+                        PlayButton(playing: rel != nil && s.playingPath == Paths.audio.appendingPathComponent(rel!).path, enabled: rel != nil) { s.play(rel: rel) }
+                        Button { m.assign(v.id, to: c) } label: { Text((on ? "✓ " : "") + v.name).font(.system(size: 12, weight: on ? .semibold : .regular)).lineLimit(1) }.buttonStyle(.plain)
+                    }.padding(.leading, 4).padding(.trailing, 10).padding(.vertical, 4)
+                    .background(Capsule().fill(on ? Flat.acc.opacity(0.22) : Flat.ctl)).overlay(Capsule().strokeBorder(on ? Flat.acc : .clear, lineWidth: 1.5))
+                }
+                if sug.isEmpty { Text(L.t("su.c.nolib")).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
+            }.frame(maxWidth: .infinity, alignment: .leading)
+            HStack(spacing: 6) {
+                if let f = c.sfx {
+                    PlayButton(playing: s.playingPath == Paths.audio.appendingPathComponent(f).path) { s.play(rel: f) }
+                    Button { m.generateSFX(only: c) } label: { Image(systemName: "arrow.clockwise") }.buttonStyle(.plain).foregroundStyle(Flat.text2).help(L.t("su.c.redo")).disabled(m.sfxRunning || s.busy)
+                } else { Text("—").foregroundStyle(Flat.text2) }
+            }.frame(width: 110, alignment: .leading)
+        }.tile(pad: EdgeInsets(top: 8, leading: 12, bottom: 8, trailing: 12))
+    }
+    /// Initiale du nom sans l'article (« Le Dragon » → D).
+    static func initial(_ n: String) -> String {
+        var t = n.trimmingCharacters(in: .whitespaces)
+        for a in ["le ", "la ", "les ", "l'", "l’", "the ", "el ", "il ", "lo ", "los ", "las "] where t.lowercased().hasPrefix(a) { t = String(t.dropFirst(a.count)); break }
+        return String(t.prefix(1)).uppercased()
     }
 
     // 7

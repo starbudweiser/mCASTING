@@ -57,6 +57,7 @@ public struct Character: Codable, Identifiable, Hashable {
     public var current: CurrentVoice?
     public var voiceID: String?
     public var style: String        // consigne d'émotion par défaut
+    public var sfx: String?         // cri de créature généré (relatif à audio/), pour les personnages non humains
     public init(id: String = UUID().uuidString, key: String? = nil, name: String, role: String = "", lines: [String] = [], lineCount: Int? = nil,
                 notes: String? = nil, current: CurrentVoice? = nil, voiceID: String? = nil, style: String = "") {
         self.id = id; self.key = key; self.name = name; self.role = role; self.lines = lines; self.lineCount = lineCount

@@ -101,6 +101,7 @@ final class AppState: ObservableObject {
         if CommandLine.arguments.contains("--demo-multi") { multi = Set((project?.characters ?? []).prefix(4).map(\.id)) }   // essais d'interface : sélection multiple
         let st = SetupState.load()
         if CommandLine.arguments.contains("--setup") || (!st.completed && (projects.isEmpty || doneSamples == 0)) { SetupModel.shared.start(quick: false) }
+        if CommandLine.arguments.contains("--setup-creatures") { let m = SetupModel.shared; m.start(quick: false); m.projectID = projectID; m.step = 5 }   // essais d'interface
         timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in Task { @MainActor in AppState.shared.reload() } }
     }
     func reload(force: Bool = false) {
