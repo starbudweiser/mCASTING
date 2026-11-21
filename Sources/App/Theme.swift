@@ -23,16 +23,20 @@ enum Flat {
     static let go = dyn(0x3f8f5a, 0x2f7d52)              // vert des boutons de création (plus doux que le vert d'état)
     static let avatar = dyn(0x26231e, 0x2c2c31)
     static let rb: CGFloat = 12, rc: CGFloat = 8
+    /// Fonds pastel des panneaux de l'écran Casting (thème clair : pastel ; thème sombre : même teinte, assombrie).
+    static let peach = dyn(0xfbe7dc, 0x2f2622), sky = dyn(0xe0ecf8, 0x212a35), mint = dyn(0xdff1e6, 0x212f28),
+               lavender = dyn(0xebe5f7, 0x2a2535), butter = dyn(0xf8f0d6, 0x2f2b1f), rose = dyn(0xf8e2e7, 0x31242a)
 }
 
 /// Boîte de la maquette : fond carte, filet 1 px, rayon 12, marge 11.
 struct Card<C: View>: View {
     var pad: CGFloat = 11
     var stretch = false          // prend la hauteur du voisin (deux cartes côte à côte de même hauteur)
+    var tint: Color? = nil       // fond pastel propre au panneau (écran Casting)
     @ViewBuilder var content: C
     var body: some View {
         content.padding(pad).frame(maxWidth: .infinity, maxHeight: stretch ? .infinity : nil, alignment: .topLeading)
-            .background(Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+            .background(tint ?? Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
     }
 }

@@ -22,6 +22,16 @@ struct McastingApp: App {
 
 final class AppDelegate: NSObject, NSApplicationDelegate {
     private var window: NSWindow?
+    private static let sizeKey = "mcasting.mainWindowSize"
+
+    /// Splash animé (règle Socle) : il part avant la fenêtre principale, qui n'apparaît qu'à t = 2 s.
+    func applicationWillFinishLaunching(_ notification: Notification) {
+        let version = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? ""
+        MainActor.assumeIsolated {
+            Splash.shared.start(Splash.Config(title: "mCASTING", subtitle: L.t("splash.subtitle"), footer: version.isEmpty ? "" : "v" + version,
+                                              accent: Color(red: 0xf0 / 255, green: 0x8a / 255, blue: 0x52 / 255)))
+        }
+    }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         Task { @MainActor in
@@ -36,7 +46,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     func applicationShouldHandleReopen(_ s: NSApplication, hasVisibleWindows f: Bool) -> Bool { if !f { Task { @MainActor in showMain() } }; return true }
 
     /// Fenêtre principale (Socle : barre de titre transparente, contenu dessous, barre d'outils vide qui descend les boutons,
-    /// lancement centré sur l'écran du pointeur, 1200 × 720, minimum 900 × 560).
+    /// lancement centré sur l'écran du pointeur, à la dernière taille choisie (1200 × 740 au premier lancement), minimum 1000 × 640).
     @MainActor func showMain(front: Bool = true) {
         if window == nil {
             let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 740), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
@@ -47,12 +57,20 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
             let host = NSHostingController(rootView: ContentView())
             host.sizingOptions = []
             w.contentViewController = host
-            w.setFrame(NSRect(x: 0, y: 0, width: 1200, height: 740), display: false)
+            // Taille mémorisée, position jamais : la fenêtre s'ouvre toujours centrée sur l'écran du pointeur.
+            let saved = NSSizeFromString(UserDefaults.standard.string(forKey: Self.sizeKey) ?? "")
+            var size = saved.width >= w.minSize.width && saved.height >= w.minSize.height ? saved : NSSize(width: 1200, height: 740)
+            w.setFrame(NSRect(origin: .zero, size: size), display: false)
             if let zone = (NSScreen.screens.first { NSMouseInRect(NSEvent.mouseLocation, $0.frame, false) } ?? NSScreen.main)?.visibleFrame {
-                let size = NSSize(width: min(1200, zone.width), height: min(740, zone.height))
-                w.setFrame(NSRect(x: zone.midX - size.width / 2, y: zone.midY - size.height / 2, width: size.width, height: size.height), display: false)
+                size = NSSize(width: min(size.width, zone.width), height: min(size.height, zone.height))
+                w.setFrame(NSRect(x: (zone.midX - size.width / 2).rounded(), y: (zone.midY - size.height / 2).rounded(), width: size.width, height: size.height), display: false)
+            }
+            NotificationCenter.default.addObserver(forName: NSWindow.didEndLiveResizeNotification, object: w, queue: .main) { n in
+                guard let w = n.object as? NSWindow, !w.styleMask.contains(.fullScreen) else { return }
+                UserDefaults.standard.set(NSStringFromSize(w.frame.size), forKey: Self.sizeKey)
             }
             window = w
+            if Splash.shared.hold(w) { return }          // premier affichage confié au splash (t = 2 s)
         }
         if front { window?.present() } else { window?.orderBack(nil) }
     }
