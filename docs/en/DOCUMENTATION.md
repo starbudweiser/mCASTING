@@ -1,8 +1,8 @@
 # mCASTING — Documentation
 
-*Version 1.6.4 · DESKTOP MAC TOOLKIT · Starbudweiser & Claude Code (Anthropic) · MIT License*
+*Version 2.0.0 · DESKTOP MAC TOOLKIT · Starbudweiser & Claude Code (Anthropic) · MIT License*
 
-mCASTING is a macOS app for **casting local AI voices**. For any project that needs voices (game, video, voice-over, tutorial, trailer, audiobook), you describe the characters, listen to a library of about 600 voices, pick one voice per character by ear, then hand the result to an AI agent or a generation script as a `casting.json` file.
+mCASTING is a macOS app for **casting local AI voices**. For any project that needs voices (game, video, voice-over, tutorial, trailer, audiobook), you describe the characters, listen to a library of about 600 voices in the languages of your choice, pick one voice per character by ear, then hand the result to an AI agent or a generation script as a `casting.json` file.
 
 Related documents:
 - [Development guide (PDF)](../pdf/mCASTING-development-EN.pdf): architecture, data, formats, MCP, build.
@@ -19,6 +19,7 @@ Related documents:
 2. [First launch: the Getting started guide](#2-first-launch-the-getting-started-guide)
 3. [Projects](#3-projects)
 4. [Casting a project](#4-casting-a-project)
+   - [Project languages and listening in other languages](#project-languages-and-listening-in-other-languages)
 5. [Voice library](#5-voice-library)
 6. [Cloning a voice](#6-cloning-a-voice)
 7. [Voice models](#7-voice-models)
@@ -49,13 +50,15 @@ At launch, an animated splash shows for three seconds, then the main window open
 
 | Step | What you do |
 |---|---|
-| **1. Project** | Give a name, choose the folder where `casting.json` will be written and the voice language (French or English). |
+| **1. Project** | Give a name, choose the folder where `casting.json` will be written and the voice languages: a main one and, if you want, a second one, among the 10 languages of the voice creator. |
 | **2. Preparation** | Choose whether an AI prepares your project: the AI you already use (Claude, ChatGPT, Cursor…), an AI installed on your Mac (Ollama, LM Studio), or none. |
 | **3. Dialogue** | Drop your lines: an mCASTING project file (JSON), a CSV table (`character; line; language`) or text (`NAME: line`). |
 | **4. Voices** | Choose where voices are made: on this Mac (models fit to your hardware), on another computer on your network, or with an online service (ElevenLabs). |
 | **5. Listening** | The checked models speak the same lines from your project; you pick the one that will voice your characters. |
 | **Creatures** | (Only if your project has some.) Suggested voices, voice effects and generated cries. |
-| **6. Library** | mCASTING builds the 600 voices in the background; you can cast in the meantime. |
+| **6. Library** | mCASTING builds the 600 voices in the project's languages, in the background; you can cast in the meantime. |
+
+![Guide, Project step: the project's two languages](../img/guide-1-projet.jpg)
 
 ![Guide, Voices step](../img/guide-4-voix.jpg)
 
@@ -63,7 +66,7 @@ At launch, an animated splash shows for three seconds, then the main window open
 
 ## 3. Projects
 
-The **Projects** page shows one card per project: number of characters, number of cast characters, a progress bar and the state of the `casting.json` file.
+The **Projects** page shows one card per project: its languages, number of characters, number of cast characters, a progress bar and the state of the `casting.json` file.
 
 - **New project** opens the guide on the steps that matter.
 - **Import a project…** loads a JSON file in the `mcasting-project/1` format.
@@ -78,7 +81,8 @@ The **Projects** page shows one card per project: number of characters, number o
 2. In the **Choose a voice** tab, the character panel recalls the role, the current voice if any, and the delivery.
 3. **Filter** the library on the right: free search, gender, age, tone, language, favourites.
 4. On each voice card:
-   - ▶ plays the voice's sample;
+   - ▶ plays the voice's sample in the listening language;
+   - the language menu (**FR ▾**) plays the voice in another language (see below);
    - **Character line** has this voice speak one of your character's lines;
    - **Compare** starts A/B listening against another voice;
    - **Choose** assigns the voice to the character;
@@ -92,17 +96,32 @@ The **Character sheet** tab lets you edit the name, role, notes and sample lines
 
 Tip: right-click the character list (or select several characters) to assign random voices, which is handy for a first pass.
 
-**Native accent:** when a project is in English, lines are spoken from the voice's English sample, with a native accent. A voice chosen in French keeps the same timbre in English, without a French accent.
+### Project languages and listening in other languages
+
+Each project has **one or two languages**: the *main* one (the language of the lines and of the casting) and an optional *second* one. Choose them when you create the project, then at any time with the **＋** button in the sidebar (*Project languages*).
+
+![Project languages window](../img/langues-projet.jpg)
+
+- **Available languages**: those of the model that creates the library voices, i.e. 10 languages with Qwen3-TTS: English, French, German, Spanish, Italian, Portuguese, Russian, Chinese, Japanese and Korean. Each language is shown in its own script, with its translated name on hover.
+- **Library**: samples are computed on your Mac in the projects' languages. A language already computed for another project is never redone. Before you apply, the window shows what is ready and what remains to compute, with the estimated time.
+- **Listening language**: in the sidebar, click one of the project's languages (FR, DE…); the voice cards, the *Language* filter and the character sheet's lines switch to that language. Below the languages, progress shows while a language is incomplete, and a voice's badge turns orange ("FR · DE…") while a project language is still missing for it.
+- **Hear a voice in any language**: each card's language menu lists the project's languages first (sample ready, instant playback), then every other language an installed model can speak, up to 23 with Chatterbox multilingual or OmniVoice. The language's standard sentence is then spoken **with the same timbre**, by cloning the voice's sample; the result is cached. *Free text…* has it say a sentence of your choice.
+- **Accent**: in a language other than its sample's, the voice keeps its timbre but may keep a slight accent. The app says so in the menu and in the free-text box.
+- **Emotion**: cloning keeps the exact timbre with no emotion (*Faithful* mode); *Expressive* mode plays the emotion, with an approximate timbre. Keeping both at once depends on the model and will come with its next versions.
+- **Lines per language**: the character sheet shows and edits the lines of the listening language. When you change the main language, lines already entered stay attached to their original language. With no line in a language, *Character line* speaks the voice's standard sentence and tells you so.
 
 ## 5. Voice library
 
 ![Library](../img/bibliotheque-dark.jpg)
 
-The library holds **600 recipes** (men, women, children, animals, creatures), each with a French and an English sample. They are made on your Mac by the Qwen3-TTS VoiceDesign model.
+The library holds **600 recipes** (men, women, children, animals, creatures), with a sample in each language of your projects. They are made on your Mac by the Qwen3-TTS VoiceDesign model; the voice description follows the computed language, to avoid a foreign accent.
 
 - Free search ("gruff", "dragon", "child"…) and filters: gender, language, used or never used voices.
 - The voice card shows its recipe (its description), engine, samples and the projects using it. You can also try it on a free sentence with an emotion.
-- **Library generation** starts or resumes the build. One job runs at a time, and its status shows at the bottom of the sidebar.
+- **Library generation** starts or resumes the build, language by language. One job runs at a time, and its status shows at the bottom of the sidebar.
+- The **Library languages** panel on that screen shows, for each language, the ready samples and the projects using it. A language can be paused and resumed. *Add a language* computes a language for the whole library without a project; a language no project uses can be freed (its samples and cached listens are deleted, and can be computed again).
+
+![Library languages](../img/langues-bibliotheque.jpg)
 
 ## 6. Cloning a voice
 
@@ -116,16 +135,16 @@ The library holds **600 recipes** (men, women, children, animals, creatures), ea
 
 ## 7. Voice models
 
-The **TTS models** page shows the local engine and each model, with its state (installed, downloading) and size. Models are downloaded from Hugging Face on demand, and a download resumes if it is interrupted.
+The **TTS models** page shows the local engine and each model, with its state (installed, downloading), its size and the languages it can speak. Models are downloaded from Hugging Face on demand, and a download resumes if it is interrupted.
 
-| Name in the guide | Model | Size | Strength |
-|---|---|---|---|
-| Voice creator | Qwen3-TTS VoiceDesign | 3.1 GB | Builds the library from descriptions. |
-| Natural voice | Qwen3-TTS Base | 3.1 GB | Versatile and fast, recommended by default. |
-| Actor voice | Fish Audio Drama 3 | 22 GB | The most lively and moving, slower. |
-| Expressive voice | Chatterbox multilingual | 2.7 GB | Very demonstrative, ideal for animation. |
-| Fast voice | OmniVoice | 1.3 GB | Light, for smaller Macs. |
-| Sound effects | Stable Audio 3 Small SFX | 3.5 GB | Creature and animal cries. |
+| Name in the guide | Model | Size | Languages | Strength |
+|---|---|---|---|---|
+| Voice creator | Qwen3-TTS VoiceDesign | 3.1 GB | 10 | Builds the library from descriptions. |
+| Natural voice | Qwen3-TTS Base | 3.1 GB | 10 | Versatile and fast, recommended by default. |
+| Actor voice | Fish Audio Drama 3 | 22 GB | 13 | The most lively and moving, slower. |
+| Expressive voice | Chatterbox multilingual | 2.7 GB | 23 | Very demonstrative, ideal for animation. |
+| Fast voice | OmniVoice | 1.3 GB | 23 | Light, for smaller Macs. |
+| Sound effects | Stable Audio 3 Small SFX | 3.5 GB | — | Creature and animal cries. |
 
 The guide only offers models that suit your Mac. A model is recommended when it needs less than half of the memory, and it is no longer shown above 70%.
 
@@ -162,7 +181,7 @@ If **Ollama** or **LM Studio** runs on your Mac, mCASTING detects it. It can the
 If a computer on your network runs an OpenAI-compatible voice server (mlx-audio server, LocalAI, Kokoro-FastAPI…):
 1. At the guide's *Voices* step, choose **On another computer**, enter its address (for example `http://pc-studio.local:8000`) and a key if the server needs one.
 2. Click **Test**.
-3. Choose between **Create the library on this server** (if the server can create voices from a description) and **Import this model's voices** (ready-made voices, with a French and an English sample).
+3. Choose between **Create the library on this server** (if the server can create voices from a description) and **Import this model's voices** (ready-made voices, with a sample in each language of your projects).
 
 *Faithful* mode (cloning) stays on your Mac, because these servers do not receive audio excerpts.
 
@@ -174,7 +193,7 @@ If a computer on your network runs an OpenAI-compatible voice server (mlx-audio 
 
 ## 11. The casting.json file
 
-`casting.json` is written in the project folder. For each character it gives:
+`casting.json` is written in the project folder. It gives the main language (`lang`) and the project's languages (`languages`), then, for each character:
 
 - the chosen voice (`voice_id`), its recipe and the delivery (`style`);
 - one voice sample per language (`samples`) and the model that speaks the lines (`acting_model`);
@@ -193,7 +212,7 @@ mCASTING includes an MCP server (`mcasting-mcp`). The exact command to declare i
 claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
 ```
 
-Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`. Incoming calls are listed in the Settings log.
+Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `list_languages`, `create_project`, `set_project_languages`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`. Incoming calls are listed in the Settings log. `list_languages` gives the languages a project can use and those any voice can be heard in; `preview_voice` accepts any of them.
 
 ## 13. Settings and updates
 
@@ -215,7 +234,11 @@ Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, 
 
 **A model is missing from the guide.** It needs too much memory for your Mac (over 70%). The TTS models page lists them all.
 
-**An English voice has a French accent.** Check that the project language is English (sidebar, *Project language*): lines are then spoken from the English sample.
+**A voice has an accent in another language.** That is expected when the listening language is not a project language: the timbre is cloned from a sample in another language. Add that language to the project (**＋** in the sidebar): the library will compute a native sample in it.
+
+**A language is not offered for a project.** A project's languages are those of the voice creator (10). The other languages stay available for listening, by cloning, if an installed model speaks them (TTS models page).
+
+**My older projects?** Projects created before 2.0 open as French + English, nothing is lost.
 
 **My agent doesn't see mCASTING.** Run *Preparation › Install in my AIs* again, or declare the server with the command from Settings, then restart the agent.
 

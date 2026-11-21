@@ -12,8 +12,9 @@ Full documentation, development guide and user interface guide, in French and En
 
 ## What it does
 
-- **Casting per project.** A project (a game, a video, a voice-over…) is a list of characters with a role, sample lines and a language (French or English). You listen to the library and pick each character's voice.
-- **Voice library.** ~600 voice recipes (men, women, children, animals, creatures) generated locally with Qwen3-TTS VoiceDesign, with a French and an English sample each. Filter by gender, age, tone, language; A/B comparison; emotion set per line.
+- **Casting per project.** A project (a game, a video, a voice-over…) is a list of characters with a role and sample lines, in one or two languages chosen for the project. You listen to the library and pick each character's voice.
+- **Voice library.** ~600 voice recipes (men, women, children, animals, creatures) generated locally with Qwen3-TTS VoiceDesign, with a sample in each of your projects' languages (10 available: English, French, German, Spanish, Italian, Portuguese, Russian, Chinese, Japanese, Korean). A language already computed is reused by every project. Filter by gender, age, tone, language; A/B comparison; emotion set per line.
+- **Any voice, any language.** Hear any voice in any language an installed model speaks (up to 23 with Chatterbox multilingual or OmniVoice): its sample is cloned to keep the timbre, and the result is cached. A slight accent may remain, and the app says so.
 - **Voice cloning.** Import an audio file (WAV, MP3, M4A…) or a web link (YouTube and other sites, audio only), choose a 5–15 s excerpt, transcribe it and add the cloned voice to the library. You must have the right to use the voice.
 - **Agent-ready (MCP).** A bundled MCP server (`mcasting-mcp`, stdio) lets an agent create projects, add characters, search voices, preview a voice and write the final `casting.json` into your project folder.
 - **100% local.** Everything runs on your Mac (Apple Silicon, macOS 15+). The app installs its own isolated Python engine (uv + mlx-audio) and downloads the models you choose from Hugging Face. One heavy generation at a time.
@@ -63,4 +64,4 @@ Ask your agent: *"Import this project into mCASTING."* It calls `get_import_guid
 DEV=1 ./build_app.sh      # development edition (separate bundle id and data folder, not installed)
 ```
 
-Languages: French, English, Spanish, Italian (follows the system language). Design: Flat Mat.
+Interface languages: French, English, Spanish, Italian (follows the system language). Voice languages: see above. Design: Flat Mat.

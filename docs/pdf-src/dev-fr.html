@@ -9,7 +9,7 @@
   <div class="sub">Architecture, modules, données, formats d'échange, serveur MCP, moteurs de voix, compilation et publication.</div>
   <div class="rule"></div>
   <div class="shot"><img src="../img/casting-dark.jpg" alt=""></div>
-  <div class="meta"><b>Version 1.6.4</b> · 21 novembre 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>Licence MIT · github.com/starbudweiser/mCASTING</div>
+  <div class="meta"><b>Version 2.0.0</b> · 21 novembre 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>Licence MIT · github.com/starbudweiser/mCASTING</div>
 </div>
 
 <div class="toc">
@@ -88,6 +88,7 @@
 ├── Sources/
 │   ├── Core/            logique partagée (appli + serveur MCP)
 │   │   ├── Models.swift          Voice, Character, Project, CurrentVoice
+│   │   ├── Languages.swift       langues (codes ISO 639-1, phrases, langues des modèles)
 │   │   ├── Paths.swift           emplacements des données
 │   │   ├── DataStore.swift       lecture / écriture JSON
 │   │   ├── Engine.swift          moteur mlx-audio, catalogue des modèles
@@ -105,6 +106,7 @@
 │   │   └── RemoteVoice.swift     serveur réseau, ElevenLabs, Trousseau
 │   ├── App/             interface SwiftUI
 │   │   ├── App.swift, AppState.swift, Views.swift, Setup.swift
+│   │   ├── LangViews.swift (choix des langues, menu « Écouter en », langues de la bibliothèque)
 │   │   ├── Theme.swift (Flat Mat), L10n.swift (4 langues)
 │   │   ├── SplashScreen.swift, About.swift, Updater.swift
 │   └── MCP/main.swift   serveur mcasting-mcp
@@ -145,7 +147,7 @@
 <tr><td><code>gender</code>, <code>age</code>, <code>pitch</code>, <code>tone</code>, <code>species</code></td><td>Critères de recherche : homme, femme, enfant, animal, créature ; jeune, adulte, âgé ; grave, moyen, aigu ; ton (sec, chaleureux…) ; espèce pour les animaux et créatures.</td></tr>
 <tr><td><code>recipe</code></td><td>Description complète en anglais, utilisée par Qwen3-TTS VoiceDesign.</td></tr>
 <tr><td><code>engine</code></td><td><code>qwen3-voicedesign</code>, <code>qwen3-base</code> (voix clonée), <code>server</code> ou <code>elevenlabs</code>.</td></tr>
-<tr><td><code>samples</code></td><td>Un extrait par langue : <code>{"fr": "lib/….m4a", "en": "…"}</code>.</td></tr>
+<tr><td><code>samples</code></td><td>Un extrait par langue, indexé par code ISO 639-1 : <code>{"fr": "lib/….m4a", "de": "…"}</code>. Toute langue y trouve sa place, sans migration.</td></tr>
 <tr><td><code>refAudio</code>, <code>refText</code>, <code>source</code></td><td>Voix clonée : extrait de référence, sa transcription exacte, son origine.</td></tr>
 <tr><td><code>remoteModel</code>, <code>remoteVoice</code></td><td>Voix d'un serveur ou d'ElevenLabs : modèle et nom (ou identifiant) de la voix.</td></tr>
 </table>
@@ -153,14 +155,16 @@
 <table>
 <tr><th>Champ</th><th>Rôle</th></tr>
 <tr><td><code>id</code>, <code>key</code>, <code>name</code>, <code>role</code>, <code>notes</code></td><td>Identité. <code>key</code> est l'identifiant du projet source : il sert à fusionner les imports successifs.</td></tr>
-<tr><td><code>lines</code>, <code>altLines</code>, <code>lineCount</code></td><td>Répliques d'exemple dans la langue du projet, répliques par langue, nombre total de répliques.</td></tr>
+<tr><td><code>lines</code>, <code>altLines</code>, <code>lineCount</code></td><td>Répliques d'exemple dans la langue principale du projet, répliques par langue (code → liste), nombre total de répliques.</td></tr>
 <tr><td><code>current</code></td><td>Voix déjà utilisée par le projet (description, moteur, extraits), pour comparer.</td></tr>
 <tr><td><code>voiceID</code>, <code>style</code></td><td>Voix choisie et consigne d'émotion par défaut (neutre, fatigué, joyeux, colère, ou texte libre).</td></tr>
 <tr><td><code>kind</code></td><td><code>human</code>, <code>creature</code> ou <code>animal</code>.</td></tr>
 <tr><td><code>fx</code>, <code>sfx</code></td><td>Effet de voix choisi et cri généré, pour les personnages non humains.</td></tr>
 </table>
 <h3>Project</h3>
-<p><code>id</code>, <code>name</code>, <code>lang</code> (<code>fr</code> ou <code>en</code>), <code>folder</code> (où écrire <code>casting.json</code>), <code>characters</code>. Supprimer un projet le retire de mCASTING sans toucher à son dossier ni à son fichier <code>casting.json</code>.</p>
+<p><code>id</code>, <code>name</code>, <code>lang</code> (langue principale, celle de <code>lines</code>), <code>langs</code> (une ou deux langues, principale en premier), <code>active</code> (langue écoutée), <code>folder</code> (où écrire <code>casting.json</code>), <code>characters</code>. Un projet 1.x (sans <code>langs</code>) est relu en français + anglais, avec son ancienne langue comme langue écoutée. Changer de langue principale range les répliques déjà saisies sous leur langue d'origine (<code>altLines</code>). Supprimer un projet le retire de mCASTING sans toucher à son dossier ni à son fichier <code>casting.json</code>.</p>
+<h3>Lang et Languages (2.0)</h3>
+<p><code>Lang</code> est un code ISO 639-1 ouvert, encodé en simple chaîne (compatible 1.x). <code>Languages.swift</code> décrit 23 langues (nom natif, nom anglais, deux phrases d'extrait) et les langues de chaque modèle : Qwen3 10, Fish Audio 13, Chatterbox multilingue et OmniVoice 23. Les langues d'un projet sont celles du créateur de voix ; l'écoute à la demande couvre les langues de tous les modèles de jeu installés.</p>
 </section>
 
 <section>
@@ -193,14 +197,14 @@
 
 <section>
 <h2><span class="n">7</span>Bibliothèque de voix et modèle de jeu</h2>
-<p>La bibliothèque compte <b>600 recettes</b> construites par combinaison (genre × âge × registre × ton, plus des animaux et des créatures). Chaque recette est rendue une fois en français et une fois en anglais par <b>Qwen3-TTS VoiceDesign</b>, soit environ 1 200 extraits. La génération tourne en arrière-plan et reprend seule après une interruption.</p>
+<p>La bibliothèque compte <b>600 recettes</b> construites par combinaison (genre × âge × registre × ton, plus des animaux et des créatures). Chaque recette est rendue par <b>Qwen3-TTS VoiceDesign</b> dans chaque langue des projets (plus les langues ajoutées à toute la bibliothèque), langue par langue, avec pause par langue (<code>setup.json</code> : <code>extraLangs</code>, <code>pausedLangs</code>). Une langue déjà calculée n'est jamais refaite. La mention « French-speaking » des recettes est remplacée par la langue calculée. La génération tourne en arrière-plan et reprend seule après une interruption.</p>
 <h3>Deux rôles distincts</h3>
 <div class="grid2">
   <div class="box"><h4>Modèle « créateur »</h4><p>Seuls certains modèles savent créer une voix à partir d'une description (Qwen3 VoiceDesign). La bibliothèque est <b>toujours</b> fabriquée par ce modèle : chaque voix a ainsi un timbre fixe, entendu dans ses extraits.</p></div>
   <div class="box"><h4>Modèle de jeu</h4><p>Le modèle choisi à l'écoute (Qwen3 Base, Fish Audio, Chatterbox, OmniVoice) <b>dit les répliques</b> en clonant l'extrait de la voix choisie. On peut changer de modèle de jeu sans régénérer la bibliothèque.</p></div>
 </div>
-<h3>Accent natif dans chaque langue</h3>
-<p>Pour dire une réplique en anglais, mCASTING clone l'extrait <b>anglais</b> de la voix ; pour le français, l'extrait français. Cloner un extrait dans une autre langue garde le timbre mais transporte aussi l'accent : l'extrait d'une autre langue ne sert qu'en dernier recours. Une recette n'est jamais régénérée par VoiceDesign pour une nouvelle réplique, car le modèle tirerait un nouveau timbre à chaque fois.</p>
+<h3>Accent natif dans chaque langue, écoute dans toutes les autres</h3>
+<p>Pour dire une réplique dans une langue, mCASTING clone l'extrait <b>de cette langue</b> s'il existe. Sinon (langue hors projet), il clone l'extrait de la langue principale avec le premier modèle de jeu installé qui parle la langue demandée (<code>Languages.actingModel</code>) : c'est l'écoute à la demande, gardée en cache dans <code>audio/cache/&lt;voix&gt;.&lt;langue&gt;.&lt;empreinte&gt;.m4a</code> (empreinte FNV-1a du texte, de l'émotion et du modèle ; pas de cache en mode Expressive). Cloner un extrait dans une autre langue garde le timbre mais transporte aussi l'accent : l'extrait d'une autre langue ne sert qu'en dernier recours. Une recette n'est jamais régénérée par VoiceDesign pour une nouvelle réplique, car le modèle tirerait un nouveau timbre à chaque fois.</p>
 <h3>Essais de répliques</h3>
 <ul>
 <li><b>Fidèle</b> : timbre exact de l'extrait, sans émotion.</li>
@@ -279,7 +283,7 @@
 <p>Tout serveur compatible avec l'API de synthèse d'OpenAI (mlx-audio server, LocalAI, Kokoro-FastAPI…) : <code>/v1/models</code>, <code>/v1/audio/voices</code>, <code>/v1/audio/speech</code>. Clé facultative dans le Trousseau.</p>
 <ul>
 <li><b>Bibliothèque fabriquée sur le serveur</b> : si le serveur a un modèle VoiceDesign, les 600 recettes y sont rendues.</li>
-<li><b>Voix toutes prêtes</b> : les voix d'un modèle (par exemple les 54 voix de Kokoro) sont importées avec un extrait FR et EN fabriqué sur le serveur ; identifiants <code>srv-&lt;hôte&gt;-&lt;voix&gt;</code>, genre déduit du préfixe (<code>af_</code>, <code>am_</code>).</li>
+<li><b>Voix toutes prêtes</b> : les voix d'un modèle (par exemple les 54 voix de Kokoro) sont importées avec un extrait dans chaque langue des projets, fabriqué sur le serveur ; identifiants <code>srv-&lt;hôte&gt;-&lt;voix&gt;</code>, genre déduit du préfixe (<code>af_</code>, <code>am_</code>).</li>
 <li>Le mode Fidèle (clonage) reste sur le Mac : ces serveurs ne reçoivent pas d'extrait audio par le réseau.</li>
 </ul>
 <h3>ElevenLabs (payant)</h3>
@@ -295,7 +299,7 @@
 <pre><code>{
   "format": "mcasting-project/1",
   "name": "Mon jeu",
-  "lang": "fr",
+  "languages": ["fr", "en"],
   "folder": "/chemin/du/projet",
   "characters": [{
     "id": "hero", "name": "Héros",
@@ -311,7 +315,7 @@
 <p>Réimporter est sans risque : les personnages sont rapprochés par <code>id</code> puis par nom, les nouveaux sont ajoutés, les existants mis à jour, et un casting déjà fait n'est jamais effacé. <code>dry_run</code> permet de prévisualiser.</p>
 <h3>Sortie : <code>casting.json</code> (<code>mcasting/1</code>)</h3>
 <pre><code>{
-  "format": "mcasting/1", "project": "Mon jeu", "lang": "fr",
+  "format": "mcasting/1", "project": "Mon jeu", "lang": "fr", "languages": ["fr", "en"],
   "characters": { "hero": {
     "name": "Héros", "voice_id": "man-adult-medium-1",
     "engine": "qwen3-voicedesign", "recipe": "A French-speaking person…",
@@ -343,10 +347,11 @@
 <tr><td><code>get_import_guide</code></td><td>Point de départ : format d'import et méthode pour le construire depuis les fichiers du projet.</td></tr>
 <tr><td><code>import_project</code></td><td>Importer ou mettre à jour un projet (<code>project_json</code> ou <code>path</code>, <code>dry_run</code>, <code>mode</code>).</td></tr>
 <tr><td><code>export_project</code></td><td>Exporter un projet au même format.</td></tr>
-<tr><td><code>list_projects</code>, <code>create_project</code></td><td>Lister les projets avec leur avancement ; créer un projet (langue, dossier).</td></tr>
+<tr><td><code>list_languages</code></td><td>Langues possibles pour un projet (bibliothèque), langues d'écoute (modèles installés), langues de chaque projet.</td></tr>
+<tr><td><code>list_projects</code>, <code>create_project</code>, <code>set_project_languages</code></td><td>Lister les projets avec leur avancement et leurs langues ; créer un projet (<code>languages</code> : « de,en », dossier) ; changer ses langues.</td></tr>
 <tr><td><code>add_characters</code>, <code>list_characters</code></td><td>Ajouter des personnages ; les lister avec la voix choisie.</td></tr>
 <tr><td><code>search_voices</code></td><td>Chercher dans la bibliothèque (genre, âge, registre, ton, espèce, texte, langue).</td></tr>
-<tr><td><code>preview_voice</code></td><td>Faire dire une réplique à une voix (calcul local, lent) ; renvoie le chemin audio.</td></tr>
+<tr><td><code>preview_voice</code></td><td>Faire dire une réplique à une voix dans n'importe quelle langue d'écoute (calcul local, lent ; mis en cache) ; renvoie le chemin audio.</td></tr>
 <tr><td><code>set_casting</code></td><td>Proposer une voix (et une émotion) pour un personnage.</td></tr>
 <tr><td><code>write_casting</code></td><td>Écrire <code>casting.json</code> dans le dossier du projet.</td></tr>
 </table>
@@ -355,7 +360,7 @@
 
 <section>
 <h2><span class="n">15</span>Interface, langues et accessibilité</h2>
-<p>L'interface suit le design <b>Flat Mat</b> (mat, plat, filets d'un pixel, rayons 12 et 8), décrit en détail dans le <i>dossier de l'interface graphique</i>. Elle est entièrement traduite en <b>français, anglais, espagnol et italien</b> (<code>L10n.swift</code>, mêmes clés dans les quatre tables, aucun texte écrit en dur) ; la langue suit celle du système, avec l'anglais par défaut.</p>
+<p>L'interface suit le design <b>Flat Mat</b> (mat, plat, filets d'un pixel, rayons 12 et 8), décrit en détail dans le <i>dossier de l'interface graphique</i>. Elle est entièrement traduite en <b>français, anglais, espagnol et italien</b> (<code>L10n.swift</code>, mêmes clés dans les quatre tables, aucun texte écrit en dur) ; la langue suit celle du système, avec l'anglais par défaut. Les langues des <b>voix</b> sont indépendantes de celle de l'interface : leurs noms s'affichent dans leur propre écriture, traduits au survol par macOS.</p>
 <ul>
 <li>Thèmes clair et sombre ; option « Réduire les animations » respectée (splash fixe).</li>
 <li>Fenêtre principale ouverte centrée sur l'écran du pointeur, à la dernière taille choisie.</li>
@@ -414,6 +419,7 @@ DEV=1 ./build_app.sh    # édition de développement (identifiant et données s�
 <tr><td>1.5.0</td><td>Skill et MCP installés dans les agents, analyse par IA locale, imports CSV et texte, effets de voix des créatures.</td></tr>
 <tr><td>1.6.0</td><td>Serveur de voix du réseau et ElevenLabs, icône de dossier.</td></tr>
 <tr><td>1.6.1 – 1.6.4</td><td>Splash animé, taille de fenêtre mémorisée, panneaux colorés « ton sur ton » (bleu et prune en sombre, gris chauds en clair).</td></tr>
+<tr><td>2.0.0</td><td>Langues de son choix : une ou deux langues par projet parmi 10, bibliothèque calculée par langue, écoute de toute voix dans 23 langues par clonage du timbre, import / casting.json / MCP multilingues.</td></tr>
 </table>
 </section>
 

@@ -9,7 +9,7 @@
   <div class="sub">Flat Mat design, colours, typography, components, screens and behaviour of the app.</div>
   <div class="rule"></div>
   <div class="shot"><img src="../img/casting-light.jpg" alt=""></div>
-  <div class="meta"><b>Version 1.6.4</b> · November 21, 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>MIT License · github.com/starbudweiser/mCASTING</div>
+  <div class="meta"><b>Version 2.0.0</b> · November 21, 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>MIT License · github.com/starbudweiser/mCASTING</div>
 </div>
 
 <div class="toc">
@@ -134,7 +134,7 @@
 <h2><span class="n">5</span>Window structure</h2>
 <ul>
 <li><b>Top bar</b> (transparent title bar): app name with its orange "m", MCP server state (green dot, "MCP server ready"), engine state ("Qwen3-TTS · installed"), "Settings" button.</li>
-<li><b>Sidebar</b>: Navigation (Projects, Casting, Voice library, Clone a voice, TTS models), Project language (FR / EN), and at the bottom the compute state ("Compute: idle", or the running job with a progress bar and percentage).</li>
+<li><b>Sidebar</b>: Navigation (Projects, Casting, Voice library, Clone a voice, TTS models), Project languages (one or two, the listening language highlighted, ＋ to change them, progress of an incomplete language), and at the bottom the compute state ("Compute: idle", or the running job with a progress bar and percentage).</li>
 <li><b>Content</b>: page title, actions on the right, then the page itself over the microphone watermark.</li>
 <li><b>Menu bar icon</b>: orange microphone; active project, running job, open mCASTING, Getting started, About, Quit.</li>
 </ul>
@@ -158,7 +158,7 @@
 <h2><span class="n">7</span>Projects</h2>
 <figure><img src="../img/projets-light.jpg"><figcaption>Projects page, light theme (filtered list).</figcaption></figure>
 <ul>
-<li>One card per project: name, language, number of characters and of cast characters, progress bar, <code>casting.json</code> file and state ("empty", "in progress").</li>
+<li>One card per project: name, languages, number of characters and of cast characters, progress bar, <code>casting.json</code> file and state ("empty", "in progress").</li>
 <li>The active project is highlighted; a click opens it in Casting.</li>
 <li>Trash icon at the top right of each card: confirmation, then the project leaves mCASTING without touching its folder.</li>
 <li>Filter, "Import a project…" and "New project" (opens the guide); the last card reminds that an agent can create a project through MCP.</li>
@@ -174,7 +174,8 @@
 <li><b>Tabs</b> "Choose a voice" and "Character sheet".</li>
 <li><b>Character panel</b> (blue in dark): identity, current voice samples, delivery (emotion), Faithful or Expressive line mode.</li>
 <li><b>Search panel</b> (plum in dark): text search, gender, age, tone, language and favourites filters; filtered voice count.</li>
-<li><b>Voice cards</b>: name, gender and tone, available languages, star, waveform and play, "Character line", "Compare", "Choose".</li>
+<li><b>Voice cards</b>: name, gender and tone, badge of the project's languages (green when ready, orange "FR · DE…" when one is missing), star, waveform and play, "FR ▾" language menu (project languages, then other languages with the same timbre, free text, accent note), "Character line", "Compare", "Choose".</li>
+<li><b>Language filter</b>: the project's languages and "All".</li>
 </ul>
 </section>
 
@@ -193,6 +194,9 @@
 <li>Grid of voice cards; on the right, the voice card: recipe, engine, available samples, projects using it, and a trial on a free line with an emotion.</li>
 </ul>
 <figure><img src="../img/bibliotheque-light.jpg"><figcaption>Library, light theme.</figcaption></figure>
+<h3>Languages (2.0)</h3>
+<figure><img src="../img/langues-projet.jpg"><figcaption>"Project languages" window: main and second language, chips in their own script, compute estimate.</figcaption></figure>
+<figure><img src="../img/langues-bibliotheque.jpg"><figcaption>Library generation: "Library languages" panel (ready samples, projects, pause, add, free).</figcaption></figure>
 </section>
 
 <section>
@@ -214,7 +218,7 @@
 <h2><span class="n">12</span>Getting started guide</h2>
 <p>Full-content window: top bar with the app name and "Getting started", steps on the left (number, green check once done), content centred in a column of 860 px at most, bottom bar with "Later", the step counter, "Back" and the primary action.</p>
 <div class="grid2">
-  <figure><img src="../img/guide-1-projet.jpg"><figcaption>1. Project: name, folder, voice language.</figcaption></figure>
+  <figure><img src="../img/guide-1-projet.jpg"><figcaption>1. Project: name, folder, voice languages (main and second).</figcaption></figure>
   <figure><img src="../img/guide-2-preparation.jpg"><figcaption>2. Preparation: the AI you already use, a local AI, or manual description.</figcaption></figure>
   <figure><img src="../img/guide-3-dialogues.jpg"><figcaption>3. Dialogue: drop a JSON, CSV or text file.</figcaption></figure>
   <figure><img src="../img/guide-4-voix.jpg"><figcaption>4. Voices on this Mac: models fit to the hardware, the recommended one marked.</figcaption></figure>

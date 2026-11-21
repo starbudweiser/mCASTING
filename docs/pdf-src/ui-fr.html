@@ -9,7 +9,7 @@
   <div class="sub">Design Flat Mat, couleurs, typographie, composants, écrans et comportements de l'application.</div>
   <div class="rule"></div>
   <div class="shot"><img src="../img/casting-light.jpg" alt=""></div>
-  <div class="meta"><b>Version 1.6.4</b> · 21 novembre 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>Licence MIT · github.com/starbudweiser/mCASTING</div>
+  <div class="meta"><b>Version 2.0.0</b> · 21 novembre 2026<br>DESKTOP MAC TOOLKIT · Starbudweiser &amp; Claude Code (Anthropic)<br>Licence MIT · github.com/starbudweiser/mCASTING</div>
 </div>
 
 <div class="toc">
@@ -134,7 +134,7 @@
 <h2><span class="n">5</span>Structure de la fenêtre</h2>
 <ul>
 <li><b>Barre du haut</b> (barre de titre transparente) : nom de l'appli avec son « m » orange, état du serveur MCP (point vert « Serveur MCP prêt »), état du moteur (« Qwen3-TTS · installé »), bouton « Réglages ».</li>
-<li><b>Barre latérale</b> : Navigation (Projets, Casting, Bibliothèque de voix, Cloner une voix, Modèles TTS), Langue du projet (FR / EN), et en bas l'état du calcul (« Calcul : libre », ou la tâche en cours avec une barre de progression et un pourcentage).</li>
+<li><b>Barre latérale</b> : Navigation (Projets, Casting, Bibliothèque de voix, Cloner une voix, Modèles TTS), Langues du projet (une ou deux, la langue écoutée en surbrillance, ＋ pour les changer, avancement du calcul d'une langue incomplète), et en bas l'état du calcul (« Calcul : libre », ou la tâche en cours avec une barre de progression et un pourcentage).</li>
 <li><b>Contenu</b> : titre de page, barre d'actions à droite, puis la page elle-même, sur le filigrane du micro.</li>
 <li><b>Icône de barre de menus</b> : micro orange ; projet actif, calcul en cours, ouvrir mCASTING, Premiers pas, À propos, Quitter.</li>
 </ul>
@@ -158,7 +158,7 @@
 <h2><span class="n">7</span>Projets</h2>
 <figure><img src="../img/projets-light.jpg"><figcaption>Page Projets, thème clair (liste filtrée).</figcaption></figure>
 <ul>
-<li>Une carte par projet : nom, langue, nombre de personnages et de personnages castés, barre d'avancement, fichier <code>casting.json</code> et état (« vide », « en cours »).</li>
+<li>Une carte par projet : nom, langues, nombre de personnages et de personnages castés, barre d'avancement, fichier <code>casting.json</code> et état (« vide », « en cours »).</li>
 <li>Le projet actif est en surbrillance ; un clic l'ouvre dans Casting.</li>
 <li>Corbeille en haut à droite de chaque carte : confirmation, puis le projet disparaît de mCASTING sans toucher à son dossier.</li>
 <li>Filtre, « Importer un projet… » et « Nouveau projet » (ouvre le guide) ; la dernière carte rappelle qu'un agent peut créer un projet par MCP.</li>
@@ -174,7 +174,8 @@
 <li><b>Onglets</b> « Choisir une voix » et « Fiche du personnage ».</li>
 <li><b>Panneau du personnage</b> (bleu en sombre) : identité, extraits de la voix actuelle, interprétation (émotion), mode de réplique Fidèle ou Expressive.</li>
 <li><b>Panneau de recherche</b> (prune en sombre) : recherche texte, filtres genre, âge, ton, langue, favoris ; nombre de voix filtrées.</li>
-<li><b>Cartes de voix</b> : nom, genre et ton, langues disponibles, étoile, onde et lecture, « Réplique du perso », « Comparer », « Choisir ».</li>
+<li><b>Cartes de voix</b> : nom, genre et ton, badge des langues du projet (vert si prêtes, orange « FR · DE… » s'il en manque une), étoile, onde et lecture, menu de langue « FR ▾ » (langues du projet, puis autres langues au même timbre, texte libre, mention de l'accent), « Réplique du perso », « Comparer », « Choisir ».</li>
+<li><b>Filtre Langue</b> : les langues du projet et « Toutes ».</li>
 </ul>
 </section>
 
@@ -193,6 +194,9 @@
 <li>Grille de cartes de voix ; à droite, la fiche de la voix : recette, moteur, échantillons disponibles, projets qui l'utilisent, et un essai sur une réplique libre avec émotion.</li>
 </ul>
 <figure><img src="../img/bibliotheque-light.jpg"><figcaption>Bibliothèque, thème clair.</figcaption></figure>
+<h3>Langues (2.0)</h3>
+<figure><img src="../img/langues-projet.jpg"><figcaption>Fenêtre « Langues du projet » : principale et secondaire, en puces à leur propre écriture, estimation du calcul.</figcaption></figure>
+<figure><img src="../img/langues-bibliotheque.jpg"><figcaption>Génération de la bibliothèque : panneau « Langues de la bibliothèque » (extraits prêts, projets, pause, ajout, libération).</figcaption></figure>
 </section>
 
 <section>
@@ -214,7 +218,7 @@
 <h2><span class="n">12</span>Guide « Premiers pas »</h2>
 <p>Fenêtre plein contenu : barre du haut avec le nom de l'appli et « Premiers pas », étapes à gauche (numéro, coche verte une fois faites), contenu centré dans une colonne de 860 px maximum, barre du bas avec « Plus tard », le compteur d'étapes, « Retour » et l'action principale.</p>
 <div class="grid2">
-  <figure><img src="../img/guide-1-projet.jpg"><figcaption>1. Projet : nom, dossier, langue des voix.</figcaption></figure>
+  <figure><img src="../img/guide-1-projet.jpg"><figcaption>1. Projet : nom, dossier, langues des voix (principale et secondaire).</figcaption></figure>
   <figure><img src="../img/guide-2-preparation.jpg"><figcaption>2. Préparation : IA déjà utilisée, IA locale ou description manuelle.</figcaption></figure>
   <figure><img src="../img/guide-3-dialogues.jpg"><figcaption>3. Dialogues : dépôt d'un fichier JSON, CSV ou texte.</figcaption></figure>
   <figure><img src="../img/guide-4-voix.jpg"><figcaption>4. Voix sur ce Mac : modèles adaptés au matériel, le conseillé est marqué.</figcaption></figure>

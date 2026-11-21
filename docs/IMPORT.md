@@ -14,7 +14,8 @@ SCHEMA
 {
   "format": "mcasting-project/1",
   "name": "Project name (required)",
-  "lang": "fr" | "en"                      // language of the voices to cast (default fr)
+  "languages": ["de", "en"],               // the project's voice languages, ISO 639-1, main one first (1 or 2). Call list_languages.
+                                           // ("lang": "fr" alone is still accepted: main language only.)
   "folder": "/absolute/path/of/the/project" // where casting.json will be written (optional but recommended)
   "characters": [
     {
@@ -23,7 +24,7 @@ SCHEMA
       "role": "young deadpan adventurer",   // short description of who they are and how they should sound
       "notes": "free text (age, accent, relationships…)",
       "line_count": 383,                    // total number of lines the character speaks (optional)
-      "lines": ["a few representative lines", "…"]   // or {"fr": [...], "en": [...]} ; 5–20 varied lines are plenty
+      "lines": ["a few representative lines", "…"]   // in the main language, or by language {"de": [...], "en": [...]} ; 5–20 varied lines are plenty
       "current_voice": {                    // only if the project already has a voice for this character
         "description": "how it was generated / what it sounds like",
         "engine": "qwen3-customvoice",

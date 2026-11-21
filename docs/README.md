@@ -7,7 +7,7 @@
 | Interface graphique / User interface (PDF) | [mCASTING-interface-FR.pdf](pdf/mCASTING-interface-FR.pdf) | [mCASTING-interface-EN.pdf](pdf/mCASTING-interface-EN.pdf) |
 | Format d'import pour les agents / Import format for agents | [IMPORT.md](IMPORT.md) | [IMPORT.md](IMPORT.md) |
 
-- `img/`: captures d'écran de l'application (version 1.6.4) / app screenshots.
+- `img/`: captures d'écran de l'application (version 2.0) / app screenshots.
 - `pdf-src/`: sources HTML des PDF. Pour les régénérer / to rebuild them:
 
 ```bash
