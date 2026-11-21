@@ -216,6 +216,14 @@ final class AppState: ObservableObject {
         }
     }
     func cancel() { cancelRequested = true }
+    /// Écoute d'un extrait avec un effet de voix (rendu instantané, hors file de calcul).
+    func playWithFX(_ fx: VoiceFX, sample rel: String) {
+        let out = Paths.audio.appendingPathComponent("preview/fx-\(fx.id)-\(abs(rel.hashValue)).m4a")
+        DispatchQueue.global(qos: .userInitiated).async {
+            do { try CreatureFX.render(fx, input: Paths.audio.appendingPathComponent(rel), output: out); Task { @MainActor in AppState.shared.play(rel: out.path) } }
+            catch { Task { @MainActor in AppState.shared.error = error.localizedDescription } }
+        }
+    }
     private var warnedNoAlt = false
     /// Réplique à dire dans la langue du projet : le texte d'origine en FR ; en EN, la réplique anglaise du même rang si l'import
     /// l'a fournie, sinon la phrase type de la bibliothèque (avec un avertissement, une fois).
@@ -226,11 +234,12 @@ final class AppState: ObservableObject {
         if !warnedNoAlt { warnedNoAlt = true; info = L.t("alt.missing") }
         return Catalog.sample(for: voice, lang: pl)
     }
-    func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil) {
+    func preview(voice: Voice, text: String, style: String, expressive: Bool? = nil, fx: VoiceFX? = nil) {
         let expr = expressive ?? self.expressive
         let lang = project?.lang ?? .fr
         run("preview") { log in
-            let u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style, expressive: expr, timbreFrom: voice.samples[lang.rawValue] != nil ? lang : voice.timbreLang)
+            var u = try LibraryGenerator.preview(voice: voice, text: text, lang: lang, style: style, expressive: expr, timbreFrom: voice.samples[lang.rawValue] != nil ? lang : voice.timbreLang)
+            if let fx { let o = u.deletingPathExtension().appendingPathExtension("fx.m4a"); try CreatureFX.render(fx, input: u, output: o); u = o }
             Task { @MainActor in AppState.shared.play(rel: u.path) }
         }
     }

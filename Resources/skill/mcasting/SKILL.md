@@ -45,5 +45,7 @@ until they say the casting is done.
 - `ref_audio` / `ref_text` for cloned voices.
 - `lines_alt`: the lines in the other languages.
 - `sfx`: a generated cry (no words) for creatures and animals, to play alone or mix under the voice.
+- `fx` / `fx_ffmpeg`: the voice effect chosen for a creature or animal. Apply `fx_ffmpeg` to every generated line
+  (`ffmpeg -i line.wav -af "<fx_ffmpeg>" out.wav`) so the lines sound like what the human chose.
 
 Never regenerate a library voice from its recipe with a voice-design model: it draws a new timbre every time.

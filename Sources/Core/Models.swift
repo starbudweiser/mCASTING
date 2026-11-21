@@ -58,6 +58,7 @@ public struct Character: Codable, Identifiable, Hashable {
     public var voiceID: String?
     public var style: String        // consigne d'émotion par défaut
     public var kind: String?        // human / creature / animal (fourni par l'import ou l'analyse des dialogues)
+    public var fx: String?          // effet de voix (CreatureFX) appliqué aux répliques, pour les créatures et animaux
     public var sfx: String?         // cri de créature généré (relatif à audio/), pour les personnages non humains
     public init(id: String = UUID().uuidString, key: String? = nil, name: String, role: String = "", lines: [String] = [], lineCount: Int? = nil,
                 notes: String? = nil, current: CurrentVoice? = nil, voiceID: String? = nil, style: String = "") {

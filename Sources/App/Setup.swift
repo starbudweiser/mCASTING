@@ -196,6 +196,13 @@ final class SetupModel: ObservableObject {
             all[i].characters[j].voiceID = all[i].characters[j].voiceID == voiceID ? nil : voiceID
         }
     }
+    func setFX(_ id: String?, for c: Character) {
+        let pid = projectID
+        AppState.shared.mutate { all in
+            guard let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == c.id }) else { return }
+            all[i].characters[j].fx = id
+        }
+    }
     /// Cris des créatures par le modèle de bruitage (téléchargé au premier usage), un fichier par personnage.
     func generateSFX(only one: Character? = nil) {
         guard !sfxRunning, !AppState.shared.busy, let pid = projectID else { return }
@@ -525,6 +532,7 @@ struct SetupWizard: View {
                 Avatar(letter: Self.initial(c.name))
                 VStack(alignment: .leading, spacing: 1) { Text(c.name).fontWeight(.semibold).rowName(c.name); Text(c.role).font(.system(size: 11)).foregroundStyle(Flat.text2).rowName(c.role) }
             }.frame(width: 190, alignment: .leading)
+            VStack(alignment: .leading, spacing: 6) {
             HStack(spacing: 6) {
                 ForEach(sug) { v in
                     let on = c.voiceID == v.id, rel = v.samples[lg] ?? v.samples.values.first
@@ -535,6 +543,16 @@ struct SetupWizard: View {
                     .background(Capsule().fill(on ? Flat.acc.opacity(0.22) : Flat.ctl)).overlay(Capsule().strokeBorder(on ? Flat.acc : .clear, lineWidth: 1.5))
                 }
                 if sug.isEmpty { Text(L.t("su.c.nolib")).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
+            }
+            if let vid = c.voiceID, let v = s.voices.first(where: { $0.id == vid }), let rel = v.samples[lg] ?? v.samples.values.first {
+                HStack(spacing: 6) {
+                    Text(L.t("su.c.fx")).font(.system(size: 11)).foregroundStyle(Flat.text2)
+                    Button { m.setFX(nil, for: c); s.play(rel: rel) } label: { Chip(title: L.t("fx.none"), on: c.fx == nil) }.buttonStyle(.plain)
+                    ForEach(CreatureFX.presets(for: c), id: \.id) { fx in
+                        Button { m.setFX(fx.id, for: c); s.playWithFX(fx, sample: rel) } label: { Chip(title: "▶ " + L.t(fx.key), on: c.fx == fx.id) }.buttonStyle(.plain)
+                    }
+                }
+            }
             }.frame(maxWidth: .infinity, alignment: .leading)
             HStack(spacing: 6) {
                 if let f = c.sfx {

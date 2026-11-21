@@ -12,6 +12,8 @@ public enum CastingExport {
         public var lines_alt: [String: [String]]?      // répliques dans les autres langues, si le projet source les fournit
         public var acting_model: String?               // modèle qui dit les répliques en clonant l'échantillon (dépôt Hugging Face)
         public var sfx: String?                        // cri de créature généré (sans paroles), à mixer ou à jouer seul
+        public var fx: String?                         // effet de voix choisi (créatures, animaux)
+        public var fx_ffmpeg: String?                  // filtre ffmpeg équivalent, à appliquer à chaque réplique générée
     }
     public struct File: Codable {
         public var format = "mcasting/1"
@@ -33,7 +35,8 @@ public enum CastingExport {
                               timbre_ref_text: v.refAudio == nil ? Catalog.sample(for: v, lang: v.timbreLang) : nil,
                               lines_alt: c.altLines,
                               acting_model: SetupState.load().actingModel.flatMap { TTSModel.find($0)?.repo },
-                              sfx: c.sfx.map { Paths.audio.appendingPathComponent($0).path })
+                              sfx: c.sfx.map { Paths.audio.appendingPathComponent($0).path },
+                              fx: c.fx, fx_ffmpeg: CreatureFX.find(c.fx, for: c)?.ffmpeg)
         }
         return File(project: p.name, lang: p.lang.rawValue, characters: out)
     }
