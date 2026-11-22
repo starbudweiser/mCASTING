@@ -726,7 +726,7 @@ struct Sheet: View {
             kv(L.t("lib.samples"), s.filterLangs.map { $0.rawValue.uppercased() + (v.samples[$0.rawValue] != nil ? " ✓" : " –") }.joined(separator: " · "))
             kv(L.t("lib.usedin"), names.isEmpty ? "—" : names)
             Header(title: L.t("lib.test")).padding(.top, 6)
-            TextEditor(text: $line).font(.system(size: 12.5)).flatEditor(height: 52)
+            TextField("", text: $line, axis: .vertical).font(.system(size: 12.5)).lineLimit(3...14).flatField()   // grandit avec le texte
             Flow { ForEach(TrialBox.emotions, id: \.0) { e in Button { emo = e.1 } label: { Chip(title: L.t(e.0), on: emo == e.1) }.buttonStyle(.plain) } }
             Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: sheetLang) : line, style: emo, expressive: !emo.isEmpty, lang: sheetLang) }
                 .buttonStyle(FlatButton(primary: true)).disabled(s.busy || !s.engineInstalled)
