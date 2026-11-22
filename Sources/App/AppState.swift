@@ -20,6 +20,7 @@ final class AppState: ObservableObject {
     @Published var fAge: String? = nil
     @Published var fTone: String? = nil
     @Published var fFav = false
+    @Published var fClone = false
     @Published var revealTick = 0
     @Published var multi: Set<String> = []        // personnages sélectionnés (⌘-clic, ⇧-clic) pour une action groupée
     @Published var expressive = UserDefaults.standard.bool(forKey: "expressive") { didSet { UserDefaults.standard.set(expressive, forKey: "expressive") } }
@@ -47,7 +48,7 @@ final class AppState: ObservableObject {
     var filteredVoices: [Voice] {
         let q = fText.lowercased()
         return voices.filter { v in
-            (!fFav || favorites.contains(v.id)) && (fGender == nil || v.gender == fGender) && (fLang == nil || v.samples[fLang!.rawValue] != nil) &&
+            (!fFav || favorites.contains(v.id)) && (!fClone || v.custom) && (fGender == nil || v.gender == fGender) && (fLang == nil || v.samples[fLang!.rawValue] != nil) &&
             (fAge == nil || v.age == fAge || (fAge == "senior" && v.age == "mature")) &&
             (fTone == nil || (fTone == "low" && v.pitch == "low") || (fTone == "high" && v.pitch == "high") || (fTone != "low" && fTone != "high" && v.tone.contains(fTone!))) &&
             (q.isEmpty || (v.name + " " + v.recipe + " " + v.tone + " " + (v.species ?? "")).lowercased().contains(q))
@@ -96,7 +97,7 @@ final class AppState: ObservableObject {
     /// Clic sur le nom vert d'un personnage : l'affiche dans la liste des voix, filtres levés, voisines visibles.
     func showVoice(of c: Character) {
         characterID = c.id; castTab = 0
-        fGender = nil; fLang = nil; fText = ""; fAge = nil; fTone = nil; fFav = false
+        fGender = nil; fLang = nil; fText = ""; fAge = nil; fTone = nil; fFav = false; fClone = false
         revealTick += 1
     }
     func toggleFavorite(_ id: String) {
@@ -166,7 +167,7 @@ final class AppState: ObservableObject {
             if let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == id }) { f(&all[i].characters[j]) }
         }
     }
-    var filtersActive: Bool { fGender != nil || fLang != nil || fAge != nil || fTone != nil || fFav || !fText.isEmpty }
+    var filtersActive: Bool { fGender != nil || fLang != nil || fAge != nil || fTone != nil || fFav || fClone || !fText.isEmpty }
     /// Genre deviné d'après la description du personnage (« farm woman », « grumbling man »…) ; nil si rien d'évident.
     static func guessGender(_ c: Character) -> Gender? {
         let words = Set((c.role + " " + (c.notes ?? "")).lowercased().split { !$0.isLetter }.map(String.init))

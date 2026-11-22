@@ -485,6 +485,7 @@ struct FilterBox: View {
                 ForEach(s.project?.languages ?? []) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
                 chip(L.t("lang.all"), s.fLang == nil) { s.fLang = nil }
                 chip("★ " + L.t("f.fav"), s.fFav) { s.fFav.toggle() }
+                chip(L.t("f.clone"), s.fClone) { s.fClone.toggle() }
             }
             Spacer(minLength: 0)
             HStack { Spacer(minLength: 0); Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count)) }
@@ -687,8 +688,13 @@ struct LibraryView: View {
                     Text(L.t("f.gender")).font(.system(size: 11)).foregroundStyle(Flat.text2).frame(width: 44, alignment: .leading)
                     Button { s.fGender = nil } label: { Chip(title: L.t("lib.all"), on: s.fGender == nil) }.buttonStyle(.plain)
                     ForEach(Gender.allCases, id: \.self) { g in Button { s.fGender = g } label: { Chip(title: L.t("g.\(g.rawValue)"), on: s.fGender == g) }.buttonStyle(.plain) }
-                    Text(L.t("f.lang")).font(.system(size: 11)).foregroundStyle(Flat.text2).padding(.leading, 14)
+                    Spacer(minLength: 0)
+                }
+                HStack(spacing: 8) {
+                    Text(L.t("f.lang")).font(.system(size: 11)).foregroundStyle(Flat.text2).frame(width: 44, alignment: .leading)
                     ForEach(s.filterLangs) { l in Button { s.fLang = s.fLang == l ? nil : l } label: { Chip(title: l.rawValue.uppercased(), on: s.fLang == l) }.buttonStyle(.plain).help(l.localized) }
+                    Button { s.fFav.toggle() } label: { Chip(title: "★ " + L.t("f.fav"), on: s.fFav) }.buttonStyle(.plain).padding(.leading, 14)
+                    Button { s.fClone.toggle() } label: { Chip(title: L.t("f.clone"), on: s.fClone) }.buttonStyle(.plain)
                     Spacer(minLength: 0)
                     Button { usage = usage == 1 ? 0 : 1 } label: { Chip(title: L.t("lib.used"), on: usage == 1) }.buttonStyle(.plain)
                     Button { usage = usage == 2 ? 0 : 2 } label: { Chip(title: L.t("lib.unused"), on: usage == 2) }.buttonStyle(.plain)
