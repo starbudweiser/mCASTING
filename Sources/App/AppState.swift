@@ -146,6 +146,15 @@ final class AppState: ObservableObject {
         mutate { $0.removeAll { $0.id == id } }
         if projectID == id { projectID = projects.first?.id; characterID = project?.characters.first?.id }
     }
+    /// Supprime une voix clonée ou importée (fichiers et écoutes en cache compris) ; les personnages concernés n'ont plus de voix.
+    func deleteVoice(_ id: String) {
+        do {
+            try VoiceCloning.remove(id: id)
+            if favorites.contains(id) { toggleFavorite(id) }
+            if abVoiceID == id { abVoiceID = nil }
+            reload(force: true)
+        } catch { self.error = error.localizedDescription }
+    }
     func addCharacter(name: String) {
         guard let pid = projectID else { return }
         let c = Character(name: name); mutate { all in if let i = all.firstIndex(where: { $0.id == pid }) { all[i].characters.append(c) } }

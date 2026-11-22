@@ -66,4 +66,25 @@ public enum VoiceCloning {
         var all = DataStore.voices(); all.append(v); try DataStore.saveVoices(all)
         return v
     }
+
+    /// Supprime une voix clonée ou importée (jamais une voix de la bibliothèque) : retirée de voices.json, ses fichiers audio
+    /// et ses écoutes en cache effacés, et les personnages qui l'avaient choisie n'ont plus de voix.
+    public static func remove(id: String) throws {
+        var all = DataStore.voices()
+        guard let v = all.first(where: { $0.id == id }), v.custom else { throw EngineError.failed("Only cloned or imported voices can be deleted") }
+        all.removeAll { $0.id == id }
+        let shared = Set(all.flatMap { Array($0.samples.values) + [$0.refAudio].compactMap { $0 } })
+        try DataStore.saveVoices(all)
+        let fm = FileManager.default
+        for rel in Set(Array(v.samples.values) + [v.refAudio].compactMap { $0 }) where !shared.contains(rel) && !rel.contains("..") {
+            try? fm.removeItem(at: Paths.audio.appendingPathComponent(rel))
+        }
+        let cache = Paths.audio.appendingPathComponent("cache")
+        for f in (try? fm.contentsOfDirectory(atPath: cache.path)) ?? [] where f.hasPrefix(id + ".") {
+            try? fm.removeItem(at: cache.appendingPathComponent(f))
+        }
+        _ = try DataStore.updateProjects { ps in
+            for i in ps.indices { for j in ps[i].characters.indices where ps[i].characters[j].voiceID == id { ps[i].characters[j].voiceID = nil } }
+        }
+    }
 }

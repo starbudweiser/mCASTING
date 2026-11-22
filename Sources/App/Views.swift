@@ -709,6 +709,7 @@ struct LibraryView: View {
 struct Sheet: View {
     let v: Voice; @Binding var line: String; @Binding var emo: String; let uses: Int
     @ObservedObject var s = AppState.shared
+    @State private var askDelete = false
     var body: some View {
         let names = s.projects.filter { $0.characters.contains { $0.voiceID == v.id } }.map(\.name).joined(separator: ", ")
         Card { VStack(alignment: .leading, spacing: 8) {
@@ -723,7 +724,16 @@ struct Sheet: View {
             Flow { ForEach(TrialBox.emotions, id: \.0) { e in Button { emo = e.1 } label: { Chip(title: L.t(e.0), on: emo == e.1) }.buttonStyle(.plain) } }
             Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line.isEmpty ? Catalog.sample(for: v, lang: sheetLang) : line, style: emo, expressive: !emo.isEmpty, lang: sheetLang) }
                 .buttonStyle(FlatButton(primary: true)).disabled(s.busy || !s.engineInstalled)
+            if v.custom {
+                Divider().padding(.vertical, 4)
+                Button(role: .destructive) { askDelete = true } label: { Label(L.t("voice.delete"), systemImage: "trash") }
+                    .buttonStyle(FlatButton(small: true)).disabled(s.busy)
+            }
         } }
+        .alert(L.t("voice.delete.q", v.name), isPresented: $askDelete) {
+            Button(L.t("btn.cancel"), role: .cancel) {}
+            Button(L.t("voice.delete"), role: .destructive) { s.deleteVoice(v.id) }
+        } message: { Text(names.isEmpty ? L.t("voice.delete.msg") : L.t("voice.delete.used", names) + " " + L.t("voice.delete.msg")) }
         .onAppear { if line.isEmpty { line = Catalog.sample(for: v, lang: sheetLang) } }
         .onChange(of: v.id) { _, _ in line = Catalog.sample(for: v, lang: sheetLang) }
         .onChange(of: s.fLang) { _, _ in line = Catalog.sample(for: v, lang: sheetLang) }
