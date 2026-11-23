@@ -508,6 +508,7 @@ struct VoiceCard: View {
     var fav: Bool { s.favorites.contains(v.id) }
     @State private var pick: Lang?
     @State private var free = false
+    @State private var ownLine = false
     @State private var hover = false
     /// Langue écoutée sur cette carte : celle choisie dans son menu, sinon la langue écoutée du projet (ou le filtre Langue).
     var lang: Lang { pick ?? (mode == .casting ? s.activeLang : (s.fLang ?? s.project?.activeLang ?? .fr)) }
@@ -538,7 +539,7 @@ struct VoiceCard: View {
             .popover(isPresented: $free) { FreeTextPopover(v: v, lang: lang, shown: $free) }
             if mode == .casting {
                 HStack(spacing: 6) {
-                    Button(L.t("v.line")) { tryLine() }.buttonStyle(FlatButton(small: true)).disabled(s.busy || !s.engineInstalled || s.character.map(s.shownLines)?.first == nil)
+                    lineMenu
                     if isB { Button(L.t("ab.cancel")) { s.abVoiceID = nil }.buttonStyle(FlatButton(small: true)) }
                     else if !chosen { Button(L.t("lib.ab")) { s.abVoiceID = v.id }.buttonStyle(FlatButton(small: true)) }
                     Spacer(minLength: 0)
@@ -551,7 +552,28 @@ struct VoiceCard: View {
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
         .onHover { hover = $0 }
     }
-    func tryLine() { if let c = s.character, !s.shownLines(c).isEmpty { s.preview(voice: v, text: s.spokenLine(c, 0, voice: v, lang: lang), style: c.style, fx: CreatureFX.find(c.fx, for: c), lang: lang) } }
+    /// Menu « Réplique du perso » : 3 premières répliques du personnage, puis un texte libre dit avec son jeu et son effet.
+    @ViewBuilder var lineMenu: some View {
+        let lines = s.character.map(s.shownLines) ?? []
+        let off = s.busy || !s.engineInstalled || s.character == nil
+        Menu {
+            ForEach(Array(lines.prefix(3).enumerated()), id: \.offset) { i, t in
+                Button("\(i + 1). « \(t.count > 70 ? String(t.prefix(70)) + "…" : t) »") { tryLine(i) }
+            }
+            if !lines.isEmpty { Divider() }
+            Button(L.t("lang.menu.free") + "…") { ownLine = true }
+        } label: {
+            HStack(spacing: 4) { Text(L.t("v.line")).font(.system(size: 11.5, weight: .medium)); Image(systemName: "chevron.down").font(.system(size: 8, weight: .bold)) }
+                .padding(.horizontal, 9).padding(.vertical, 3).foregroundStyle(Flat.text).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+        }
+        .menuStyle(.button).buttonStyle(.plain).menuIndicator(.hidden).fixedSize().disabled(off).opacity(off ? 0.4 : 1)
+        .popover(isPresented: $ownLine) {
+            FreeTextPopover(v: v, lang: lang, shown: $ownLine, initial: lines.first) { t in
+                if let c = s.character { s.preview(voice: v, text: t, style: c.style, fx: CreatureFX.find(c.fx, for: c), lang: lang) }
+            }
+        }
+    }
+    func tryLine(_ i: Int) { if let c = s.character, !s.shownLines(c).isEmpty { s.preview(voice: v, text: s.spokenLine(c, i, voice: v, lang: lang), style: c.style, fx: CreatureFX.find(c.fx, for: c), lang: lang) } }
     /// Langues prêtes de la voix pour le projet (« DE · EN »), en orange si une langue du projet reste à calculer.
     @ViewBuilder var langTag: some View {
         let proj = s.project?.languages ?? []

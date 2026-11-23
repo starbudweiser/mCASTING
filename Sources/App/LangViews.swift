@@ -136,6 +136,9 @@ struct ListenLangMenu: View {
 struct FreeTextPopover: View {
     let v: Voice; let lang: Lang
     @Binding var shown: Bool
+    /// Texte proposé à l'ouverture (sinon la phrase type de la voix) et action de lecture (sinon écoute simple).
+    var initial: String? = nil
+    var onPlay: ((String) -> Void)? = nil
     @State private var text = ""
     @ObservedObject var s = AppState.shared
     var body: some View {
@@ -144,10 +147,10 @@ struct FreeTextPopover: View {
             TextEditor(text: $text).font(.system(size: 12.5)).flatEditor(height: 70)
             Text("ⓘ " + L.t("lang.accent")).font(.system(size: 11)).foregroundStyle(Flat.sub).fixedSize(horizontal: false, vertical: true)
             HStack { Spacer(); Button(L.t("btn.cancel")) { shown = false }.buttonStyle(FlatButton())
-                Button("▶ " + L.t("lib.try")) { s.listen(voice: v, lang: lang, text: text); shown = false }.buttonStyle(FlatButton(primary: true))
+                Button("▶ " + L.t("lib.try")) { if let onPlay { onPlay(text) } else { s.listen(voice: v, lang: lang, text: text) }; shown = false }.buttonStyle(FlatButton(primary: true))
                     .disabled(text.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty || s.busy || !s.engineInstalled) }
         }.padding(14).frame(width: 340).background(Flat.bg)
-        .onAppear { text = Catalog.sample(for: v, lang: lang) }
+        .onAppear { text = initial ?? Catalog.sample(for: v, lang: lang) }
     }
 }
 
