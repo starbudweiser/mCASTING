@@ -127,7 +127,7 @@ The library holds **600 recipes** (men, women, children, animals, creatures), wi
 
 1. Open **Clone a voice**.
 2. Pick an audio or video file (WAV, MP3, M4A, AIFF…) or paste a web link (YouTube and other sites, audio only).
-3. Select a 5 to 15 second excerpt where the voice is clear and alone.
+3. Select a 15 to 25 second excerpt where the voice is clear and alone.
 4. Check the automatic transcript and fix it if needed.
 5. Tick the box certifying you have the right to use this voice, then add it: it joins the library like any other voice.
 

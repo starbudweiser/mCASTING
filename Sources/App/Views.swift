@@ -947,7 +947,7 @@ struct CloneView: View {
     }
     /// Chargement d'une source : durée, extrait par défaut, puis transcription automatique de l'extrait (le bouton reste pour relancer).
     func load(_ u: URL) { Task {
-        total = await VoiceCloning.duration(of: u); length = min(10, total)
+        total = await VoiceCloning.duration(of: u); length = min(20, total)
         if s.engineInstalled, !working, source == u { transcribe() }
     } }
     func fetch() {
@@ -988,7 +988,7 @@ struct ModelsView: View {
             ScrollView(showsIndicators: false) { VStack(spacing: 8) {
                 row(letter: "E", title: L.t("mod.engine"), sub: "uv · Python 3.12 · mlx-audio · yt-dlp", ok: s.engineInstalled, size: nil, first: false, action: { s.installEngine() }, label: L.t("mod.install"), enabled: !s.busy)
                 ForEach(TTSModel.catalog) { m in
-                    row(letter: String(m.title.prefix(1)), title: m.title, sub: m.notes.replacingOccurrences(of: "_", with: " "), ok: m.installed, size: m.sizeGB, first: m.reference && m.id == "qwen3-voicedesign", ref: m.reference, langs: Languages.of(m),
+                    row(letter: String(m.title.prefix(1)), title: m.title, sub: m.notes.replacingOccurrences(of: "_", with: " "), ok: m.upToDate, size: m.sizeGB, first: m.reference && m.id == "qwen3-voicedesign", ref: m.reference, langs: Languages.of(m),
                         action: { s.download(m) }, label: L.t("mod.download"), enabled: !s.busy && s.engineInstalled)
                 }
                 if s.busy { Card { Text(String(s.log.suffix(400))).font(.system(size: 11.5, design: .monospaced)).foregroundStyle(Flat.text2).frame(maxWidth: .infinity, alignment: .leading) } }

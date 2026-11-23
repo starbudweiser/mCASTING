@@ -127,7 +127,7 @@ La bibliothèque compte **600 recettes** (hommes, femmes, enfants, animaux, cré
 
 1. Ouvrez **Cloner une voix**.
 2. Choisissez un fichier audio ou vidéo (WAV, MP3, M4A, AIFF…) ou collez un lien web (YouTube et d'autres sites, audio seul).
-3. Sélectionnez un extrait de 5 à 15 secondes, où la voix est claire et seule.
+3. Sélectionnez un extrait de 15 à 25 secondes, où la voix est claire et seule.
 4. Vérifiez la transcription automatique, et corrigez-la si besoin.
 5. Cochez la case par laquelle vous certifiez avoir le droit d'utiliser cette voix, puis ajoutez-la : elle rejoint la bibliothèque comme une voix normale.
 

@@ -17,11 +17,13 @@ public struct TTSModel: Identifiable, Hashable {
     public var nameKey = ""
     public var ramGB: Double = 0
     public var license = "Apache-2.0"
+    /// Ancien dépôt encore accepté tant que le nouveau n'est pas téléchargé (passage du 8 bits au bf16, plus fidèle).
+    public var legacyRepo: String? = nil
     public static let catalog: [TTSModel] = [
         .init(id: "qwen3-voicedesign", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-8bit", title: "Qwen3-TTS VoiceDesign (1.7B, 8 bits)", notes: "voice_design", sizeGB: 3.1, reference: true),
         .init(id: "qwen3-customvoice", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-CustomVoice-8bit", title: "Qwen3-TTS CustomVoice (1.7B, 8 bits)", notes: "custom_voice", sizeGB: 3.1, reference: true),
-        .init(id: "qwen3-base", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit", title: "Qwen3-TTS Base (1.7B, 8 bits)", notes: "cloning", sizeGB: 3.1, reference: false,
-              family: "qwen3", acting: true, nameKey: "mdl.natural", ramGB: 5),
+        .init(id: "qwen3-base", repo: "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-bf16", title: "Qwen3-TTS Base (1.7B, bf16)", notes: "cloning", sizeGB: 4.2, reference: false,
+              family: "qwen3", acting: true, nameKey: "mdl.natural", ramGB: 7, legacyRepo: "mlx-community/Qwen3-TTS-12Hz-1.7B-Base-8bit"),
         .init(id: "fish-drama3", repo: "mlx-community/fish-audio-drama-3-4bit", title: "Fish Audio Drama 3 (4 bits)", notes: "cloning_acting", sizeGB: 22, reference: false,
               family: "fish", acting: true, nameKey: "mdl.actor", ramGB: 26, license: "Fish Audio Community"),
         .init(id: "chatterbox-ml", repo: "mlx-community/chatterbox-multilingual-v3", title: "Chatterbox multilingue v3", notes: "cloning_expressive", sizeGB: 2.7, reference: false,
@@ -36,15 +38,22 @@ public struct TTSModel: Identifiable, Hashable {
     public static func find(_ id: String) -> TTSModel? { catalog.first { $0.id == id } }
 
     /// Dossier du cache Hugging Face (même règle que huggingface_hub).
-    public var cacheDir: URL {
+    public var cacheDir: URL { cacheDir(repo) }
+    func cacheDir(_ repo: String) -> URL {
         let env = ProcessInfo.processInfo.environment
         let root = env["HF_HUB_CACHE"].map { URL(fileURLWithPath: $0) }
             ?? env["HF_HOME"].map { URL(fileURLWithPath: $0).appendingPathComponent("hub") }
             ?? FileManager.default.homeDirectoryForCurrentUser.appendingPathComponent(".cache/huggingface/hub")
         return root.appendingPathComponent("models--" + repo.replacingOccurrences(of: "/", with: "--"))
     }
-    public var installed: Bool {
-        let snaps = cacheDir.appendingPathComponent("snapshots")
+    /// Modèle à jour (dépôt actuel téléchargé).
+    public var upToDate: Bool { has(repo) }
+    /// Utilisable : dépôt actuel, ou à défaut l'ancien dépôt.
+    public var installed: Bool { upToDate || legacyRepo.map(has) == true }
+    /// Dépôt passé à mlx-audio : l'actuel s'il est là, sinon l'ancien encore présent.
+    public var runRepo: String { upToDate ? repo : (legacyRepo.flatMap { has($0) ? $0 : nil } ?? repo) }
+    func has(_ repo: String) -> Bool {
+        let snaps = cacheDir(repo).appendingPathComponent("snapshots")
         guard let s = try? FileManager.default.contentsOfDirectory(atPath: snaps.path), let first = s.first else { return false }
         let files = (try? FileManager.default.contentsOfDirectory(atPath: snaps.appendingPathComponent(first).path)) ?? []
         return files.contains { $0.hasSuffix(".safetensors") } && files.contains("config.json")
@@ -111,7 +120,7 @@ public enum Engine {
         guard installed else { throw EngineError.notInstalled }
         log("Downloading \(m.title)…")
         try run(python, ["-c", "from huggingface_hub import snapshot_download as s; s('\(m.repo)')"], log: log)
-        guard m.installed else { throw EngineError.failed("Verification failed for \(m.repo)") }
+        guard m.upToDate else { throw EngineError.failed("Verification failed for \(m.repo)") }
     }
 
     /// Ajoute yt-dlp à un moteur déjà installé (liens web).
@@ -141,7 +150,7 @@ public enum Engine {
             let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: tmp) }
-            var args = ["-m", "mlx_audio.tts.generate", "--model", model.repo, "--text", text, "--lang_code", model.family == "qwen3" ? lang.qwen : lang.rawValue,
+            var args = ["-m", "mlx_audio.tts.generate", "--model", model.runRepo, "--text", text, "--lang_code", model.family == "qwen3" ? lang.qwen : lang.rawValue,
                         "--output_path", tmp.path, "--file_prefix", "v", "--join_audio"]
             if !instruct.isEmpty { args += ["--instruct", instruct] }
             if let voice { args += ["--voice", voice] }

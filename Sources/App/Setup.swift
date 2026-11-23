@@ -238,7 +238,7 @@ final class SetupModel: ObservableObject {
         AppState.shared.run("compare") { log in
             func say(_ s: String) { Task { @MainActor in SetupModel.shared.status = s } }
             if !Engine.installed { say(L.t("su.ec.engine")); try Engine.install(log: log) }
-            for m in [TTSModel.find("qwen3-voicedesign")!] + ids.compactMap({ TTSModel.find($0) }) where !m.installed {
+            for m in [TTSModel.find("qwen3-voicedesign")!] + ids.compactMap({ TTSModel.find($0) }) where !m.upToDate {
                 say(L.t("su.ec.dl", L.t(m.nameKey.isEmpty ? "mdl.ref" : m.nameKey))); try Engine.download(m, log: log)
             }
             say(L.t("su.ec.ref"))

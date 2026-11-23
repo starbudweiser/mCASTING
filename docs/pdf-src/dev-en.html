@@ -175,7 +175,7 @@
 <tr><th>Model</th><th>Hugging Face repository</th><th>Size</th><th>Use</th></tr>
 <tr><td>Qwen3-TTS VoiceDesign 1.7B 8-bit</td><td><code>mlx-community/Qwen3-TTS-12Hz-1.7B-VoiceDesign-8bit</code></td><td>3.1 GB</td><td>Creates a voice from a description: builds the library.</td></tr>
 <tr><td>Qwen3-TTS CustomVoice</td><td><code>…-CustomVoice-8bit</code></td><td>3.1 GB</td><td>Ready-made voices driven by instructions.</td></tr>
-<tr><td>Qwen3-TTS Base</td><td><code>…-Base-8bit</code></td><td>3.1 GB</td><td>Cloning: "natural voice", default acting model.</td></tr>
+<tr><td>Qwen3-TTS Base</td><td><code>…-Base-bf16</code></td><td>4.2 GB</td><td>Cloning: "natural voice", default acting model.</td></tr>
 <tr><td>Fish Audio Drama 3 (4-bit)</td><td><code>mlx-community/fish-audio-drama-3-4bit</code></td><td>22 GB</td><td>Highly expressive cloning ("actor voice"), inline acting cues.</td></tr>
 <tr><td>Chatterbox multilingual v3</td><td><code>mlx-community/chatterbox-multilingual-v3</code></td><td>2.7 GB</td><td>Expressive cloning with adjustable exaggeration.</td></tr>
 <tr><td>OmniVoice 0.6B</td><td><code>mlx-community/OmniVoice-bfloat16</code></td><td>1.3 GB</td><td>Light cloning for smaller Macs.</td></tr>
@@ -217,7 +217,7 @@
 <h2><span class="n">8</span>Voice cloning</h2>
 <ol>
 <li>Source: an audio or video file (WAV, MP3, M4A, AIFF…) or a web link (YouTube and other sites, audio only, through <code>yt-dlp</code>).</li>
-<li>Pick a 5 to 15 second excerpt.</li>
+<li>Pick a 15 to 25 second excerpt.</li>
 <li>Automatic transcription of the excerpt (mlx-audio speech recognition), editable.</li>
 <li>Required checkbox: the user certifies they have the right to use this voice.</li>
 <li>The voice is added to the library with <code>engine: "qwen3-base"</code>, <code>refAudio</code> and <code>refText</code>.</li>

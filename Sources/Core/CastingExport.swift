@@ -37,7 +37,7 @@ public enum CastingExport {
                               timbre_ref_audio: v.refAudio == nil ? v.samples[v.timbreLang.rawValue].map { Paths.audio.appendingPathComponent($0).path } : nil,
                               timbre_ref_text: v.refAudio == nil ? Catalog.sample(for: v, lang: v.timbreLang) : nil,
                               lines_alt: c.altLines,
-                              acting_model: SetupState.load().actingModel.flatMap { TTSModel.find($0)?.repo },
+                              acting_model: SetupState.load().actingModel.flatMap { TTSModel.find($0)?.runRepo },
                               sfx: c.sfx.map { Paths.audio.appendingPathComponent($0).path },
                               fx: c.fx, fx_ffmpeg: CreatureFX.find(c.fx, for: c)?.ffmpeg,
                               remote_model: v.remoteModel, remote_voice: v.remoteVoice, server: v.engine == "server" ? v.source : nil)
