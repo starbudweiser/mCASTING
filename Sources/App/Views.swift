@@ -815,12 +815,20 @@ struct CloneView: View {
     @State private var working = false
     @State private var message = ""
     @State private var total = 0.0
+    @State private var dropping = false
     var body: some View {
         Page { ScrollView(showsIndicators: false) { VStack(alignment: .leading, spacing: 10) {
             Title(text: L.t("nav.clone")); Text(L.t("clone.sub")).font(.system(size: 12)).foregroundStyle(Flat.text2)
             Card { VStack(alignment: .leading, spacing: 8) {
-                HStack { Button(L.t("clone.file")) { pickFile() }.buttonStyle(FlatButton(primary: true))
-                    Text(label).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1) }
+                VStack(spacing: 6) {
+                    Image(systemName: "waveform.badge.plus").font(.system(size: 24)).foregroundStyle(dropping ? Flat.acc : Flat.text2)
+                    Text(L.t("clone.drop")).font(.system(size: 13, weight: .semibold))
+                    Text(L.t("clone.drop.sub")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+                    HStack(spacing: 8) { Button(L.t("clone.file")) { pickFile() }.buttonStyle(FlatButton(primary: true))
+                        if !label.isEmpty { Text(label).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1).truncationMode(.middle) } }.padding(.top, 4)
+                }.frame(maxWidth: .infinity).padding(18)
+                .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(dropping ? Flat.acc.opacity(0.08) : .clear))
+                .overlay(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).strokeBorder(dropping ? Flat.acc : Flat.text2.opacity(0.45), style: StrokeStyle(lineWidth: 1.5, dash: [6, 4])))
                 HStack { TextField(L.t("clone.link"), text: $link).flatField()
                     Button(L.t("clone.fetch")) { fetch() }.buttonStyle(FlatButton()).disabled(link.isEmpty || working || !s.engineInstalled) }
             } }
@@ -843,11 +851,31 @@ struct CloneView: View {
             if working { ProgressView().controlSize(.small) }
             if !message.isEmpty { Text(message).font(.system(size: 12)).foregroundStyle(Flat.text2) }
         } } }
+        .onDrop(of: [.fileURL, .url], isTargeted: $dropping) { items in drop(items) }
     }
     private var work: URL { FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-clone") }
     func pickFile() {
         let o = NSOpenPanel(); o.allowedContentTypes = [.audio, .movie]
-        if o.runModal() == .OK, let u = o.url { source = u; label = u.lastPathComponent; load(u) }
+        if o.runModal() == .OK, let u = o.url { useFile(u) }
+    }
+    func useFile(_ u: URL) { source = u; label = u.lastPathComponent; start = 0; transcript = ""; message = ""; load(u) }
+    /// Glisser-déposer : un fichier audio ou vidéo est chargé tel quel ; un lien web (glissé depuis le navigateur) est analysé.
+    func drop(_ items: [NSItemProvider]) -> Bool {
+        guard let p = items.first, !working else { return false }
+        let fileType = p.hasItemConformingToTypeIdentifier(UTType.fileURL.identifier)
+        _ = p.loadObject(ofClass: URL.self) { u, _ in
+            guard let u else { return }
+            Task { @MainActor in
+                if fileType || u.isFileURL {
+                    let t = UTType(filenameExtension: u.pathExtension)
+                    if let t, t.conforms(to: .audio) || t.conforms(to: .movie) || t.conforms(to: .audiovisualContent) { useFile(u) }
+                    else { message = L.t("clone.drop.bad") }
+                } else if ["http", "https"].contains(u.scheme?.lowercased() ?? "") {
+                    link = u.absoluteString; if s.engineInstalled { fetch() }
+                }
+            }
+        }
+        return true
     }
     func load(_ u: URL) { Task { total = await VoiceCloning.duration(of: u); length = min(10, total) } }
     func fetch() {
