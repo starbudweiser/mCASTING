@@ -881,7 +881,11 @@ struct CloneView: View {
         }
         return true
     }
-    func load(_ u: URL) { Task { total = await VoiceCloning.duration(of: u); length = min(10, total) } }
+    /// Chargement d'une source : durée, extrait par défaut, puis transcription automatique de l'extrait (le bouton reste pour relancer).
+    func load(_ u: URL) { Task {
+        total = await VoiceCloning.duration(of: u); length = min(10, total)
+        if s.engineInstalled, !working, source == u { transcribe() }
+    } }
     func fetch() {
         working = true; message = ""
         let l = link, dir = work.appendingPathComponent("dl-\(UUID().uuidString)")
