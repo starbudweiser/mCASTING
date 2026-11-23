@@ -254,7 +254,7 @@ struct CharacterColumn: View {
                     Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(c.role)
                 }
                 Spacer(minLength: 0)
-            }.tile(selected: s.characterID == c.id || s.multi.contains(c.id))
+            }.hoverTile(selected: s.characterID == c.id || s.multi.contains(c.id))
         }.contentShape(Rectangle()).onTapGesture { click(c) }.contextMenu { menu(c) }.accessibilityAddTraits(.isButton)
     }
 }
@@ -508,6 +508,7 @@ struct VoiceCard: View {
     var fav: Bool { s.favorites.contains(v.id) }
     @State private var pick: Lang?
     @State private var free = false
+    @State private var hover = false
     /// Langue écoutée sur cette carte : celle choisie dans son menu, sinon la langue écoutée du projet (ou le filtre Langue).
     var lang: Lang { pick ?? (mode == .casting ? s.activeLang : (s.fLang ?? s.project?.activeLang ?? .fr)) }
     var body: some View {
@@ -545,8 +546,10 @@ struct VoiceCard: View {
                 }
             }
         }
-        .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: chosen ? Flat.ok : (isB ? Flat.acc : nil), dashed: isB && !chosen, selected: selected)
+        .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: chosen ? Flat.ok : (isB ? Flat.acc : nil), dashed: isB && !chosen,
+              selected: selected || chosen, hovered: hover, tint: chosen && !selected ? Flat.ok : nil)
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
+        .onHover { hover = $0 }
     }
     func tryLine() { if let c = s.character, !s.shownLines(c).isEmpty { s.preview(voice: v, text: s.spokenLine(c, 0, voice: v, lang: lang), style: c.style, fx: CreatureFX.find(c.fx, for: c), lang: lang) } }
     /// Langues prêtes de la voix pour le projet (« DE · EN »), en orange si une langue du projet reste à calculer.
@@ -650,7 +653,7 @@ struct ProjectsView: View {
                 }
                 Bar2(value: Double(p.castCount) / Double(max(p.characters.count, 1)))
                 HStack(spacing: 6) { Text(p.folder.map { "…/" + URL(fileURLWithPath: $0).lastPathComponent + "/casting.json" } ?? "casting.json").font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(p.folder ?? ""); Tag(title: st.0, color: st.1) }
-            }.tile(pad: EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14), selected: s.projectID == p.id)
+            }.hoverTile(pad: EdgeInsets(top: 14, leading: 14, bottom: 14, trailing: 14), selected: s.projectID == p.id)
         }.buttonStyle(.plain)
     }
 }

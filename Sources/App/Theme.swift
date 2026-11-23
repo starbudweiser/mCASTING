@@ -80,11 +80,20 @@ struct Card<C: View>: View {
 }
 extension View {
     /// Ligne / tuile de la maquette (`.chr`, `.v`, `.pc`) : marges réglables, contour optionnel (plein ou pointillé).
-    func tile(pad: EdgeInsets = EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10), outline: Color? = nil, dashed: Bool = false, selected: Bool = false) -> some View {
+    /// `selected` : teinte d'accent (ou `tint`, par exemple vert pour la voix choisie) ; `hovered` : léger éclaircissement au survol.
+    func tile(pad: EdgeInsets = EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10), outline: Color? = nil, dashed: Bool = false, selected: Bool = false, hovered: Bool = false, tint: Color? = nil) -> some View {
         padding(pad)
-            .background { ZStack { RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(Flat.card); RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(selected ? Flat.acc.opacity(0.24) : .clear) } }
+            .background { ZStack {
+                RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(Flat.card)
+                RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(selected ? (tint ?? Flat.acc).opacity(0.24) : .clear)
+                RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).fill(hovered ? Flat.text.opacity(selected ? 0.04 : 0.07) : .clear)
+            }.animation(.easeOut(duration: 0.12), value: hovered) }
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
             .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(outline ?? .clear, style: StrokeStyle(lineWidth: 2, dash: dashed ? [5, 4] : [])))
+    }
+    /// Tuile cliquable qui s'éclaircit au survol (lignes de personnages, cartes de projets).
+    func hoverTile(pad: EdgeInsets = EdgeInsets(top: 8, leading: 10, bottom: 8, trailing: 10), selected: Bool = false) -> some View {
+        modifier(HoverTile(pad: pad, selected: selected))
     }
     /// Champ de la maquette (`.search`) : fond contrôle, rayon 8, marge 7 × 11.
     func flatField() -> some View {
@@ -208,4 +217,10 @@ struct Flow: Layout {
         }
         return (CGSize(width: min(maxW, w), height: y + rowH), frames)
     }
+}
+
+struct HoverTile: ViewModifier {
+    let pad: EdgeInsets; let selected: Bool
+    @State private var hover = false
+    func body(content: Content) -> some View { content.tile(pad: pad, selected: selected, hovered: hover).onHover { hover = $0 } }
 }
