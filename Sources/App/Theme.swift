@@ -30,6 +30,8 @@ enum Flat {
     static let go = dyn(0x3f8f5a, 0x2f7d52)              // vert des boutons de création (plus doux que le vert d'état)
     static let avatar = dyn(0x26231e, 0x2c2c31)
     static let rb: CGFloat = 12, rc: CGFloat = 8
+    /// Hauteur commune des barres du bas (bouton large, état du calcul) pour qu'elles s'alignent d'une colonne à l'autre.
+    static let barH: CGFloat = 40
     /// Fonds pastel des panneaux de l'écran Casting (thème clair : pastel ; thème sombre : même teinte, assombrie).
     static let peach = dyn(0xfbe7dc, 0x45301f), sky = dyn(0xccc8c0, 0x1d3350), mint = dyn(0xe3e0da, 0x1c3f2d),
                lavender = dyn(0xe3e0da, 0x36285a), butter = dyn(0xccc8c0, 0x423a1c), rose = dyn(0xf8e2e7, 0x472433),
@@ -121,8 +123,8 @@ struct FlatButton: ButtonStyle {
         @Environment(\.onTint) private var onTint
         var body: some View {
             c.label.font(.system(size: small ? 11.5 : (wide ? 14 : 13), weight: wide ? .semibold : .medium)).lineLimit(1).fixedSize()
-                .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : (wide ? 12 : 6))
-                .frame(maxWidth: wide ? .infinity : nil)
+                .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : (wide ? 0 : 6))
+                .frame(maxWidth: wide ? .infinity : nil, minHeight: wide ? Flat.barH : nil)
                 .foregroundStyle(green ? Color.white : primary ? (onTint ? Flat.tSelText : Flat.onAcc) : (onTint ? Flat.tChipText : Flat.text))
                 .background(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(green ? Flat.go.opacity(hover ? 0.85 : 1)
                     : primary ? (onTint ? Flat.tSel : Flat.acc).opacity(hover ? 0.85 : 1)

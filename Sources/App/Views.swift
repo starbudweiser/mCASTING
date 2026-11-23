@@ -107,7 +107,7 @@ struct NavPanel: View {
             SidebarLangs()
             Spacer()
             ComputeStatus()
-        }.padding(.horizontal, 10).padding(.vertical, 12)
+        }.padding(.horizontal, 10).padding(.top, 12).padding(.bottom, 14)
         .overlay(alignment: .trailing) { Rectangle().fill(Flat.line).frame(width: 1) }
     }
 }
@@ -138,7 +138,7 @@ struct ComputeStatus: View {
             }
             .clipShape(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
         }
-        .frame(height: 34)
+        .frame(height: Flat.barH)
         .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { pulse = true } } }
         .animation(.easeOut(duration: 0.3), value: fraction)
     }
