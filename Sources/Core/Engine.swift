@@ -139,6 +139,13 @@ public enum Engine {
         return try body()
     }
 
+    /// Texte réellement envoyé au modèle. En français, les voix clonées lisent souvent « un » comme « une » : on écrit
+    /// le chiffre « 1 », que le modèle prononce « un ». Le texte enregistré et affiché ne change pas (remarque de Stéphan, 24/11/2026).
+    public static func speechText(_ text: String, lang: Lang) -> String {
+        guard lang == .fr else { return text }
+        return text.replacingOccurrences(of: #"(?<![\p{L}\p{N}])[Uu][Nn](?![\p{L}\p{N}])"#, with: "1", options: .regularExpression)
+    }
+
     /// Génère `text` ; `instruct` = description de la voix (VoiceDesign) ou consigne d'émotion (CustomVoice).
     /// Sortie en .m4a (AAC, `afconvert` de macOS). Renvoie la durée de calcul.
     @discardableResult
@@ -150,7 +157,7 @@ public enum Engine {
             let tmp = FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-\(UUID().uuidString)")
             try FileManager.default.createDirectory(at: tmp, withIntermediateDirectories: true)
             defer { try? FileManager.default.removeItem(at: tmp) }
-            var args = ["-m", "mlx_audio.tts.generate", "--model", model.runRepo, "--text", text, "--lang_code", model.family == "qwen3" ? lang.qwen : lang.rawValue,
+            var args = ["-m", "mlx_audio.tts.generate", "--model", model.runRepo, "--text", speechText(text, lang: lang), "--lang_code", model.family == "qwen3" ? lang.qwen : lang.rawValue,
                         "--output_path", tmp.path, "--file_prefix", "v", "--join_audio"]
             if !instruct.isEmpty { args += ["--instruct", instruct] }
             if let voice { args += ["--voice", voice] }
