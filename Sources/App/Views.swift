@@ -816,6 +816,7 @@ struct CloneView: View {
     @State private var message = ""
     @State private var total = 0.0
     @State private var dropping = false
+    @State private var toDelete: Voice?
     var body: some View {
         Page { ScrollView(showsIndicators: false) { VStack(alignment: .leading, spacing: 10) {
             Title(text: L.t("nav.clone")); Text(L.t("clone.sub")).font(.system(size: 12)).foregroundStyle(Flat.text2)
@@ -850,8 +851,46 @@ struct CloneView: View {
             }
             if working { ProgressView().controlSize(.small) }
             if !message.isEmpty { Text(message).font(.system(size: 12)).foregroundStyle(Flat.text2) }
+            clonedList
         } } }
         .onDrop(of: [.fileURL, .url], isTargeted: $dropping) { items in drop(items) }
+        .alert(L.t("voice.delete.q", toDelete?.name ?? ""), isPresented: Binding(get: { toDelete != nil }, set: { if !$0 { toDelete = nil } })) {
+            Button(L.t("btn.cancel"), role: .cancel) {}
+            Button(L.t("voice.delete"), role: .destructive) { if let v = toDelete { s.deleteVoice(v.id) } }
+        } message: {
+            let names = s.projects.filter { $0.characters.contains { $0.voiceID == toDelete?.id } }.map(\.name).joined(separator: ", ")
+            Text(names.isEmpty ? L.t("voice.delete.msg") : L.t("voice.delete.used", names) + " " + L.t("voice.delete.msg"))
+        }
+    }
+    /// Voix déjà clonées ou importées : pour éviter les doublons et les retrouver d'un coup d'œil.
+    @ViewBuilder var clonedList: some View {
+        let cloned = s.voices.filter(\.custom).sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+        let used = s.projects.flatMap(\.characters).compactMap(\.voiceID).reduce(into: [String: Int]()) { $0[$1, default: 0] += 1 }
+        Card { VStack(alignment: .leading, spacing: 8) {
+            HStack { Header(title: L.t("clone.list")); Tag(title: "\(cloned.count)"); Spacer() }
+            if cloned.isEmpty { Text(L.t("clone.none")).font(.system(size: 12)).foregroundStyle(Flat.text2) }
+            LazyVGrid(columns: [GridItem(.adaptive(minimum: 280), spacing: 8)], spacing: 8) {   // plusieurs colonnes selon la largeur
+                ForEach(cloned) { v in
+                    let rel = v.refAudio ?? v.samples.values.first
+                    let playing = rel.map { s.playingPath == Paths.audio.appendingPathComponent($0).path } ?? false
+                    HStack(spacing: 8) {
+                        Button { s.play(rel: rel) } label: { Image(systemName: playing ? "stop.fill" : "play.fill").frame(width: 14) }
+                            .buttonStyle(FlatButton(small: true)).disabled(rel == nil)
+                        VStack(alignment: .leading, spacing: 2) {
+                            HStack(spacing: 6) { Text(v.name).font(.system(size: 12.5, weight: .semibold)).lineLimit(1)
+                                if let n = used[v.id] { Tag(title: L.t("clone.used", n), color: Flat.ok) } }
+                            Text(([L.t("g.\(v.gender.rawValue)")] + [v.source].compactMap { $0 }).joined(separator: " · "))
+                                .font(.system(size: 11)).foregroundStyle(Flat.text2).lineLimit(1).truncationMode(.middle)
+                        }
+                        Spacer(minLength: 4)
+                        Button { s.fText = v.name; s.fClone = true; s.screen = .library } label: { Image(systemName: "arrow.up.right.square") }
+                            .buttonStyle(FlatButton(small: true)).help(L.t("clone.open"))
+                        Button { toDelete = v } label: { Image(systemName: "trash") }
+                            .buttonStyle(FlatButton(small: true)).help(L.t("voice.delete")).disabled(s.busy)
+                    }.padding(8).background(Flat.ctl.opacity(0.5), in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+                }
+            }
+        } }
     }
     private var work: URL { FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-clone") }
     func pickFile() {
