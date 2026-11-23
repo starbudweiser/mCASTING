@@ -858,7 +858,11 @@ struct CloneView: View {
         let o = NSOpenPanel(); o.allowedContentTypes = [.audio, .movie]
         if o.runModal() == .OK, let u = o.url { useFile(u) }
     }
-    func useFile(_ u: URL) { source = u; label = u.lastPathComponent; start = 0; transcript = ""; message = ""; load(u) }
+    func useFile(_ u: URL) {
+        source = u; label = u.lastPathComponent; start = 0; transcript = ""; message = ""
+        name = u.deletingPathExtension().lastPathComponent   // nom de la voix pré-rempli avec le nom du fichier
+        load(u)
+    }
     /// Glisser-déposer : un fichier audio ou vidéo est chargé tel quel ; un lien web (glissé depuis le navigateur) est analysé.
     func drop(_ items: [NSItemProvider]) -> Bool {
         guard let p = items.first, !working else { return false }
