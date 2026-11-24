@@ -14,8 +14,12 @@ public enum Paths {
     public static var engine: URL { home.appendingPathComponent("engine") }
     public static var lock: URL { home.appendingPathComponent("compute.lock") }
     public static var jobs: URL { home.appendingPathComponent("jobs.json") }
+    /// Boîte de réception : d'autres outils (mTALKIE…) y déposent des paquets (manifest.json + audio), importés tout seuls.
+    public static var inbox: URL { home.appendingPathComponent("Inbox") }
+    public static var lines: URL { home.appendingPathComponent("lines") }
+    public static var linesDB: URL { home.appendingPathComponent("lines.sqlite") }
 
     public static func prepare() {
-        for d in [home, audio, engine] { try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true) }
+        for d in [home, audio, engine, inbox, lines] { try? FileManager.default.createDirectory(at: d, withIntermediateDirectories: true) }
     }
 }

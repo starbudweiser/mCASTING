@@ -41,6 +41,13 @@ Optionally help with `search_voices` (filters: gender, age, tone) and `preview_v
 and suggest candidates with `set_casting` — but tell the human to **listen and validate in the app**. Do not continue
 until they say the casting is done.
 
+## 3 bis. Pick lines from the line database (optional)
+Lines received from mTALKIE (games) or other tools are searchable: `list_line_sources`, then `search_lines` (text, source,
+character, lang, tags, duration). `assign_line` gives a line to a character. Default mode `inspiration`: rewrite the line
+for the character in `text` (game, film and series lines and actors' voices are copyrighted; required for anything
+published). Mode `original` keeps the exact words, for private tests only. Assigned lines appear in `casting.json` as
+`assigned_lines` (`text` to speak, `original`, `source`, `mode`, `emotion`).
+
 ## 4. Generate from casting.json
 `write_casting` writes `<folder>/casting.json` (format `mcasting/1`). For each character it gives:
 - `voice_id`, `recipe` (voice description), `samples` (one audio sample of the voice per language), `style`.

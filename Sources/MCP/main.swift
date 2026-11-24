@@ -37,6 +37,14 @@ let tools: [[String: Any]] = [
     ["name": "import_project", "description": "Import (or update) an in-progress project: its characters, sample lines and current voices. Provide project_json (JSON text) OR path (absolute path of a .json file). mode: merge (default, never erases an existing casting) or replace. dry_run: true to preview only. Call get_import_guide first for the format.",
      "inputSchema": schema(["project_json": "Project JSON text (format mcasting-project/1, or a bare array of characters)", "path": "Absolute path of a JSON file (alternative to project_json)", "name": "Project name (needed only if the JSON has none)", "mode": "merge|replace", "dry_run": "true to preview without saving"])],
     ["name": "export_project", "description": "Export a project (characters, current voices, casting) as JSON in the same format as import_project.", "inputSchema": schema(["project": "Project name or id"], required: ["project"])],
+    ["name": "list_line_sources", "description": "Line database: list the sources (games, films, series) whose lines were received (from mTALKIE or any tool dropping a package in the Inbox), with line counts, languages and top speakers.", "inputSchema": schema([:])],
+    ["name": "search_lines", "description": "Search the line database to pick lines for characters. text: words (prefix match, accents ignored). Filters: source (id or title, comma-separated), character (speaker in the source), lang (ISO 639-1), tags (comma-separated: laugh, scream, insult, greeting, question, threat, exclamation), min_duration, max_duration (seconds), limit (default 30, max 200).",
+     "inputSchema": schema(["text": "Words to find", "source": "Source id(s) or title(s)", "character": "Speaker", "lang": "", "tags": "", "min_duration": "", "max_duration": "", "limit": ""])],
+    ["name": "get_line", "description": "Get one line of the database by id (text, source, speaker, tags, audio path).", "inputSchema": schema(["id": "Line id"], required: ["id"])],
+    ["name": "assign_line", "description": "Assign a database line to a project character. mode: inspiration (default: the line is rewritten in 'text' before being spoken — required for published videos or games, since game/film lines and actors' voices are copyrighted) or original (verbatim, private tests only). text: the line the character will say (required for inspiration). emotion: optional delivery.",
+     "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "id": "Line id", "mode": "inspiration|original", "text": "Rewritten line to speak", "emotion": "Delivery"], required: ["project", "character", "id"])],
+    ["name": "unassign_line", "description": "Remove an assigned line from a character (assigned line id from list_characters).",
+     "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "assigned_id": "Assigned line id"], required: ["project", "character", "assigned_id"])],
     ["name": "write_casting", "description": "Write casting.json into the project's folder.", "inputSchema": schema(["project": "Project name or id"], required: ["project"])],
 ]
 
@@ -53,7 +61,8 @@ func logCall(_ name: String, _ a: [String: Any]) {
 
 func call(_ name: String, _ a: [String: Any]) throws -> String {
     Paths.prepare(); logCall(name, a)
-    func s(_ k: String) -> String { (a[k] as? String) ?? "" }
+    InboxImporter.processAll()          // paquets déposés pendant que l'appli était fermée
+    func s(_ k: String) -> String { (a[k] as? String) ?? (a[k].map { "\($0)" } ?? "") }
     switch name {
     case "list_projects":
         return json(DataStore.projects().map { ["id": $0.id, "name": $0.name, "lang": $0.lang.rawValue, "languages": $0.languages.map(\.rawValue).joined(separator: ","), "characters": "\($0.characters.count)", "cast": "\($0.castCount)"] })
@@ -134,6 +143,40 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
     case "export_project":
         guard let p = DataStore.projects().first(where: { $0.id == s("project") || $0.name.lowercased() == s("project").lowercased() }) else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project"]) }
         return String(decoding: ProjectImport.export(p, voices: DataStore.voices()), as: UTF8.self)
+    case "list_line_sources":
+        struct Src: Encodable { var id: String, title: String, kind: String, lines: Int, languages: [String], top_speakers: [String] }
+        return json(LinesStore.sources().map { Src(id: $0.id, title: $0.title, kind: $0.kind, lines: $0.count, languages: $0.langs,
+                                                   top_speakers: LinesStore.characters(source: $0.id, limit: 12).map { "\($0.0) (\($0.1))" }) })
+    case "search_lines":
+        var q = LinesStore.Query()
+        q.text = s("text"); q.character = s("character"); q.lang = s("lang").lowercased()
+        q.tags = s("tags").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty }
+        let srcs = LinesStore.sources()
+        q.sources = s("source").split(separator: ",").compactMap { k in
+            let k = k.trimmingCharacters(in: .whitespaces).lowercased()
+            return srcs.first { $0.id == k || $0.title.lowercased() == k || $0.title.lowercased().contains(k) }?.id
+        }
+        if !s("source").isEmpty, q.sources.isEmpty { throw NSError(domain: "mcasting", code: 5, userInfo: [NSLocalizedDescriptionKey: "Unknown source. Call list_line_sources."]) }
+        q.minDuration = Double(s("min_duration")); q.maxDuration = Double(s("max_duration"))
+        q.limit = min(Int(s("limit")) ?? 30, 200)
+        let r = LinesStore.search(q)
+        struct Out: Encodable { var total: Int; var shown: Int; var lines: [LineRecord] }
+        return json(Out(total: r.total, shown: r.lines.count, lines: r.lines))
+    case "get_line":
+        guard let id = Int64(s("id")), let r = LinesStore.get(id) else { throw NSError(domain: "mcasting", code: 6, userInfo: [NSLocalizedDescriptionKey: "Unknown line id"]) }
+        return json(r)
+    case "assign_line", "unassign_line":
+        var out = AssignedLine(text: "")
+        try DataStore.updateProjects { all in
+            guard let i = findProject(s("project"), in: all), let j = all[i].characters.firstIndex(where: { $0.id == s("character") || $0.name.lowercased() == s("character").lowercased() })
+            else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project or character"]) }
+            if name == "unassign_line" { all[i].characters[j].assigned?.removeAll { $0.id == s("assigned_id") }; return }
+            guard let id = Int64(s("id")), let r = LinesStore.get(id) else { throw NSError(domain: "mcasting", code: 6, userInfo: [NSLocalizedDescriptionKey: "Unknown line id"]) }
+            let mode = s("mode") == "original" ? "original" : "inspiration"
+            out = AssignedLine(record: r, mode: mode, text: s("text"), emotion: s("emotion").isEmpty ? nil : s("emotion"))
+            all[i].characters[j].assigned = (all[i].characters[j].assigned ?? []) + [out]
+        }
+        return name == "unassign_line" ? "OK" : json(out) + (out.mode == "inspiration" && s("text").isEmpty ? "\nNote: mode inspiration without 'text' keeps the original wording; rewrite it before any public use." : "")
     case "write_casting":
         guard let p = DataStore.projects().first(where: { $0.id == s("project") || $0.name.lowercased() == s("project").lowercased() }) else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project"]) }
         return try CastingExport.write(p, voices: DataStore.voices()).path

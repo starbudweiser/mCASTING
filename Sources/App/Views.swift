@@ -27,6 +27,7 @@ struct ContentView: View {
                     case .projects: ProjectsView()
                     case .casting: CastingView()
                     case .library: LibraryView()
+                    case .lines: LinesView()
                     case .generation: GenerationView()
                     case .clone: CloneView()
                     case .models: ModelsView()
@@ -34,6 +35,16 @@ struct ContentView: View {
                     }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
                 .background(alignment: .bottomTrailing) { Watermark() }.clipped()
+            }
+        }
+        .overlay(alignment: .bottomTrailing) {
+            if let t = s.toast {
+                HStack(spacing: 8) { Image(systemName: "tray.and.arrow.down.fill"); Text(t).fixedSize(horizontal: false, vertical: true) }
+                    .font(.system(size: 12.5, weight: .medium)).foregroundStyle(Flat.onAcc)
+                    .padding(.horizontal, 14).padding(.vertical, 10).frame(maxWidth: 420, alignment: .leading)
+                    .background(Flat.acc, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+                    .padding(16).transition(.move(edge: .bottom).combined(with: .opacity))
+                    .onTapGesture { s.toast = nil }
             }
         }
     }
@@ -91,7 +102,7 @@ struct Dot: View {
 /// `.nav` : 190 px, filet à droite, entrées 8 × 11 de rayon 8.
 struct NavPanel: View {
     @ObservedObject var s = AppState.shared
-    static let items: [(Screen, String, String)] = [(.projects, "rectangle.stack", "nav.projects"), (.casting, "person.wave.2", "nav.casting"), (.library, "music.note.list", "nav.library"), (.clone, "waveform.badge.plus", "nav.clone"), (.models, "arrow.down.circle", "nav.models")]
+    static let items: [(Screen, String, String)] = [(.projects, "rectangle.stack", "nav.projects"), (.casting, "person.wave.2", "nav.casting"), (.library, "music.note.list", "nav.library"), (.lines, "text.quote", "nav.lines"), (.clone, "waveform.badge.plus", "nav.clone"), (.models, "arrow.down.circle", "nav.models")]
     var active: Screen { s.screen == .generation ? .library : s.screen }
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -369,7 +380,7 @@ struct CharacterSheet: View {
         ScrollView(showsIndicators: false) {
             HStack(alignment: .top, spacing: 12) {
                 VStack(spacing: 10) { identity; interpretation; if let cur = c.current { current(cur) } }.frame(maxWidth: .infinity)
-                VStack(spacing: 10) { lines }.frame(maxWidth: .infinity)
+                VStack(spacing: 10) { lines; AssignedCard(c: c) }.frame(maxWidth: .infinity)
             }
         }
         .onAppear { name = c.name; role = c.role; notes = c.notes ?? ""; linesText = c.lines.joined(separator: "\n") }

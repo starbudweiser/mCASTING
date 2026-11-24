@@ -2,7 +2,7 @@
 import SwiftUI
 import AVFoundation
 
-enum Screen: String, CaseIterable { case projects, casting, library, clone, models, settings, generation }
+enum Screen: String, CaseIterable { case projects, casting, library, lines, clone, models, settings, generation }
 
 @MainActor
 final class AppState: ObservableObject {
@@ -39,6 +39,9 @@ final class AppState: ObservableObject {
     private var cancelRequested = false
     private var player: AVAudioPlayer?
     @Published var playingPath: String?
+    @Published var toast: String?            // notification discrète (paquet reçu dans la boîte de réception)
+    @Published var linesTick = 0             // change quand la base de répliques change
+    private var importing = false
     private var stamp: (Date, Date) = (.distantPast, .distantPast)
     private var timer: Timer?
 
@@ -113,7 +116,7 @@ final class AppState: ObservableObject {
         let st = SetupState.load()
         if CommandLine.arguments.contains("--setup") || (!st.completed && (projects.isEmpty || doneSamples == 0)) { SetupModel.shared.start(quick: false) }
         if CommandLine.arguments.contains("--setup-creatures") { let m = SetupModel.shared; m.start(quick: false); m.projectID = projectID; m.step = 5 }   // essais d'interface
-        timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in Task { @MainActor in AppState.shared.reload() } }
+        timer = Timer.scheduledTimer(withTimeInterval: 1.5, repeats: true) { _ in Task { @MainActor in AppState.shared.reload(); AppState.shared.checkInbox() } }
     }
     func reload(force: Bool = false) {
         let a = DataStore.modified(Paths.projects), b = DataStore.modified(Paths.voices)
@@ -122,6 +125,39 @@ final class AppState: ObservableObject {
         projects = DataStore.projects(); voices = DataStore.voices()
         if projectID == nil || project == nil { projectID = projects.first?.id }
         if character == nil { characterID = project?.characters.first?.id }
+    }
+
+    // MARK: boîte de réception et base de répliques
+    /// Importe les paquets déposés (mTALKIE…) en arrière-plan, puis l'annonce par une notification discrète.
+    func checkInbox() {
+        guard !importing else { return }
+        let items = ((try? FileManager.default.contentsOfDirectory(atPath: Paths.inbox.path)) ?? []).filter { !$0.hasPrefix(".") && $0 != "failed" }
+        guard !items.isEmpty else { return }
+        importing = true
+        DispatchQueue.global(qos: .utility).async {
+            let done = InboxImporter.processAll()
+            Task { @MainActor in
+                let a = AppState.shared; a.importing = false
+                guard !done.isEmpty else { return }
+                a.reload(force: true); a.linesTick += 1
+                a.showToast(done.map { d in d.kind == "voice" ? L.t("toast.voice", d.app ?? "?", d.voiceName ?? "") : L.t("toast.lines", d.app ?? "?", d.count, d.title) }.joined(separator: "\n"))
+            }
+        }
+    }
+    func showToast(_ t: String) {
+        toast = t
+        DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in if self?.toast == t { self?.toast = nil } }
+    }
+    /// Attribue une réplique de la base à un personnage.
+    func assign(_ r: LineRecord, project pid: String, character cid: String, mode: String, text: String?) {
+        mutate { all in
+            guard let i = all.firstIndex(where: { $0.id == pid }), let j = all[i].characters.firstIndex(where: { $0.id == cid }) else { return }
+            all[i].characters[j].assigned = (all[i].characters[j].assigned ?? []) + [AssignedLine(record: r, mode: mode, text: text)]
+        }
+    }
+    /// Personnages (tous projets) à qui cette réplique a déjà été attribuée.
+    func assignedNames(_ r: LineRecord) -> [String] {
+        projects.flatMap(\.characters).filter { $0.assigned?.contains { $0.key == r.key && $0.source == r.sourceTitle } ?? false }.map(\.name)
     }
 
     // MARK: projets

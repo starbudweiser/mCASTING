@@ -76,10 +76,33 @@ public struct Character: Codable, Identifiable, Hashable {
     public var kind: String?        // human / creature / animal (fourni par l'import ou l'analyse des dialogues)
     public var fx: String?          // effet de voix (CreatureFX) appliqué aux répliques, pour les créatures et animaux
     public var sfx: String?         // cri de créature généré (relatif à audio/), pour les personnages non humains
+    public var assigned: [AssignedLine]?   // répliques piochées dans la base de répliques et attribuées au personnage
     public init(id: String = UUID().uuidString, key: String? = nil, name: String, role: String = "", lines: [String] = [], lineCount: Int? = nil,
                 notes: String? = nil, current: CurrentVoice? = nil, voiceID: String? = nil, style: String = "") {
         self.id = id; self.key = key; self.name = name; self.role = role; self.lines = lines; self.lineCount = lineCount
         self.notes = notes; self.current = current; self.voiceID = voiceID; self.style = style
+    }
+}
+
+/// Réplique de la base attribuée à un personnage : texte à dire, réplique d'origine et mode d'usage.
+public struct AssignedLine: Codable, Hashable, Identifiable {
+    public var id: String
+    public var text: String          // texte que le personnage dira (réécrit en mode inspiration)
+    public var original: String?     // réplique d'origine
+    public var source: String?       // titre de la source (jeu, film, série)
+    public var key: String?          // nom de la réplique dans la source
+    public var speaker: String?      // personnage d'origine
+    public var audio: String?        // audio d'origine (chemin absolu), pour réécouter
+    public var mode: String          // "inspiration" (réécrite) ou "original" (texte d'origine, essais privés)
+    public var emotion: String?
+    public init(id: String = UUID().uuidString, text: String, original: String? = nil, source: String? = nil, key: String? = nil,
+                speaker: String? = nil, audio: String? = nil, mode: String = "inspiration", emotion: String? = nil) {
+        self.id = id; self.text = text; self.original = original; self.source = source; self.key = key
+        self.speaker = speaker; self.audio = audio; self.mode = mode; self.emotion = emotion
+    }
+    public init(record r: LineRecord, mode: String, text: String? = nil, emotion: String? = nil) {
+        self.init(text: (text?.isEmpty == false ? text! : r.text), original: r.text, source: r.sourceTitle, key: r.key,
+                  speaker: r.character.isEmpty ? nil : r.character, audio: r.audio, mode: mode, emotion: emotion)
     }
 }
 
