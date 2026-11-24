@@ -519,7 +519,7 @@ struct VoiceCard: View {
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 6) { Text(v.name).fontWeight(.semibold).foregroundStyle(hover ? Flat.sand : Flat.text).animation(.easeOut(duration: 0.12), value: hover).rowName(v.name)
+                    HStack(spacing: 6) { Text(v.name).fontWeight(.semibold).foregroundStyle(hover ? Flat.brand : Flat.text).animation(.easeOut(duration: 0.12), value: hover).rowName(v.name)
                         if chosen { Tag(title: L.t("lib.chosen").replacingOccurrences(of: " ✓", with: ""), color: Flat.ok) }
                         if isA { Tag(title: "A", solid: true) }; if isB { Tag(title: "B", solid: true) }
                         if v.custom { Tag(title: "clone", color: Flat.brand) } }

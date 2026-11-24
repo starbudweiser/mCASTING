@@ -26,7 +26,6 @@ enum Flat {
     static let line = dyn(0xe3ddd2, 0x303035)
     static let acc = dyn(0x26231e, 0x0a84ff), onAcc = dyn(0xf4f1ec, 0xffffff)
     static let brand = dyn(0xd9622b, 0xf08a52)
-    static let sand = dyn(0xb0702f, 0xe9b77c)            // orange sable : nom d'une carte de voix survolée
     static let ok = dyn(0x3f8f5a, 0x30d158), warn = dyn(0xb7791f, 0xff9f0a)
     static let go = dyn(0x3f8f5a, 0x2f7d52)              // vert des boutons de création (plus doux que le vert d'état)
     static let avatar = dyn(0x26231e, 0x2c2c31)
