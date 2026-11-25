@@ -92,6 +92,8 @@ struct TopBar: View {
             Text("Qwen3-TTS · " + (s.engineInstalled ? L.t("mod.installed") : L.t("mod.notinstalled"))).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1).fixedSize()
             Button { s.screen = .settings } label: { HStack(spacing: 5) { Image(systemName: "gearshape"); Text(L.t("nav.settings")) } }.buttonStyle(FlatButton(small: true))
         }.frame(height: 52).padding(.trailing, 18)
+        .background { Color.clear.contentShape(Rectangle()).gesture(WindowDragGesture())   // déplacer la fenêtre par la barre
+            .onTapGesture(count: 2) { NSApp.keyWindow?.performZoom(nil) } }                    // double-clic : agrandir, comme une barre de titre
         .overlay(alignment: .bottom) { Rectangle().fill(Flat.line).frame(height: 1) }
     }
 }

@@ -49,7 +49,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
     /// lancement centré sur l'écran du pointeur, à la dernière taille choisie (1200 × 740 au premier lancement), minimum 1000 × 640).
     @MainActor func showMain(front: Bool = true) {
         if window == nil {
-            let w = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 740), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
+            let w = MainWindow(contentRect: NSRect(x: 0, y: 0, width: 1200, height: 740), styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView], backing: .buffered, defer: false)
             w.titlebarAppearsTransparent = true; w.titleVisibility = .hidden; w.isReleasedWhenClosed = false
             w.title = "mCASTING"; w.backgroundColor = Flat.bgNS
             let tb = NSToolbar(identifier: "mcasting.main"); tb.showsBaselineSeparator = false; w.toolbar = tb; w.toolbarStyle = .unified
@@ -85,4 +85,35 @@ struct MenuBarIcon: View {
         i.isTemplate = false; return i
     }()
     var body: some View { Image(nsImage: Self.img) }
+}
+
+
+/// Fenêtre principale. La barre d'outils vide (Socle : elle descend les boutons de fenêtre) recouvre les 52 px du haut ;
+/// depuis macOS 27.2 elle avale les clics, et le bouton « Réglages » de la barre du haut ne répondait plus (25/11/2026).
+/// Les clics de cette bande vont donc directement au contenu SwiftUI, sauf sur les trois boutons de fenêtre ;
+/// le déplacement de la fenêtre par la barre est rendu par `WindowDragGesture` (TopBar).
+final class MainWindow: NSWindow {
+    static let band: CGFloat = 52
+    private var tracked: NSView?
+    override func sendEvent(_ e: NSEvent) {
+        switch e.type {
+        case .leftMouseDown:
+            if let cv = contentView, e.locationInWindow.y >= cv.bounds.height - Self.band, !onWindowButton(e.locationInWindow),
+               let hit = cv.hitTest(cv.convert(e.locationInWindow, from: nil)) {
+                tracked = hit; hit.mouseDown(with: e); return
+            }
+        case .leftMouseDragged:
+            if let v = tracked { v.mouseDragged(with: e); return }
+        case .leftMouseUp:
+            if let v = tracked { tracked = nil; v.mouseUp(with: e); return }
+        default: break
+        }
+        super.sendEvent(e)
+    }
+    private func onWindowButton(_ p: NSPoint) -> Bool {
+        [NSWindow.ButtonType.closeButton, .miniaturizeButton, .zoomButton].contains { type in
+            guard let b = standardWindowButton(type), let sv = b.superview else { return false }
+            return sv.convert(b.frame, to: nil).insetBy(dx: -4, dy: -4).contains(p)
+        }
+    }
 }
