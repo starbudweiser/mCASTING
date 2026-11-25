@@ -112,20 +112,35 @@ struct ClonesView: View {
         Dictionary(grouping: clones.filter { kind == nil || $0.originKind == kind }.compactMap(\.originTitle)) { $0 }.map { ($0.key, $0.value.count) }.sorted { $0.0 < $1.0 }
     }
 
+    var addButton: some View { Button(L.t("nav.clone.sub")) { s.screen = .clone }.buttonStyle(FlatButton(small: true)).fixedSize() }
+    var groupPicker: some View {
+        HStack(spacing: 6) {
+            Text(L.t("clones.group")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+            chip(L.t("clones.source"), group == 0) { group = 0 }
+            chip(L.t("clones.character"), group == 1) { group = 1 }
+            chip(L.t("clones.nogroup"), group == 2) { group = 2 }
+        }.fixedSize()
+    }
+
     // MARK: liste (centre)
     var center: some View {
         VStack(alignment: .leading, spacing: 10) {
-            HStack(spacing: 10) {
-                Title(text: L.t("nav.clones")).fixedSize(); Tag(title: L.t("clones.count", shown.count))
-                Spacer(minLength: 6)
-                Button(L.t("nav.clone.sub")) { s.screen = .clone }.buttonStyle(FlatButton(small: true))
-            }
-            HStack(spacing: 6) {
-                Text(L.t("clones.group")).font(.system(size: 12)).foregroundStyle(Flat.text2)
-                chip(L.t("clones.source"), group == 0) { group = 0 }
-                chip(L.t("clones.character"), group == 1) { group = 1 }
-                chip(L.t("clones.nogroup"), group == 2) { group = 2 }
-                Spacer(minLength: 0)
+            // Titre et « Grouper par » sur une seule ligne quand la largeur le permet, sinon sur deux.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 10) {
+                    Title(text: L.t("nav.clones")).fixedSize(); Tag(title: L.t("clones.count", shown.count))
+                    groupPicker.padding(.leading, 14)
+                    Spacer(minLength: 6)
+                    addButton
+                }
+                VStack(alignment: .leading, spacing: 10) {
+                    HStack(spacing: 10) {
+                        Title(text: L.t("nav.clones")).fixedSize(); Tag(title: L.t("clones.count", shown.count))
+                        Spacer(minLength: 6)
+                        addButton
+                    }
+                    groupPicker
+                }
             }
             ScrollView(showsIndicators: false) {
                 VStack(alignment: .leading, spacing: 10) {
