@@ -47,7 +47,7 @@ struct ClonesView: View {
             if clones.isEmpty { empty } else {
                 HStack(alignment: .top, spacing: 12) {
                     ScrollView(showsIndicators: false) { filters }.frame(width: 220)
-                    center.frame(maxWidth: .infinity)
+                    center.frame(minWidth: 0, maxWidth: .infinity)
                     if let v = sel { ScrollView(showsIndicators: false) { CloneSheet(v: v, uses: used[v.id] ?? []) }.frame(width: 300) }
                 }
             }
@@ -184,19 +184,29 @@ struct CloneRow: View {
     @ObservedObject var s = AppState.shared
     @State private var hover = false
     var body: some View {
+        // Fenêtre étroite (fiche ouverte à droite) : version compacte sans la colonne des étiquettes, pour ne jamais
+        // pousser la fiche hors de la fenêtre. Toutes les lignes ont la même largeur, donc la même version : colonnes alignées.
+        ViewThatFits(in: .horizontal) { row(full: true); row(full: false) }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(selected ? Flat.acc.opacity(0.24) : (hover ? Flat.text.opacity(0.05) : .clear))
+        .animation(.easeOut(duration: 0.12), value: hover)
+        .onHover { hover = $0 }
+        .contentShape(Rectangle()).onTapGesture(perform: select)
+    }
+    func row(full: Bool) -> some View {
         let path = Paths.audio.appendingPathComponent(v.refAudio ?? "").path
-        HStack(spacing: 10) {
+        return HStack(spacing: 10) {
             Avatar(letter: String((v.character ?? v.name).prefix(1)), size: 26)
             VStack(alignment: .leading, spacing: 1) {
                 Text(v.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(hover ? Flat.brand : Flat.text)
                     .animation(.easeOut(duration: 0.12), value: hover).rowName(v.name)
                 Text(([v.character, L.t("g.\(v.gender.rawValue)")].compactMap { $0 } + [duration].compactMap { $0 }).joined(separator: " · "))
                     .font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1)
-            }.frame(minWidth: 170, maxWidth: 260, alignment: .leading)
+            }.frame(minWidth: full ? 170 : 110, maxWidth: 260, alignment: .leading)
             HStack(spacing: 3) { ForEach(v.samples.keys.sorted(), id: \.self) { Tag(title: $0.uppercased()) } }.frame(width: 34, alignment: .leading)
             PlayButton(playing: s.playingPath == path) { s.play(rel: v.refAudio) }
-            Wave(seed: Double(abs(v.id.hashValue % 97)), playing: s.playingPath == path).frame(minWidth: 90, maxWidth: .infinity)
-            Group {
+            Wave(seed: Double(abs(v.id.hashValue % 97)), playing: s.playingPath == path).frame(minWidth: full ? 90 : 40, maxWidth: .infinity)
+            if full { Group {
                 let t = v.tags ?? []
                 if t.isEmpty { Text("—").foregroundStyle(Flat.text2) }
                 else {   // autant d'étiquettes entières que la place en permet, jamais une étiquette coupée
@@ -206,20 +216,15 @@ struct CloneRow: View {
                         }
                     }
                 }
-            }.frame(width: 170, alignment: .leading).help((v.tags ?? []).joined(separator: ", "))
+            }.frame(width: 170, alignment: .leading).help((v.tags ?? []).joined(separator: ", ")) }
             Group {
                 if let u = uses.first {
                     Text("→ " + u.components(separatedBy: " (").first! + (uses.count > 1 ? " +\(uses.count - 1)" : ""))
                         .font(.system(size: 11, weight: .semibold)).lineLimit(1).truncationMode(.middle).padding(.horizontal, 7).padding(.vertical, 2)
                         .foregroundStyle(Flat.ok).background(Capsule().fill(Flat.ok.opacity(0.22))).help(uses.joined(separator: "\n"))
                 } else { Tag(title: L.t("clones.unused")) }
-            }.frame(width: 150, alignment: .trailing)
+            }.frame(width: full ? 150 : 110, alignment: .trailing)
         }
-        .padding(.horizontal, 10).padding(.vertical, 7)
-        .background(selected ? Flat.acc.opacity(0.24) : (hover ? Flat.text.opacity(0.05) : .clear))
-        .animation(.easeOut(duration: 0.12), value: hover)
-        .onHover { hover = $0 }
-        .contentShape(Rectangle()).onTapGesture(perform: select)
     }
     var duration: String? {
         guard let r = v.refAudio, let d = try? AVAudioPlayerShim.duration(Paths.audio.appendingPathComponent(r)) else { return nil }

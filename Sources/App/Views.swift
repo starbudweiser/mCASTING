@@ -883,6 +883,10 @@ struct CloneView: View {
     @State private var character = ""
     @State private var srcKind = "other"
     @State private var srcTitle = ""
+    /// Langue parlée dans l'extrait : "" = langue principale du projet (par défaut), "auto" = détection par Whisper,
+    /// sinon un code. La détection seule se trompait (extrait français de Kaamelott transcrit en anglais, 25/11/2026).
+    @State private var spoken = ""
+    private var spokenLang: Lang? { spoken == "auto" ? nil : (Lang(rawValue: spoken) ?? s.project?.lang ?? .fr) }
     var body: some View {
         Page { ScrollView(showsIndicators: false) { VStack(alignment: .leading, spacing: 10) {
             Title(text: L.t("nav.clone")); Text(L.t("clone.sub")).font(.system(size: 12)).foregroundStyle(Flat.text2)
@@ -908,7 +912,17 @@ struct CloneView: View {
                     Text(L.t("clone.hint")).font(.system(size: 12)).foregroundStyle(Flat.text2)
                     Text(L.t("clone.transcript")).font(.system(size: 12)).foregroundStyle(Flat.text2)
                     TextEditor(text: $transcript).font(.system(size: 12.5)).flatEditor(height: 70)
-                    Button(L.t("clone.auto")) { transcribe() }.buttonStyle(FlatButton()).disabled(working || !s.engineInstalled)
+                    HStack(spacing: 6) {
+                        Button(L.t("clone.auto")) { transcribe() }.buttonStyle(FlatButton()).disabled(working || !s.engineInstalled)
+                        Spacer(minLength: 12)
+                        Text(L.t("clone.spoken")).font(.system(size: 12)).foregroundStyle(Flat.text2)
+                        let cur = spokenLang?.rawValue ?? "auto"
+                        ForEach(["auto"] + Languages.qwen3, id: \.self) { code in
+                            Button { spoken = code; if source != nil, s.engineInstalled, !working { transcribe() } } label: {
+                                Chip(title: code == "auto" ? L.t("clone.spoken.auto") : code.uppercased(), on: cur == code)
+                            }.buttonStyle(.plain).help(code == "auto" ? L.t("clone.spoken.auto.help") : (Lang(rawValue: code)?.native ?? code))
+                        }
+                    }
                     HStack { TextField(L.t("clone.name"), text: $name).flatField()
                         Picker("", selection: $gender) { ForEach(Gender.allCases, id: \.self) { Text(L.t("g.\($0.rawValue)")).tag($0) } }.frame(width: 130) }
                     HStack {
@@ -1012,13 +1026,13 @@ struct CloneView: View {
     func listen() { Task { if let p = try? await prepared() { s.play(rel: p.wav.path) } } }
     func transcribe() {
         working = true; message = ""
-        Task { do { let p = try await prepared()
-            let t = try await Task.detached { try VoiceCloning.transcribe(p.wav, lang: nil) }.value
+        Task { do { let p = try await prepared(); let lang = spokenLang
+            let t = try await Task.detached { try VoiceCloning.transcribe(p.wav, lang: lang) }.value
             transcript = t; working = false } catch { working = false; message = error.localizedDescription } }
     }
     func create() {
         working = true
-        Task { do { let p = try await prepared(); try VoiceCloning.register(name: name, gender: gender, prepared: p, refText: transcript, lang: Languages.detect(transcript) ?? s.project?.lang ?? .fr,
+        Task { do { let p = try await prepared(); try VoiceCloning.register(name: name, gender: gender, prepared: p, refText: transcript, lang: spokenLang ?? Languages.detect(transcript) ?? s.project?.lang ?? .fr,
                                                                                                   character: character, sourceKind: srcTitle.isEmpty ? nil : srcKind, sourceTitle: srcTitle)
             s.reload(force: true); working = false; message = L.t("clone.done"); source = nil; name = ""; transcript = ""; consent = false; character = "" }
             catch { working = false; message = error.localizedDescription } }
