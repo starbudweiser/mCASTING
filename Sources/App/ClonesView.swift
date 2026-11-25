@@ -137,9 +137,15 @@ struct ClonesView: View {
                                 Tag(title: "\(list.count)")
                             }.padding(.top, 2)
                         }
-                        LazyVGrid(columns: [GridItem(.adaptive(minimum: 230), spacing: 8)], spacing: 8) {
-                            ForEach(list) { v in CloneCard(v: v, uses: used[v.id] ?? [], selected: sel?.id == v.id) { selID = v.id } }
+                        VStack(spacing: 0) {
+                            ForEach(Array(list.enumerated()), id: \.element.id) { i, v in
+                                if i > 0 { Rectangle().fill(Flat.line).frame(height: 1) }
+                                CloneRow(v: v, uses: used[v.id] ?? [], selected: sel?.id == v.id) { selID = v.id }
+                            }
                         }
+                        .background(Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+                        .clipShape(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+                        .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
                     }
                 }
             }
@@ -157,32 +163,47 @@ struct ClonesView: View {
     }
 }
 
-struct CloneCard: View {
+/// Ligne de la liste des voix clonées : colonnes de largeur fixe (sauf nom et étiquettes) pour rester alignées d'un groupe à l'autre.
+struct CloneRow: View {
     let v: Voice; let uses: [String]; let selected: Bool; let select: () -> Void
     @ObservedObject var s = AppState.shared
     @State private var hover = false
     var body: some View {
-        VStack(alignment: .leading, spacing: 6) {
-            HStack(spacing: 8) {
-                Avatar(letter: String((v.character ?? v.name).prefix(1)), size: 30)
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 6) { Text(v.name).font(.system(size: 13, weight: .semibold)).lineLimit(1); ForEach(v.samples.keys.sorted(), id: \.self) { Tag(title: $0.uppercased()) } }
-                    Text(([v.character, L.t("g.\(v.gender.rawValue)")].compactMap { $0 } + [duration].compactMap { $0 }).joined(separator: " · ")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1)
+        let path = Paths.audio.appendingPathComponent(v.refAudio ?? "").path
+        HStack(spacing: 10) {
+            Avatar(letter: String((v.character ?? v.name).prefix(1)), size: 26)
+            VStack(alignment: .leading, spacing: 1) {
+                Text(v.name).font(.system(size: 13, weight: .semibold)).foregroundStyle(hover ? Flat.brand : Flat.text)
+                    .animation(.easeOut(duration: 0.12), value: hover).rowName(v.name)
+                Text(([v.character, L.t("g.\(v.gender.rawValue)")].compactMap { $0 } + [duration].compactMap { $0 }).joined(separator: " · "))
+                    .font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(1)
+            }.frame(minWidth: 170, maxWidth: 260, alignment: .leading)
+            HStack(spacing: 3) { ForEach(v.samples.keys.sorted(), id: \.self) { Tag(title: $0.uppercased()) } }.frame(width: 34, alignment: .leading)
+            PlayButton(playing: s.playingPath == path) { s.play(rel: v.refAudio) }
+            Wave(seed: Double(abs(v.id.hashValue % 97)), playing: s.playingPath == path).frame(minWidth: 90, maxWidth: .infinity)
+            Group {
+                let t = v.tags ?? []
+                if t.isEmpty { Text("—").foregroundStyle(Flat.text2) }
+                else {   // autant d'étiquettes entières que la place en permet, jamais une étiquette coupée
+                    ViewThatFits(in: .horizontal) {
+                        ForEach(Array(stride(from: min(t.count, 3), through: 1, by: -1)), id: \.self) { n in
+                            HStack(spacing: 4) { ForEach(t.prefix(n), id: \.self) { Tag(title: $0) } }
+                        }
+                    }
                 }
-                Spacer(minLength: 0)
-            }
-            HStack(spacing: 8) {
-                PlayButton(playing: s.playingPath == Paths.audio.appendingPathComponent(v.refAudio ?? "").path) { s.play(rel: v.refAudio) }
-                Wave(seed: Double(abs(v.id.hashValue % 97)), bars: 30, playing: s.playingPath == Paths.audio.appendingPathComponent(v.refAudio ?? "").path)
-            }
-            HStack(spacing: 5) {
-                ForEach((v.tags ?? []).prefix(3), id: \.self) { Tag(title: $0) }
-                Spacer(minLength: 4)
-                if let u = uses.first { Tag(title: "→ " + u.components(separatedBy: " (").first! + (uses.count > 1 ? " +\(uses.count - 1)" : ""), color: Flat.ok).help(uses.joined(separator: "\n")) }
-                else { Tag(title: L.t("clones.unused")) }
-            }
+            }.frame(width: 170, alignment: .leading).help((v.tags ?? []).joined(separator: ", "))
+            Group {
+                if let u = uses.first {
+                    Text("→ " + u.components(separatedBy: " (").first! + (uses.count > 1 ? " +\(uses.count - 1)" : ""))
+                        .font(.system(size: 11, weight: .semibold)).lineLimit(1).truncationMode(.middle).padding(.horizontal, 7).padding(.vertical, 2)
+                        .foregroundStyle(Flat.ok).background(Capsule().fill(Flat.ok.opacity(0.22))).help(uses.joined(separator: "\n"))
+                } else { Tag(title: L.t("clones.unused")) }
+            }.frame(width: 150, alignment: .trailing)
         }
-        .tile(selected: selected, hovered: hover).onHover { hover = $0 }
+        .padding(.horizontal, 10).padding(.vertical, 7)
+        .background(selected ? Flat.acc.opacity(0.24) : (hover ? Flat.text.opacity(0.05) : .clear))
+        .animation(.easeOut(duration: 0.12), value: hover)
+        .onHover { hover = $0 }
         .contentShape(Rectangle()).onTapGesture(perform: select)
     }
     var duration: String? {

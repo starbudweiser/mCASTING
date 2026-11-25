@@ -170,15 +170,19 @@ struct BrandName: View {
 }
 
 /// `.wave` : barres de 2,5 px, écart 1,5, hauteur 22 ; accent pendant la lecture.
+/// Onde d'un extrait : elle remplit la largeur disponible, le nombre de barres suit la largeur (une barre tous les 4 pt).
 struct Wave: View {
     var seed: Double; var bars = 34; var playing = false
     var body: some View {
-        HStack(spacing: 1.5) {
-            ForEach(0..<bars, id: \.self) { i in
-                let h = 0.2 + abs(sin(Double(i) * 0.7 + seed) * cos(Double(i) * 0.31 + seed * 2)) * 0.8
-                RoundedRectangle(cornerRadius: 1.25).fill(playing ? Flat.acc : Flat.text2.opacity(0.65)).frame(width: 2.5, height: 22 * h)
-            }
-        }.frame(height: 22).frame(maxWidth: .infinity, alignment: .leading)
+        GeometryReader { g in
+            let n = max(8, Int((g.size.width + 1.5) / 4))
+            HStack(spacing: 1.5) {
+                ForEach(0..<n, id: \.self) { i in
+                    let h = 0.2 + abs(sin(Double(i) * 0.7 + seed) * cos(Double(i) * 0.31 + seed * 2)) * 0.8
+                    RoundedRectangle(cornerRadius: 1.25).fill(playing ? Flat.acc : Flat.text2.opacity(0.65)).frame(width: 2.5, height: 22 * h)
+                }
+            }.frame(maxHeight: .infinity)
+        }.frame(minWidth: CGFloat(min(bars, 20)) * 4, maxWidth: .infinity).frame(height: 22)
     }
 }
 
