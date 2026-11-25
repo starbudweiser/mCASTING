@@ -87,6 +87,7 @@ struct TopBar: View {
         HStack(spacing: 10) {
             BrandName().padding(.leading, 104)
             Spacer()
+            ComputeStatus()
             HStack(spacing: 8) { Dot(color: Flat.ok); Text(L.t("bar.mcp")) }.font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1).fixedSize()
             Text("Qwen3-TTS · " + (s.engineInstalled ? L.t("mod.installed") : L.t("mod.notinstalled"))).font(.system(size: 12)).foregroundStyle(Flat.text2).lineLimit(1).fixedSize()
             Button { s.screen = .settings } label: { HStack(spacing: 5) { Image(systemName: "gearshape"); Text(L.t("nav.settings")) } }.buttonStyle(FlatButton(small: true))
@@ -119,39 +120,47 @@ struct NavPanel: View {
             }
             SidebarLangs()
             Spacer()
-            ComputeStatus()
         }.padding(.horizontal, 10).padding(.top, 12).padding(.bottom, 14)
         .overlay(alignment: .trailing) { Rectangle().fill(Flat.line).frame(width: 1) }
     }
 }
 
-/// État du calcul, en bas de la navigation : texte centré sur une barre de progression en arrière-plan (indéterminée si le calcul n'a pas de pourcentage).
+/// État du calcul, dans la barre du haut avec les autres états : point vert au repos ; pendant un calcul, point orange
+/// qui pulse, pourcentage et fine barre de progression. Un clic pendant un calcul ouvre le détail (et l'arrêt quand il est possible).
 struct ComputeStatus: View {
     @ObservedObject var s = AppState.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
     @State private var pulse = false
+    @State private var detail = false
     var fraction: Double? { s.busy && s.task == "library" && s.totalSamples > 0 ? Double(s.doneSamples) / Double(s.totalSamples) : nil }
     var label: String {
         guard s.busy else { return L.t("compute.free") }
         if let f = fraction { return L.t("compute.busy") + " · " + "\(Int((f * 100).rounded())) %" }
         return L.t("compute.busy")
     }
+    var lastLine: String { s.log.split(whereSeparator: \.isNewline).last.map(String.init) ?? "" }
     var body: some View {
-        GeometryReader { g in
-            ZStack {
-                RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(Flat.ctl)
-                if s.busy {
-                    RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).fill(Flat.warn.opacity(fraction == nil ? (pulse ? 0.45 : 0.2) : 0.42))
-                        .frame(width: fraction.map { max(g.size.width * $0, 8) } ?? g.size.width).frame(maxWidth: .infinity, alignment: .leading)
+        Button { if s.busy { detail.toggle() } } label: {
+            HStack(spacing: 8) {
+                Dot(color: s.busy ? Flat.warn : Flat.ok).opacity(s.busy && !reduceMotion && pulse ? 0.35 : 1)
+                Text(label).foregroundStyle(s.busy ? Flat.text : Flat.text2).fontWeight(s.busy ? .medium : .regular)
+                if let f = fraction {
+                    ZStack(alignment: .leading) {
+                        Capsule().fill(Flat.ctl)
+                        Capsule().fill(Flat.warn).frame(width: max(4, 56 * f))
+                    }.frame(width: 56, height: 4)
                 }
-                HStack(spacing: 7) {
-                    if !s.busy { Dot(color: Flat.ok) }
-                    Text(label).font(.system(size: 12, weight: s.busy ? .medium : .regular)).foregroundStyle(s.busy ? Flat.text : Flat.text2).lineLimit(1).minimumScaleFactor(0.85)
-                }
-            }
-            .clipShape(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+            }.font(.system(size: 12)).lineLimit(1).fixedSize().contentShape(Rectangle())
         }
-        .frame(height: Flat.barH)
+        .buttonStyle(.plain).help(s.busy ? lastLine : "")
+        .popover(isPresented: $detail, arrowEdge: .bottom) {
+            VStack(alignment: .leading, spacing: 8) {
+                Text(label).font(.system(size: 13, weight: .semibold))
+                if !lastLine.isEmpty { Text(lastLine).font(.system(size: 11.5)).foregroundStyle(Flat.text2).lineLimit(3).fixedSize(horizontal: false, vertical: true) }
+                if s.task == "library" { Button(L.t("btn.stop")) { s.cancel(); detail = false }.buttonStyle(FlatButton(small: true)) }
+            }.padding(14).frame(width: 280, alignment: .leading)
+        }
+        .onChange(of: s.busy) { _, b in if !b { detail = false } }
         .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { pulse = true } } }
         .animation(.easeOut(duration: 0.3), value: fraction)
     }
