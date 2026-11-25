@@ -27,8 +27,10 @@ let tools: [[String: Any]] = [
     ["name": "add_characters", "description": "Add characters to a project. characters_json: JSON array of {name, role, lines[]}.",
      "inputSchema": schema(["project": "Project name or id", "characters_json": "JSON array"], required: ["project", "characters_json"])],
     ["name": "list_characters", "description": "List characters of a project with their cast voice.", "inputSchema": schema(["project": "Project name or id"], required: ["project"])],
-    ["name": "search_voices", "description": "Search the voice library. Filters: gender (man|woman|child|animal|creature), age, pitch (low|medium|high), tone, species, text, lang (ISO 639-1: voices with a ready sample in that language), limit.",
-     "inputSchema": schema(["gender": "", "age": "", "pitch": "", "tone": "", "species": "", "text": "free text", "lang": "", "limit": "default 20"])],
+    ["name": "search_voices", "description": "Search the voice library. Filters: gender (man|woman|child|animal|creature), age, pitch (low|medium|high), tone, species, text, lang (ISO 639-1: voices with a ready sample in that language), limit. Cloned voices: cloned=true, source (title of the game, film or series), source_kind (game|film|series|other), character (original character), tags (comma-separated).",
+     "inputSchema": schema(["gender": "", "age": "", "pitch": "", "tone": "", "species": "", "text": "free text", "lang": "", "limit": "default 20", "cloned": "true = cloned voices only", "source": "", "source_kind": "", "character": "", "tags": ""])],
+    ["name": "update_voice", "description": "Complete the record of a cloned voice: name, character (original character), source_kind (game|film|series|other), source (title), gender, tags (comma-separated, replaces the list).",
+     "inputSchema": schema(["voice_id": "Voice id", "name": "", "character": "", "source_kind": "", "source": "", "gender": "", "tags": ""], required: ["voice_id"])],
     ["name": "set_casting", "description": "Assign a voice to a character (and an optional emotion style).",
      "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "voice_id": "Voice id", "style": "Emotion/delivery"], required: ["project", "character", "voice_id"])],
     ["name": "preview_voice", "description": "Generate a preview of a voice for a line (slow: runs the local TTS). Returns the audio path.",
@@ -114,9 +116,28 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
             (s("pitch").isEmpty || v.pitch == s("pitch")) && (s("tone").isEmpty || v.tone.contains(s("tone"))) &&
             (s("species").isEmpty || v.species == s("species")) &&
             (q.isEmpty || (v.name + " " + v.recipe + " " + v.tone + " " + (v.species ?? "")).lowercased().contains(q)) &&
-            (s("lang").isEmpty || v.samples[s("lang")] != nil)
+            (s("lang").isEmpty || v.samples[s("lang")] != nil) &&
+            (s("cloned") != "true" || v.isClone) &&
+            (s("source").isEmpty || (v.originTitle ?? "").lowercased().contains(s("source").lowercased())) &&
+            (s("source_kind").isEmpty || v.originKind == s("source_kind")) &&
+            (s("character").isEmpty || (v.character ?? "").lowercased().contains(s("character").lowercased())) &&
+            s("tags").split(separator: ",").allSatisfy { t in (v.tags ?? []).contains { $0.lowercased() == t.trimmingCharacters(in: .whitespaces).lowercased() } }
         }.prefix(Int(s("limit")) ?? 20)
-        return json(out.map { ["id": $0.id, "name": $0.name, "gender": $0.gender.rawValue, "age": $0.age, "pitch": $0.pitch, "tone": $0.tone, "recipe": $0.recipe] })
+        return json(out.map { v -> [String: String] in
+            var d = ["id": v.id, "name": v.name, "gender": v.gender.rawValue, "age": v.age, "pitch": v.pitch, "tone": v.tone, "recipe": v.recipe]
+            if v.isClone { d["cloned"] = "true"; d["character"] = v.character ?? ""; d["source"] = v.originTitle ?? ""; d["source_kind"] = v.originKind; d["tags"] = (v.tags ?? []).joined(separator: ","); d["ref_text"] = v.refText ?? "" }
+            return d
+        })
+    case "update_voice":
+        try VoiceCloning.updateInfo(id: s("voice_id")) { v in
+            if !s("name").isEmpty { v.name = s("name") }
+            if a["character"] != nil { v.character = s("character").isEmpty ? nil : s("character") }
+            if !s("source_kind").isEmpty { v.sourceKind = s("source_kind") }
+            if a["source"] != nil { v.sourceTitle = s("source").isEmpty ? nil : s("source") }
+            if let g = Gender(rawValue: s("gender")) { v.gender = g }
+            if a["tags"] != nil { v.tags = s("tags").split(separator: ",").map { $0.trimmingCharacters(in: .whitespaces) }.filter { !$0.isEmpty } }
+        }
+        return "OK"
     case "set_casting":
         try DataStore.updateProjects { all in
             guard let i = findProject(s("project"), in: all), let j = all[i].characters.firstIndex(where: { $0.id == s("character") || $0.name.lowercased() == s("character").lowercased() })

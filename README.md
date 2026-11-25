@@ -15,7 +15,7 @@ Full documentation, development guide and user interface guide, in French and En
 - **Casting per project.** A project (a game, a video, a voice-over…) is a list of characters with a role and sample lines, in one or two languages chosen for the project. You listen to the library and pick each character's voice.
 - **Voice library.** ~600 voice recipes (men, women, children, animals, creatures) generated locally with Qwen3-TTS VoiceDesign, with a sample in each of your projects' languages (10 available: English, French, German, Spanish, Italian, Portuguese, Russian, Chinese, Japanese, Korean). A language already computed is reused by every project. Filter by gender, age, tone, language; A/B comparison; emotion set per line.
 - **Any voice, any language.** Hear any voice in any language an installed model speaks (up to 23 with Chatterbox multilingual or OmniVoice): its sample is cloned to keep the timbre, and the result is cached. A slight accent may remain, and the app says so.
-- **Voice cloning.** Import an audio file (WAV, MP3, M4A…) or a web link (YouTube and other sites, audio only), choose a 15–25 s excerpt, transcribe it and add the cloned voice to the library. You must have the right to use the voice.
+- **Voice cloning.** Import an audio file (WAV, MP3, M4A…) or a web link (YouTube and other sites, audio only), choose a 15–25 s excerpt, transcribe it and add the cloned voice to the library. You must have the right to use the voice. Cloned voices have their own library, sorted by source type (game, film, series), source, original character, gender, language, tags and use, with an editable record.
 - **Line database.** Lines received from other tools (mTALKIE sends game lines with their text, speaker and audio; any tool can drop a package, see [docs/INBOX.md](docs/INBOX.md)) go into a searchable database: full-text search (accents ignored), filters by source, tag, language, length and speaker, playback, export to CSV or JSON. Assign a line to a character, as *inspiration* (rewritten before being spoken) or as *original text* (private tests only); assigned lines go into `casting.json` (`assigned_lines`).
 - **Agent-ready (MCP).** A bundled MCP server (`mcasting-mcp`, stdio) lets an agent create projects, add characters, search voices, preview a voice and write the final `casting.json` into your project folder.
 - **100% local.** Everything runs on your Mac (Apple Silicon, macOS 15+). The app installs its own isolated Python engine (uv + mlx-audio) and downloads the models you choose from Hugging Face. One heavy generation at a time.
@@ -52,7 +52,7 @@ them (`"lines": {"fr": [...], "en": [...]}`).
 claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
 ```
 
-Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`, and for the line database `list_line_sources`, `search_lines`, `get_line`, `assign_line`, `unassign_line`.
+Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices` (also by source, source kind, character and tags for cloned voices), `update_voice`, `set_casting`, `preview_voice`, `write_casting`, and for the line database `list_line_sources`, `search_lines`, `get_line`, `assign_line`, `unassign_line`.
 
 ## Bring an existing project (any agent)
 

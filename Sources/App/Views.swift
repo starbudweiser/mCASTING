@@ -28,6 +28,7 @@ struct ContentView: View {
                     case .casting: CastingView()
                     case .library: LibraryView()
                     case .lines: LinesView()
+                    case .clones: ClonesView()
                     case .generation: GenerationView()
                     case .clone: CloneView()
                     case .models: ModelsView()
@@ -102,7 +103,7 @@ struct Dot: View {
 /// `.nav` : 190 px, filet à droite, entrées 8 × 11 de rayon 8.
 struct NavPanel: View {
     @ObservedObject var s = AppState.shared
-    static let items: [(Screen, String, String)] = [(.projects, "rectangle.stack", "nav.projects"), (.casting, "person.wave.2", "nav.casting"), (.library, "music.note.list", "nav.library"), (.lines, "text.quote", "nav.lines"), (.clone, "waveform.badge.plus", "nav.clone"), (.models, "arrow.down.circle", "nav.models")]
+    static let items: [(Screen, String, String)] = [(.projects, "rectangle.stack", "nav.projects"), (.casting, "person.wave.2", "nav.casting"), (.library, "music.note.list", "nav.library"), (.clones, "person.2.wave.2", "nav.clones"), (.clone, "plus", "nav.clone.sub"), (.lines, "text.quote", "nav.lines"), (.models, "arrow.down.circle", "nav.models")]
     var active: Screen { s.screen == .generation ? .library : s.screen }
     var body: some View {
         VStack(alignment: .leading, spacing: 4) {
@@ -110,7 +111,8 @@ struct NavPanel: View {
             ForEach(Self.items, id: \.0) { it in
                 Button { s.screen = it.0 } label: {
                     HStack(spacing: 9) { Image(systemName: it.1).frame(width: 16); Text(L.t(it.2)).lineLimit(1); Spacer(minLength: 0) }
-                        .padding(.horizontal, 11).padding(.vertical, 8).contentShape(Rectangle())
+                        .font(.system(size: it.0 == .clone ? 12 : 13)).padding(.leading, it.0 == .clone ? 20 : 0)
+                        .padding(.horizontal, 11).padding(.vertical, it.0 == .clone ? 5 : 8).contentShape(Rectangle())
                         .background(active == it.0 ? Flat.ctl : .clear, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
                         .foregroundStyle(active == it.0 ? Flat.text : Flat.text2).fontWeight(active == it.0 ? .semibold : .regular)
                 }.buttonStyle(.plain)
@@ -496,7 +498,14 @@ struct FilterBox: View {
                 ForEach(s.project?.languages ?? []) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
                 chip(L.t("lang.all"), s.fLang == nil) { s.fLang = nil }
                 chip("★ " + L.t("f.fav"), s.fFav) { s.fFav.toggle() }
-                chip(L.t("f.clone"), s.fClone) { s.fClone.toggle() }
+                chip(L.t("f.clone"), s.fClone) { s.fClone.toggle(); if !s.fClone { s.fSource = nil } }
+            }
+            let srcs = Array(Set(s.voices.filter(\.isClone).compactMap(\.originTitle))).sorted()
+            if s.fClone, !srcs.isEmpty {
+                row(L.t("clones.source")) {
+                    chip(L.t("clones.all.f"), s.fSource == nil) { s.fSource = nil }
+                    ForEach(srcs, id: \.self) { t in chip(t, s.fSource == t) { s.fSource = s.fSource == t ? nil : t } }
+                }
             }
             Spacer(minLength: 0)
             HStack { Spacer(minLength: 0); Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count)) }
@@ -730,7 +739,7 @@ struct LibraryView: View {
                     Text(L.t("f.lang")).font(.system(size: 11)).foregroundStyle(Flat.text2).frame(width: 44, alignment: .leading)
                     ForEach(s.filterLangs) { l in Button { s.fLang = s.fLang == l ? nil : l } label: { Chip(title: l.rawValue.uppercased(), on: s.fLang == l) }.buttonStyle(.plain).help(l.localized) }
                     Button { s.fFav.toggle() } label: { Chip(title: "★ " + L.t("f.fav"), on: s.fFav) }.buttonStyle(.plain).padding(.leading, 14)
-                    Button { s.fClone.toggle() } label: { Chip(title: L.t("f.clone"), on: s.fClone) }.buttonStyle(.plain)
+                    Button { s.screen = .clones } label: { Chip(title: L.t("f.clone") + " →", on: false) }.buttonStyle(.plain).help(L.t("nav.clones"))
                     Spacer(minLength: 0)
                     Button { usage = usage == 1 ? 0 : 1 } label: { Chip(title: L.t("lib.used"), on: usage == 1) }.buttonStyle(.plain)
                     Button { usage = usage == 2 ? 0 : 2 } label: { Chip(title: L.t("lib.unused"), on: usage == 2) }.buttonStyle(.plain)
@@ -853,6 +862,9 @@ struct CloneView: View {
     @State private var total = 0.0
     @State private var dropping = false
     @State private var toDelete: Voice?
+    @State private var character = ""
+    @State private var srcKind = "other"
+    @State private var srcTitle = ""
     var body: some View {
         Page { ScrollView(showsIndicators: false) { VStack(alignment: .leading, spacing: 10) {
             Title(text: L.t("nav.clone")); Text(L.t("clone.sub")).font(.system(size: 12)).foregroundStyle(Flat.text2)
@@ -881,6 +893,11 @@ struct CloneView: View {
                     Button(L.t("clone.auto")) { transcribe() }.buttonStyle(FlatButton()).disabled(working || !s.engineInstalled)
                     HStack { TextField(L.t("clone.name"), text: $name).flatField()
                         Picker("", selection: $gender) { ForEach(Gender.allCases, id: \.self) { Text(L.t("g.\($0.rawValue)")).tag($0) } }.frame(width: 130) }
+                    HStack {
+                        TextField(L.t("clones.character.ph"), text: $character).flatField()
+                        Picker("", selection: $srcKind) { ForEach(ClonesView.kinds, id: \.self) { Text(L.t("kind." + $0)).tag($0) } }.frame(width: 120)
+                        TextField(L.t("clones.title.ph"), text: $srcTitle).flatField()
+                    }
                     Toggle(L.t("clone.consent"), isOn: $consent).toggleStyle(.checkbox)
                     Button(L.t("clone.create")) { create() }.buttonStyle(FlatButton(primary: true)).disabled(!consent || name.isEmpty || transcript.isEmpty || working)
                 } }
@@ -983,8 +1000,9 @@ struct CloneView: View {
     }
     func create() {
         working = true
-        Task { do { let p = try await prepared(); try VoiceCloning.register(name: name, gender: gender, prepared: p, refText: transcript, lang: s.project?.lang ?? .fr)
-            s.reload(force: true); working = false; message = L.t("clone.done"); source = nil; name = ""; transcript = ""; consent = false }
+        Task { do { let p = try await prepared(); try VoiceCloning.register(name: name, gender: gender, prepared: p, refText: transcript, lang: s.project?.lang ?? .fr,
+                                                                                                  character: character, sourceKind: srcTitle.isEmpty ? nil : srcKind, sourceTitle: srcTitle)
+            s.reload(force: true); working = false; message = L.t("clone.done"); source = nil; name = ""; transcript = ""; consent = false; character = "" }
             catch { working = false; message = error.localizedDescription } }
     }
 }

@@ -8,7 +8,7 @@ public enum InboxImporter {
     public struct Source: Codable { public var kind: String?; public var title: String; public var id: String? }
     public struct VoicePart: Codable {
         public var name: String, lang: String, audio: String, text: String
-        public var gender: String?, description: String?
+        public var gender: String?, description: String?, character: String?, tags: [String]?
     }
     public struct LinePart: Codable {
         public var key: String?, text: String?, character: String?, lang: String?
@@ -81,10 +81,12 @@ public enum InboxImporter {
             var voice = Voice(id: id, name: v.name, gender: Gender(rawValue: v.gender ?? "") ?? .man, age: "n/a", pitch: "n/a", tone: "cloned",
                               recipe: v.description.map { "Cloned voice: \($0)" } ?? "Cloned voice from a reference sample.", engine: "qwen3-base",
                               samples: [lang.rawValue: rel], custom: true, refAudio: rel, refText: v.text, source: origin)
+            voice.character = v.character; voice.sourceKind = m.source?.kind ?? "other"; voice.sourceTitle = m.source?.title
+            voice.tags = v.tags; voice.added = Date()
             var all = DataStore.voices()
             if let i = all.firstIndex(where: { $0.custom && $0.name == v.name && $0.source == origin }) {   // même voix renvoyée : on la remplace
                 voice.id = all[i].id
-                let old = all[i].refAudio; all[i] = voice
+                let old = all[i].refAudio; voice.tags = voice.tags ?? all[i].tags; all[i] = voice
                 all[i].samples = [lang.rawValue: rel]
                 if let old, old != rel { try? FileManager.default.removeItem(at: Paths.audio.appendingPathComponent(old)) }
             } else { all.append(voice) }

@@ -2,7 +2,7 @@
 import SwiftUI
 import AVFoundation
 
-enum Screen: String, CaseIterable { case projects, casting, library, lines, clone, models, settings, generation }
+enum Screen: String, CaseIterable { case projects, casting, library, clones, lines, clone, models, settings, generation }
 
 @MainActor
 final class AppState: ObservableObject {
@@ -21,6 +21,7 @@ final class AppState: ObservableObject {
     @Published var fTone: String? = nil
     @Published var fFav = false
     @Published var fClone = false
+    @Published var fSource: String? = nil     // voix clonées : titre de la source (jeu, film, série)
     @Published var revealTick = 0
     @Published var multi: Set<String> = []        // personnages sélectionnés (⌘-clic, ⇧-clic) pour une action groupée
     @Published var expressive = UserDefaults.standard.bool(forKey: "expressive") { didSet { UserDefaults.standard.set(expressive, forKey: "expressive") } }
@@ -51,7 +52,7 @@ final class AppState: ObservableObject {
     var filteredVoices: [Voice] {
         let q = fText.lowercased()
         return voices.filter { v in
-            (!fFav || favorites.contains(v.id)) && (!fClone || v.custom) && (fGender == nil || v.gender == fGender) && (fLang == nil || v.samples[fLang!.rawValue] != nil) &&
+            (!fFav || favorites.contains(v.id)) && (!fClone || v.custom) && (fSource == nil || v.originTitle == fSource) && (fGender == nil || v.gender == fGender) && (fLang == nil || v.samples[fLang!.rawValue] != nil) &&
             (fAge == nil || v.age == fAge || (fAge == "senior" && v.age == "mature")) &&
             (fTone == nil || (fTone == "low" && v.pitch == "low") || (fTone == "high" && v.pitch == "high") || (fTone != "low" && fTone != "high" && v.tone.contains(fTone!))) &&
             (q.isEmpty || (v.name + " " + v.recipe + " " + v.tone + " " + (v.species ?? "")).lowercased().contains(q))
@@ -100,7 +101,7 @@ final class AppState: ObservableObject {
     /// Clic sur le nom vert d'un personnage : l'affiche dans la liste des voix, filtres levés, voisines visibles.
     func showVoice(of c: Character) {
         characterID = c.id; castTab = 0
-        fGender = nil; fLang = nil; fText = ""; fAge = nil; fTone = nil; fFav = false; fClone = false
+        fGender = nil; fLang = nil; fText = ""; fAge = nil; fTone = nil; fFav = false; fClone = false; fSource = nil
         revealTick += 1
     }
     func toggleFavorite(_ id: String) {
@@ -147,6 +148,10 @@ final class AppState: ObservableObject {
     func showToast(_ t: String) {
         toast = t
         DispatchQueue.main.asyncAfter(deadline: .now() + 6) { [weak self] in if self?.toast == t { self?.toast = nil } }
+    }
+    /// Modifie la fiche d'une voix clonée (nom, personnage, source, genre, étiquettes).
+    func editVoice(_ id: String, _ f: @escaping (inout Voice) -> Void) {
+        do { try VoiceCloning.updateInfo(id: id) { f(&$0) }; reload(force: true) } catch { self.error = error.localizedDescription }
     }
     /// Attribue une réplique de la base à un personnage.
     func assign(_ r: LineRecord, project pid: String, character cid: String, mode: String, text: String?) {

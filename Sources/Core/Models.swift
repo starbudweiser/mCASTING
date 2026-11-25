@@ -21,6 +21,22 @@ public struct Voice: Codable, Identifiable, Hashable {
     public var source: String?      // origine : nom de fichier ou lien (adresse du serveur pour une voix de serveur)
     public var remoteModel: String? // voix d'un serveur ou d'ElevenLabs : modèle à utiliser
     public var remoteVoice: String? // nom de la voix sur le serveur, ou identifiant de voix ElevenLabs
+    // Voix clonées : fiche de classement (bibliothèque « Voix clonées »)
+    public var character: String?   // personnage d'origine (« Guybrush Threepwood »)
+    public var sourceKind: String?  // game / film / series / other
+    public var sourceTitle: String? // « Escape from Monkey Island »
+    public var tags: [String]?      // étiquettes libres (Héros, Pirate…)
+    public var added: Date?         // date d'ajout
+    /// Titre de la source : champ dédié, sinon déduit de l'ancien champ `source` (« mTALKIE · Escape from Monkey Island »).
+    public var originTitle: String? {
+        if let t = sourceTitle, !t.isEmpty { return t }
+        guard custom, refAudio != nil, let s = source, !s.isEmpty, !s.hasPrefix("http") else { return nil }
+        if let r = s.range(of: " · ") { return String(s[r.upperBound...]) }
+        return s.contains(".") ? nil : s          // un nom de fichier n'est pas une source
+    }
+    /// Type de source : champ dédié, sinon « game » pour les voix reçues de mTALKIE, « other » sinon.
+    public var originKind: String { sourceKind ?? (source?.hasPrefix("mTALKIE") == true ? "game" : (originTitle == nil ? "none" : "other")) }
+    public var isClone: Bool { custom && refAudio != nil }
     /// Langue de référence du timbre : le français d'abord (casting rédigé en français), sinon la première langue disponible.
     public var timbreLang: Lang { samples["fr"] != nil ? .fr : (samples.keys.compactMap { Lang(rawValue: $0) }.sorted().first ?? .fr) }
     /// Langue de référence du timbre pour parler `lang` : l'extrait de cette langue s'il existe, sinon celui de `prefer`, sinon `timbreLang`.

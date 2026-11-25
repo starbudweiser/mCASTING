@@ -1,0 +1,135 @@
+<!doctype html>
+<html lang="fr"><head><meta charset="utf-8"><title>Voix clonées · mCASTING</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font:13px/1.45 -apple-system,"SF Pro Text",system-ui,sans-serif;background:#0b0b0d;color:#f5f5f7;-webkit-font-smoothing:antialiased;padding:24px 28px 60px}
+h1{font-size:20px;margin-bottom:4px}.mc{color:#f08a52}
+h2{font-size:16px;margin:30px 0 10px}
+p.lead{color:#98989f;max-width:1000px}
+figure{display:flex;flex-direction:column;gap:8px;margin-top:14px}
+figcaption{color:#98989f;font-size:12px;max-width:1100px}figcaption b{color:#f5f5f7}
+.thm{display:inline-flex;background:#222;border-radius:999px;padding:3px;margin-left:10px;vertical-align:middle}
+.thm button{border:0;background:none;color:#eee;font:inherit;font-size:12px;padding:3px 12px;border-radius:999px;cursor:pointer}.thm button.on{background:#444}
+.F{--bg:#f4f1ec;--card:#fff;--ctl:#ebe6de;--t:#26231e;--t2:#7b756a;--acc:#26231e;--onacc:#f4f1ec;--m:#d9622b;--ok:#3f8f5a;--warn:#b7791f;--bd:1px solid #e3ddd2;--g:#5b7fa6;--f:#a0567d;--s:#6b8f4e}
+.F.dk{--bg:#131316;--card:#232327;--ctl:#2c2c31;--t:#f5f5f7;--t2:#98989f;--acc:#0a84ff;--onacc:#fff;--m:#f08a52;--ok:#30d158;--warn:#ff9f0a;--bd:1px solid #303035;--g:#64a0ff;--f:#ff7ac0;--s:#8fd16a}
+.win{width:1200px;height:720px;display:grid;grid-template-columns:190px 1fr;grid-template-rows:auto 1fr;overflow:hidden;position:relative;background:var(--bg);color:var(--t);border-radius:12px;box-shadow:0 18px 50px rgba(0,0,0,.4);font-size:12.5px}
+.bar{grid-column:1/3;display:flex;align-items:center;gap:12px;padding:10px 16px;border-bottom:var(--bd)}
+.l{display:flex;gap:5px}.l i{width:11px;height:11px;border-radius:50%;background:#ff5f57}.l i+i{background:#febc2e}.l i+i+i{background:#28c840}
+.brand{font-weight:700;font-size:15px;margin-left:8px}.brand b{color:var(--m)}
+.right{margin-left:auto;color:var(--t2);font-size:12px}
+.nav{padding:12px 10px;display:flex;flex-direction:column;gap:4px;border-right:var(--bd)}
+.nav div{padding:7px 10px;border-radius:8px;color:var(--t2)}
+.nav div.on{background:var(--ctl);color:var(--t);font-weight:600}
+.nav .sub{padding-left:28px;font-size:12px}
+.new{display:inline-block;margin-left:4px;font-size:9.5px;padding:1px 6px;border-radius:99px;background:var(--m);color:#fff;font-weight:600}
+.h{font-size:10.5px;font-weight:600;letter-spacing:.04em;text-transform:uppercase;color:var(--t2);margin-bottom:6px}
+.main{padding:14px;display:grid;grid-template-columns:230px 1fr 300px;gap:12px;overflow:hidden;min-height:0}
+.col{display:flex;flex-direction:column;gap:10px;min-height:0;overflow:hidden}
+.box{background:var(--card);border:var(--bd);border-radius:12px;padding:10px}
+.btn{background:var(--ctl);color:var(--t);padding:5px 11px;border-radius:8px;font-weight:500;white-space:nowrap;display:inline-block}
+.btn.pri{background:var(--acc);color:var(--onacc)}.btn.sm{padding:3px 9px;font-size:11px}
+.search{background:var(--ctl);border-radius:8px;padding:7px 11px;color:var(--t2)}
+.chips{display:flex;flex-wrap:wrap;gap:5px}
+.chip{padding:3px 9px;border-radius:999px;background:var(--ctl);font-size:11px}
+.chip.on{background:var(--acc);color:var(--onacc);font-weight:600}
+.facet{display:flex;justify-content:space-between;padding:4px 6px;border-radius:6px;font-size:12px}
+.facet.on{background:var(--ctl);font-weight:600}.facet span{color:var(--t2)}
+.tag{font-size:10px;font-weight:600;padding:2px 7px;border-radius:999px;background:var(--ctl);color:var(--t2);white-space:nowrap}
+.tag.g{background:color-mix(in srgb,var(--g) 20%,transparent);color:var(--g)}
+.tag.f{background:color-mix(in srgb,var(--f) 20%,transparent);color:var(--f)}
+.tag.s{background:color-mix(in srgb,var(--s) 22%,transparent);color:var(--s)}
+.tag.ok{background:color-mix(in srgb,var(--ok) 20%,transparent);color:var(--ok)}
+.grp{font-weight:650;font-size:13px;display:flex;gap:8px;align-items:center;margin-top:4px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.vc{background:var(--card);border:var(--bd);border-radius:12px;padding:9px 10px;display:flex;flex-direction:column;gap:5px}
+.vc.on{outline:2px solid var(--acc)}
+.nm{font-weight:650;display:flex;gap:6px;align-items:center}
+.subt{color:var(--t2);font-size:11px}
+.row{display:flex;gap:8px;align-items:center}
+.play{width:24px;height:24px;border-radius:50%;background:var(--acc);color:var(--onacc);display:grid;place-items:center;font-size:9px;flex:none}
+.wave{display:flex;align-items:center;gap:1.5px;height:18px;flex:1}.wave i{display:block;width:2.5px;border-radius:2px;background:var(--t2);opacity:.6}
+.av{width:30px;height:30px;border-radius:8px;display:grid;place-items:center;color:#fff;font-weight:700;font-size:12px;flex:none;background:#26231e}
+.F.dk .av{background:#2c2c31}
+.fld{background:var(--ctl);border-radius:8px;padding:5px 9px;font-size:12px}
+.kv{display:flex;justify-content:space-between;padding:3px 0}.kv span:first-child{color:var(--t2)}
+.lbl{color:var(--t2);font-size:11px;margin:6px 0 3px}
+.ref{font-family:ui-monospace,Menlo,monospace;font-size:10.5px;background:var(--ctl);border-radius:8px;padding:8px;color:var(--t2);line-height:1.5}
+.arch{background:#1c1c1f;border:1px solid #303035;border-radius:6px;padding:16px 20px;max-width:1200px}
+.arch ul{margin:6px 0 0 18px}.arch li{margin:4px 0}.arch code{font-family:"SF Mono",Menlo,monospace;font-size:12px;color:#409cff}
+</style></head><body>
+<h1><span class="mc">m</span>CASTING : bibliothèque des voix clonées</h1>
+<p class="lead">Un écran à part pour les voix clonées, qu'elles viennent de mTALKIE, d'un fichier ou d'un lien. On les range par source (jeu, film, série), par personnage, genre, langue et étiquettes, et on retrouve tout de suite où chacune est utilisée.</p>
+
+<h2>1. Écran « Voix clonées » <span class="thm"><button class="on" onclick="th(0)">Clair</button><button onclick="th(1)">Sombre</button></span></h2>
+<figure><div class="F win">
+ <div class="bar"><div class="l"><i></i><i></i><i></i></div><div class="brand"><b>m</b>CASTING</div><div class="right">● Serveur MCP prêt · Qwen3-TTS installé</div></div>
+ <div class="nav"><div class="h">Navigation</div><div>▤ Projets</div><div>◉ Casting</div><div>♫ Bibliothèque de voix</div><div class="on">◎ Voix clonées<span class="new">nouveau</span></div><div class="sub">+ Cloner une voix</div><div>❝ Répliques</div><div>⬇ Modèles TTS</div></div>
+ <div class="main">
+  <div class="col">
+   <div class="search">⌕ Nom, personnage, source…</div>
+   <div class="box"><div class="h">Type de source</div><div class="chips"><span class="chip on">Tous · 14</span><span class="chip">🎮 Jeux · 9</span><span class="chip">🎬 Films · 3</span><span class="chip">📺 Séries · 1</span><span class="chip">Autres · 1</span></div></div>
+   <div class="box"><div class="h">Source</div>
+    <div class="facet on">Toutes<span>14</span></div>
+    <div class="facet">Escape from Monkey Island<span>4</span></div>
+    <div class="facet">Monkey Island 2 SE<span>3</span></div>
+    <div class="facet">The Dig<span>2</span></div>
+    <div class="facet">Retour vers le futur<span>2</span></div>
+    <div class="facet">Kaamelott<span>1</span></div>
+    <div class="facet">King's Quest VI<span>1</span></div>
+    <div class="facet">Sans source<span>1</span></div></div>
+   <div class="box"><div class="h">Genre</div><div class="chips"><span class="chip on">Tous</span><span class="chip">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span><span class="chip">Créature</span></div>
+    <div class="h" style="margin-top:8px">Langue</div><div class="chips"><span class="chip on">Toutes</span><span class="chip">EN</span><span class="chip">FR</span></div>
+    <div class="h" style="margin-top:8px">Étiquettes</div><div class="chips"><span class="chip">Héros</span><span class="chip">Méchant</span><span class="chip">Pirate</span><span class="chip">Âgé</span><span class="chip">Grave</span><span class="chip">+</span></div>
+    <div class="h" style="margin-top:8px">Usage</div><div class="chips"><span class="chip">Utilisées</span><span class="chip">Jamais utilisées</span></div></div>
+  </div>
+  <div class="col">
+   <div class="row"><b style="font-size:16px">Voix clonées</b><span class="tag">14 voix</span><span style="margin-left:auto">Grouper par</span><div class="chips"><span class="chip on">Source</span><span class="chip">Personnage</span><span class="chip">Aucun</span></div></div>
+   <div class="grp">🎮 Escape from Monkey Island <span class="tag g">jeu</span><span class="tag">4</span></div>
+   <div class="grid">
+    <div class="vc on"><div class="row"><div class="av">G</div><div style="flex:1"><div class="nm">Guybrush (EMI) <span class="tag">EN</span></div><div class="subt">Guybrush Threepwood · Homme · 24,8 s</div></div></div>
+     <div class="row"><div class="play">▶</div><div class="wave"><i style="height:30%"></i><i style="height:70%"></i><i style="height:50%"></i><i style="height:90%"></i><i style="height:40%"></i><i style="height:65%"></i><i style="height:80%"></i><i style="height:35%"></i><i style="height:60%"></i><i style="height:45%"></i><i style="height:75%"></i><i style="height:30%"></i><i style="height:85%"></i><i style="height:50%"></i><i style="height:40%"></i><i style="height:70%"></i></div></div>
+     <div class="row"><span class="tag">Héros</span><span class="tag">Pirate</span><span class="tag ok" style="margin-left:auto">→ Capitaine Loutre</span></div></div>
+    <div class="vc"><div class="row"><div class="av">E</div><div style="flex:1"><div class="nm">Elaine (EMI) <span class="tag">EN</span></div><div class="subt">Elaine Marley · Femme · 21,2 s</div></div></div>
+     <div class="row"><div class="play">▶</div><div class="wave"><i style="height:50%"></i><i style="height:30%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:40%"></i><i style="height:75%"></i><i style="height:55%"></i><i style="height:35%"></i><i style="height:65%"></i><i style="height:85%"></i><i style="height:45%"></i><i style="height:30%"></i><i style="height:70%"></i><i style="height:50%"></i><i style="height:60%"></i><i style="height:40%"></i></div></div>
+     <div class="row"><span class="tag">Héroïne</span><span class="tag" style="margin-left:auto">jamais utilisée</span></div></div>
+    <div class="vc"><div class="row"><div class="av">L</div><div style="flex:1"><div class="nm">LeChuck (EMI) <span class="tag">EN</span></div><div class="subt">LeChuck · Homme · 19,6 s</div></div></div>
+     <div class="row"><div class="play">▶</div><div class="wave"><i style="height:80%"></i><i style="height:60%"></i><i style="height:90%"></i><i style="height:70%"></i><i style="height:50%"></i><i style="height:85%"></i><i style="height:65%"></i><i style="height:45%"></i><i style="height:75%"></i><i style="height:95%"></i><i style="height:55%"></i><i style="height:40%"></i><i style="height:80%"></i><i style="height:60%"></i><i style="height:70%"></i><i style="height:50%"></i></div></div>
+     <div class="row"><span class="tag">Méchant</span><span class="tag">Grave</span><span class="tag ok" style="margin-left:auto">→ Le Dragon</span></div></div>
+    <div class="vc"><div class="row"><div class="av">M</div><div style="flex:1"><div class="nm">Murray (EMI) <span class="tag">EN</span></div><div class="subt">Murray · Créature · 16,1 s</div></div></div>
+     <div class="row"><div class="play">▶</div><div class="wave"><i style="height:40%"></i><i style="height:60%"></i><i style="height:30%"></i><i style="height:70%"></i><i style="height:50%"></i><i style="height:35%"></i><i style="height:65%"></i><i style="height:45%"></i><i style="height:55%"></i><i style="height:30%"></i><i style="height:60%"></i><i style="height:40%"></i><i style="height:50%"></i><i style="height:35%"></i><i style="height:45%"></i><i style="height:55%"></i></div></div>
+     <div class="row"><span class="tag">Crâne</span><span class="tag" style="margin-left:auto">jamais utilisée</span></div></div>
+   </div>
+   <div class="grp">🎬 Retour vers le futur <span class="tag f">film</span><span class="tag">2</span></div>
+   <div class="grid">
+    <div class="vc"><div class="row"><div class="av">D</div><div style="flex:1"><div class="nm">Doc (VF) <span class="tag">FR</span></div><div class="subt">Emmett Brown · Homme · 18,0 s</div></div></div><div class="row"><span class="tag">Âgé</span><span class="tag">Excentrique</span></div></div>
+    <div class="vc"><div class="row"><div class="av">M</div><div style="flex:1"><div class="nm">Marty (VF) <span class="tag">FR</span></div><div class="subt">Marty McFly · Homme · 17,2 s</div></div></div><div class="row"><span class="tag">Jeune</span></div></div>
+   </div>
+  </div>
+  <div class="col">
+   <div class="box"><div class="h">Fiche · Guybrush (EMI)</div>
+    <div class="lbl">Nom de la voix</div><div class="fld">Guybrush (EMI)</div>
+    <div class="lbl">Personnage</div><div class="fld">Guybrush Threepwood</div>
+    <div class="lbl">Source</div><div class="row"><div class="chips"><span class="chip on">Jeu</span><span class="chip">Film</span><span class="chip">Série</span><span class="chip">Autre</span></div></div>
+    <div class="fld" style="margin-top:5px">Escape from Monkey Island ▾</div>
+    <div class="lbl">Genre · Langue</div><div class="chips"><span class="chip on">Homme</span><span class="chip">Femme</span><span class="chip">Enfant</span><span class="chip">Créature</span><span class="chip on" style="margin-left:6px">EN</span></div>
+    <div class="lbl">Étiquettes</div><div class="chips"><span class="chip on">Héros</span><span class="chip on">Pirate</span><span class="chip">+ ajouter</span></div>
+    <div class="lbl">Texte de référence</div><div class="ref">It's the official symbol of the governor's office. The header says: 'Mêlée Government Employment Contract'…</div>
+    <div class="kv" style="margin-top:6px"><span>Reçue de</span><span>mTALKIE · 25/11/2026</span></div>
+    <div class="kv"><span>Utilisée par</span><span>Capitaine Loutre (wSHOWCASE)</span></div>
+    <div class="row" style="margin-top:8px"><span class="btn">▶ Essayer une phrase</span><span class="btn pri" style="margin-left:auto">Choisir pour le personnage</span></div>
+   </div>
+  </div>
+ </div>
+</div><figcaption><b>Voix clonées.</b> Nouvelle entrée dans la navigation ; « Cloner une voix » devient son sous-bouton. <b>À gauche</b>, les filtres : type de source (jeux, films, séries), source avec le nombre de voix, genre, langue, étiquettes libres, utilisées ou jamais utilisées, et une recherche sur le nom, le personnage et la source. <b>Au centre</b>, les voix groupées par source (ou par personnage), avec écoute et l'endroit où chacune est utilisée. <b>À droite</b>, la fiche modifiable : nom, personnage, source (type et titre), genre, langue, étiquettes, texte de référence, origine. Les voix reçues de mTALKIE arrivent déjà remplies : jeu, personnage et genre.</figcaption></figure>
+
+<h2>2. Ce qui change</h2>
+<div class="arch"><ul>
+<li><b>Fiche des voix clonées</b> : nouveaux champs <code>character</code>, <code>sourceKind</code> (jeu, film, série, autre), <code>sourceTitle</code> et <code>tags</code>. Les voix déjà clonées sont reprises sans perte : « mTALKIE · Escape from Monkey Island » devient source « Escape from Monkey Island », type jeu.</li>
+<li><b>mTALKIE</b> envoie aussi le personnage (déduit du nom des répliques ou tapé) ; le format <code>mcasting-inbox/1</code> gagne <code>voice.character</code>.</li>
+<li><b>Panneau « Cloner une voix »</b> (fichier ou lien) : mêmes champs à remplir avant d'ajouter la voix (type de source, titre, personnage, genre).</li>
+<li><b>Bibliothèque de voix</b> : le filtre « Clonées » renvoie vers ce nouvel écran. Le casting (« Choisir une voix ») propose un filtre par source.</li>
+<li><b>MCP</b> : <code>search_voices</code> accepte <code>source</code>, <code>source_kind</code>, <code>character</code> et <code>tags</code> pour retrouver une voix clonée ; nouvel outil <code>update_voice</code> pour compléter la fiche.</li>
+</ul></div>
+<script>function th(d){document.querySelectorAll('.F').forEach(w=>w.classList.toggle('dk',!!d));document.querySelectorAll('.thm button').forEach((b,i)=>b.classList.toggle('on',i==d))}</script>
+</body></html>

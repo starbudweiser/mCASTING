@@ -21,13 +21,15 @@ Inbox/lines-1712345678/
   "kind": "voice",
   "origin": { "app": "mTALKIE", "version": "1.6.0" },
   "source": { "kind": "game", "title": "Escape from Monkey Island", "id": "emi" },
-  "voice": { "name": "Guybrush (EMI)", "lang": "en", "gender": "man", "description": "young man, cheerful",
+  "voice": { "name": "Guybrush (EMI)", "character": "Guybrush Threepwood", "lang": "en", "gender": "man",
+             "description": "young man, cheerful", "tags": ["hero"],
              "audio": "voice.wav", "text": "Exact transcript of voice.wav." }
 }
 ```
 
 `audio`: 15–25 s of clean speech (any format `afconvert` reads); it is converted to mono 24 kHz. `text` must be the exact
-transcript (it is the cloning reference). `gender`: man, woman, child, animal or creature. Sending the same `name` from
+transcript (it is the cloning reference). `character`, `tags` and `source` fill the voice's record in the *Cloned voices*
+library (filters by source type, source, character, gender, language and tags). `gender`: man, woman, child, animal or creature. Sending the same `name` from
 the same source again replaces the voice.
 
 ## `kind: "lines"` — lines for the line database

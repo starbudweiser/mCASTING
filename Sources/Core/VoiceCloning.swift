@@ -54,7 +54,8 @@ public enum VoiceCloning {
 
     /// Enregistre la voix clonée : copie l'extrait dans la bibliothèque et ajoute la voix.
     @discardableResult
-    public static func register(name: String, gender: Gender, prepared p: Prepared, refText: String, lang: Lang) throws -> Voice {
+    public static func register(name: String, gender: Gender, prepared p: Prepared, refText: String, lang: Lang,
+                                character: String? = nil, sourceKind: String? = nil, sourceTitle: String? = nil, tags: [String]? = nil) throws -> Voice {
         let id = "clone-" + UUID().uuidString.prefix(8).lowercased()
         let rel = "clones/\(id).wav"
         let dest = Paths.audio.appendingPathComponent(rel)
@@ -63,8 +64,18 @@ public enum VoiceCloning {
         let v = Voice(id: id, name: name, gender: gender, age: "n/a", pitch: "n/a", tone: "cloned",
                       recipe: "Cloned voice from a reference sample.", engine: "qwen3-base",
                       samples: [lang.rawValue: rel], custom: true, refAudio: rel, refText: refText, source: p.source)
-        var all = DataStore.voices(); all.append(v); try DataStore.saveVoices(all)
-        return v
+        var voice = v
+        voice.character = character.flatMap { $0.isEmpty ? nil : $0 }; voice.sourceKind = sourceKind
+        voice.sourceTitle = sourceTitle.flatMap { $0.isEmpty ? nil : $0 }; voice.tags = tags.flatMap { $0.isEmpty ? nil : $0 }; voice.added = Date()
+        var all = DataStore.voices(); all.append(voice); try DataStore.saveVoices(all)
+        return voice
+    }
+
+    /// Met à jour la fiche de classement d'une voix clonée ou importée.
+    public static func updateInfo(id: String, _ f: (inout Voice) -> Void) throws {
+        var all = DataStore.voices()
+        guard let i = all.firstIndex(where: { $0.id == id }), all[i].custom else { throw EngineError.failed("Only cloned or imported voices can be edited") }
+        f(&all[i]); try DataStore.saveVoices(all)
     }
 
     /// Supprime une voix clonée ou importée (jamais une voix de la bibliothèque) : retirée de voices.json, ses fichiers audio
