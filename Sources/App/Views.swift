@@ -19,7 +19,9 @@ struct ContentView: View {
     }
     var main: some View {
         VStack(spacing: 0) {
-            TopBar()
+            // Au premier plan : une zone de défilement d'un écran (fiche de Voix clonées) débordait sous la barre, invisible
+            // car rognée, mais elle prenait les clics du bouton « Réglages » (25/11/2026).
+            TopBar().zIndex(1)
             HStack(spacing: 0) {
                 NavPanel().frame(width: 212)
                 Group {
