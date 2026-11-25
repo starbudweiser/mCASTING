@@ -127,10 +127,19 @@ struct NavPanel: View {
 
 /// État du calcul, dans la barre du haut avec les autres états : point vert au repos ; pendant un calcul, point orange
 /// qui pulse, pourcentage et fine barre de progression. Un clic pendant un calcul ouvre le détail (et l'arrêt quand il est possible).
+/// Point qui clignote tant qu'il est affiché (créé à chaque début de calcul).
+struct BlinkDot: View {
+    var color: Color; var still = false
+    @State private var dim = false
+    var body: some View {
+        Dot(color: color).opacity(dim ? 0.2 : 1)
+            .onAppear { if !still { withAnimation(.easeInOut(duration: 0.6).repeatForever(autoreverses: true)) { dim = true } } }
+    }
+}
+
 struct ComputeStatus: View {
     @ObservedObject var s = AppState.shared
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
-    @State private var pulse = false
     @State private var detail = false
     var fraction: Double? { s.busy && s.task == "library" && s.totalSamples > 0 ? Double(s.doneSamples) / Double(s.totalSamples) : nil }
     var label: String {
@@ -142,7 +151,7 @@ struct ComputeStatus: View {
     var body: some View {
         Button { if s.busy { detail.toggle() } } label: {
             HStack(spacing: 8) {
-                Dot(color: s.busy ? Flat.warn : Flat.ok).opacity(s.busy && !reduceMotion && pulse ? 0.35 : 1)
+                if s.busy { BlinkDot(color: Flat.warn, still: reduceMotion) } else { Dot(color: Flat.ok) }
                 Text(label).foregroundStyle(s.busy ? Flat.text : Flat.text2).fontWeight(s.busy ? .medium : .regular)
                 if let f = fraction {
                     ZStack(alignment: .leading) {
@@ -161,7 +170,6 @@ struct ComputeStatus: View {
             }.padding(14).frame(width: 280, alignment: .leading)
         }
         .onChange(of: s.busy) { _, b in if !b { detail = false } }
-        .onAppear { if !reduceMotion { withAnimation(.easeInOut(duration: 1).repeatForever(autoreverses: true)) { pulse = true } } }
         .animation(.easeOut(duration: 0.3), value: fraction)
     }
 }
