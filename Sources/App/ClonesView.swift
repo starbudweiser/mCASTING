@@ -182,7 +182,7 @@ struct CloneCard: View {
                 else { Tag(title: L.t("clones.unused")) }
             }
         }
-        .tile(outline: selected ? Flat.acc : nil, hovered: hover).onHover { hover = $0 }
+        .tile(selected: selected, hovered: hover).onHover { hover = $0 }
         .contentShape(Rectangle()).onTapGesture(perform: select)
     }
     var duration: String? {

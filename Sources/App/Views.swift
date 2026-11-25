@@ -567,7 +567,7 @@ struct VoiceCard: View {
                 }
             }
         }
-        .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: chosen ? Flat.ok : (isB ? Flat.acc : nil), dashed: isB && !chosen,
+        .tile(pad: EdgeInsets(top: 9, leading: 10, bottom: 9, trailing: 10), outline: isB && !chosen ? Flat.acc : nil, dashed: true,
               selected: selected || chosen, hovered: hover, tint: chosen && !selected ? Flat.ok : nil)
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
         .onHover { hover = $0 }

@@ -407,7 +407,7 @@ struct SetupWizard: View {
             }.buttonStyle(.plain).disabled(!enabled)
             extra().padding(.leading, 32)
         }.padding(16)
-        .tile(pad: EdgeInsets(), outline: on ? Flat.acc : nil).opacity(enabled ? 1 : 0.55)
+        .tile(pad: EdgeInsets(), selected: on).opacity(enabled ? 1 : 0.55)
     }
 
     // 1
@@ -598,7 +598,7 @@ struct SetupWizard: View {
                         }
                         Button { m.chosen = id } label: { Text((sel ? "✓ " : "") + L.t("su.e.keep")).frame(maxWidth: .infinity) }
                             .buttonStyle(FlatButton(primary: sel)).disabled(m.results[id]?.count != m.lines.count)
-                    }.padding(16).tile(pad: EdgeInsets(), outline: sel ? Flat.acc : nil)
+                    }.padding(16).tile(pad: EdgeInsets(), selected: sel)
                 }
             }.frame(maxWidth: .infinity).onAppear { if m.lines.isEmpty { m.prepareLines() } }
             HStack(spacing: 10) {
