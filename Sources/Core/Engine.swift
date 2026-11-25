@@ -164,6 +164,9 @@ public enum Engine {
             if let voice { args += ["--voice", voice] }
             if let refAudio { args += ["--ref_audio", refAudio.path] }
             if let refText, !refText.isEmpty { args += ["--ref_text", refText] }
+            // Garde-fou : sans limite, un modèle qui ne trouve pas la fin produit des minutes de charabia (2048 jetons par
+            // segment, 12,5 jetons/s). On autorise environ 2 jetons par caractère (≈ 6 caractères/s, débit très lent).
+            if model.family == "qwen3", !extra.contains("--max_tokens") { args += ["--max_tokens", String(max(150, text.count * 2))] }
             args += extra
             try run(python, args)
             let files = (try? FileManager.default.contentsOfDirectory(atPath: tmp.path))?.filter { $0.hasSuffix(".wav") }.sorted() ?? []

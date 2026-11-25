@@ -1011,13 +1011,13 @@ struct CloneView: View {
     func listen() { Task { if let p = try? await prepared() { s.play(rel: p.wav.path) } } }
     func transcribe() {
         working = true; message = ""
-        Task { do { let p = try await prepared(); let lang = s.project?.lang ?? .fr
-            let t = try await Task.detached { try VoiceCloning.transcribe(p.wav, lang: lang) }.value
+        Task { do { let p = try await prepared()
+            let t = try await Task.detached { try VoiceCloning.transcribe(p.wav, lang: nil) }.value
             transcript = t; working = false } catch { working = false; message = error.localizedDescription } }
     }
     func create() {
         working = true
-        Task { do { let p = try await prepared(); try VoiceCloning.register(name: name, gender: gender, prepared: p, refText: transcript, lang: s.project?.lang ?? .fr,
+        Task { do { let p = try await prepared(); try VoiceCloning.register(name: name, gender: gender, prepared: p, refText: transcript, lang: Languages.detect(transcript) ?? s.project?.lang ?? .fr,
                                                                                                   character: character, sourceKind: srcTitle.isEmpty ? nil : srcKind, sourceTitle: srcTitle)
             s.reload(force: true); working = false; message = L.t("clone.done"); source = nil; name = ""; transcript = ""; consent = false; character = "" }
             catch { working = false; message = error.localizedDescription } }

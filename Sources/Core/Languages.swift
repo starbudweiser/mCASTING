@@ -1,6 +1,7 @@
 // mCASTING — langues des voix : catalogue (code ISO 639-1, nom natif, nom anglais, phrases d'extrait) et langues de chaque moteur.
 // Une langue n'est proposée que si un modèle installé sait la dire ; l'interface de l'appli reste, elle, en 4 langues.
 import Foundation
+import NaturalLanguage
 
 /// Langue d'une voix, identifiée par son code ISO 639-1 (« fr », « de », « ja »…). Encodée en simple chaîne (compatible 1.x).
 public struct Lang: RawRepresentable, Codable, Hashable, Identifiable, Comparable {
@@ -43,6 +44,15 @@ public struct Lang: RawRepresentable, Codable, Hashable, Identifiable, Comparabl
 }
 
 public enum Languages {
+    /// Langue d'un texte (transcription d'un extrait à cloner), si la détection est sûre et que Qwen3 la parle.
+    /// Un extrait français enregistré comme « anglais » faisait divaguer le modèle (clone de Hoagie, 25/11/2026).
+    public static func detect(_ text: String) -> Lang? {
+        let r = NLLanguageRecognizer(); r.processString(text)
+        guard let (code, p) = r.languageHypotheses(withMaximum: 1).first, p >= 0.8 else { return nil }
+        let c = String(code.rawValue.prefix(2))
+        return qwen3.contains(c) ? Lang(rawValue: c) : nil
+    }
+
     struct Info { let native: String; let english: String; let samples: [String] }
 
     /// Langues de Qwen3-TTS (VoiceDesign, Base) : celles de la bibliothèque.

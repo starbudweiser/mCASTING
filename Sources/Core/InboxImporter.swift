@@ -71,16 +71,21 @@ public enum InboxImporter {
         case "voice":
             guard let v = m.voice, !v.name.isEmpty, !v.text.isEmpty else { throw fail("voice: name, audio and text are required") }
             let src = try file(v.audio, in: dir)
-            let lang = Lang(rawValue: v.lang.lowercased()) ?? .en
             let id = "clone-" + UUID().uuidString.prefix(8).lowercased()
             let rel = "clones/\(id).wav", dest = Paths.audio.appendingPathComponent(rel)
             try FileManager.default.createDirectory(at: dest.deletingLastPathComponent(), withIntermediateDirectories: true)
             // Même préparation que le panneau « Cloner une voix » : WAV mono 24 kHz 16 bits.
             try Engine.run(URL(fileURLWithPath: "/usr/bin/afconvert"), ["-f", "WAVE", "-d", "LEI16@24000", "-c", "1", src.path, dest.path])
+            // Le texte reçu peut être le sous-titre d'une autre langue que l'audio (mTALKIE : audio anglais, texte français pour
+            // Day of the Tentacle, 25/11/2026). Un texte qui ne correspond pas à l'extrait fait divaguer le clonage : on retranscrit
+            // l'extrait nous-mêmes et la langue est celle réellement parlée.
+            var refText = v.text
+            if Engine.installed, let heard = try? VoiceCloning.transcribe(dest, lang: nil), !heard.isEmpty { refText = heard }
+            let lang = Languages.detect(refText) ?? Lang(rawValue: v.lang.lowercased()) ?? .en
             let origin = [m.origin?["app"], title].compactMap { $0 }.joined(separator: " · ")
             var voice = Voice(id: id, name: v.name, gender: Gender(rawValue: v.gender ?? "") ?? .man, age: "n/a", pitch: "n/a", tone: "cloned",
                               recipe: v.description.map { "Cloned voice: \($0)" } ?? "Cloned voice from a reference sample.", engine: "qwen3-base",
-                              samples: [lang.rawValue: rel], custom: true, refAudio: rel, refText: v.text, source: origin)
+                              samples: [lang.rawValue: rel], custom: true, refAudio: rel, refText: refText, source: origin)
             voice.character = v.character; voice.sourceKind = m.source?.kind ?? "other"; voice.sourceTitle = m.source?.title
             voice.tags = v.tags; voice.added = Date()
             var all = DataStore.voices()

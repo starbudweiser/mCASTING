@@ -41,15 +41,16 @@ public enum VoiceCloning {
     }
 
     /// Transcription automatique de l'extrait (modèle de reconnaissance de mlx-audio, téléchargé au premier usage).
-    public static func transcribe(_ wav: URL, lang: Lang) throws -> String {
+    /// `lang` nil : Whisper détecte lui-même la langue parlée (imposer une langue fausse donne une traduction, pas le texte dit).
+    public static func transcribe(_ wav: URL, lang: Lang?) throws -> String {
         guard Engine.installed else { throw EngineError.notInstalled }
         let out = FileManager.default.temporaryDirectory.appendingPathComponent("mcasting-stt-\(UUID().uuidString)")
         defer { try? FileManager.default.removeItem(atPath: out.path + ".txt") }
         _ = try Engine.withComputeLock {
             try Engine.run(Engine.python, ["-m", "mlx_audio.stt.generate", "--model", "mlx-community/whisper-large-v3-turbo-asr-fp16",
-                                           "--audio", wav.path, "--output-path", out.path, "--format", "txt", "--language", lang.rawValue])
+                                           "--audio", wav.path, "--output-path", out.path, "--format", "txt"] + (lang.map { ["--language", $0.rawValue] } ?? []))
         }
-        return ((try? String(contentsOfFile: out.path + ".txt", encoding: .utf8)) ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+        return ((try? String(contentsOfFile: out.path + ".txt", encoding: .utf8)) ?? "").trimmingCharacters(in: CharacterSet.whitespacesAndNewlines.union(CharacterSet(charactersIn: "«»\"“”")))
     }
 
     /// Enregistre la voix clonée : copie l'extrait dans la bibliothèque et ajoute la voix.
