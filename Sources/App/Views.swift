@@ -237,8 +237,9 @@ struct CharacterColumn: View {
     @Binding var adding: Bool
     @ObservedObject var s = AppState.shared
     var body: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            Header(title: L.t("char.title"))
+        VStack(alignment: .leading, spacing: 10) {
+            // Même hauteur que le commutateur de la colonne de droite : les premières cartes des deux colonnes s'alignent.
+            Header(title: L.t("char.title")).frame(height: Flat.headRow, alignment: .leading)
             if !s.multi.isEmpty {
                 VStack(spacing: 6) {
                     HStack(spacing: 6) {
@@ -311,7 +312,7 @@ struct CastingRight: View {
     @ObservedObject var s = AppState.shared
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
-            Seg(items: [L.t("char.tab.voices"), L.t("char.tab.sheet")], selection: $s.castTab)
+            Seg(items: [L.t("char.tab.voices"), L.t("char.tab.sheet")], selection: $s.castTab).frame(height: Flat.headRow)
             if let c = s.character {
                 if s.castTab == 0 {
                     HStack(alignment: .top, spacing: 10) {

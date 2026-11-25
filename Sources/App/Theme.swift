@@ -32,6 +32,8 @@ enum Flat {
     static let rb: CGFloat = 12, rc: CGFloat = 8
     /// Hauteur commune des barres du bas (bouton large, état du calcul) pour qu'elles s'alignent d'une colonne à l'autre.
     static let barH: CGFloat = 40
+    /// Hauteur commune des en-têtes de colonnes (titre de section ou commutateur), pour aligner les cartes en dessous.
+    static let headRow: CGFloat = 32
     /// Fonds pastel des panneaux de l'écran Casting (thème clair : pastel ; thème sombre : même teinte, assombrie).
     static let peach = dyn(0xfbe7dc, 0x45301f), sky = dyn(0xccc8c0, 0x1d3350), mint = dyn(0xe3e0da, 0x1c3f2d),
                lavender = dyn(0xe3e0da, 0x36285a), butter = dyn(0xccc8c0, 0x423a1c), rose = dyn(0xf8e2e7, 0x472433),
