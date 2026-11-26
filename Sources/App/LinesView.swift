@@ -17,6 +17,10 @@ struct LinesView: View {
     @State private var sources: [LineSource] = []
     @State private var assigning: LineRecord?
     @State private var removing: LineSource?
+    @State private var selected: Set<Int64> = []
+    @State private var anchor: Int64?
+    @State private var deleting: [Int64] = []
+    @FocusState private var listFocus: Bool
     @State private var tick = 0
 
     var allCount: Int { sources.reduce(0) { $0 + $1.count } }
@@ -42,8 +46,15 @@ struct LinesView: View {
         .sheet(item: $assigning) { r in AssignSheet(r: r) }
         .alert(L.t("lines.remove.q", removing?.title ?? "", removing?.count ?? 0), isPresented: Binding(get: { removing != nil }, set: { if !$0 { removing = nil } })) {
             Button(L.t("btn.cancel"), role: .cancel) { removing = nil }
-            Button(L.t("char.assigned.remove"), role: .destructive) { if let r = removing { try? LinesStore.remove(source: r.id); srcs.remove(r.id); reloadSources(); search() }; removing = nil }
+            Button(L.t("btn.delete"), role: .destructive) { if let r = removing { try? LinesStore.remove(source: r.id); srcs.remove(r.id); selected = []; reloadSources(); search() }; removing = nil }
         } message: { Text(L.t("lines.remove.msg")) }
+        .alert(deleting.count == 1 ? L.t("lines.del.q1") : L.t("lines.del.q", deleting.count), isPresented: Binding(get: { !deleting.isEmpty }, set: { if !$0 { deleting = [] } })) {
+            Button(L.t("btn.cancel"), role: .cancel) { deleting = [] }
+            Button(L.t("btn.delete"), role: .destructive) {
+                do { try LinesStore.remove(lines: deleting) } catch { s.error = error.localizedDescription }
+                selected.subtract(deleting); deleting = []; reloadSources(); search()
+            }
+        } message: { Text(L.t("lines.del.msg")) }
     }
 
     /// Clé de recherche : relance la recherche à chaque changement de texte ou de filtre.
@@ -58,7 +69,7 @@ struct LinesView: View {
     }
 
     var filters: some View {
-        Card { VStack(alignment: .leading, spacing: 6) {
+        Card { VStack(alignment: .leading, spacing: 2) {
             row(L.t("lines.f.source")) {
                 Button { srcs = [] } label: { Chip(title: L.t("lines.all"), on: srcs.isEmpty) }.buttonStyle(.plain)
                 ForEach(sources) { src in
@@ -75,29 +86,66 @@ struct LinesView: View {
             row(L.t("lines.f.lang")) {
                 Button { lang = "" } label: { Chip(title: L.t("lines.all"), on: lang.isEmpty) }.buttonStyle(.plain)
                 ForEach(langs, id: \.self) { l in Button { lang = lang == l ? "" : l } label: { Chip(title: l.uppercased(), on: lang == l) }.buttonStyle(.plain) }
-                Text(L.t("lines.f.dur")).font(.system(size: 11)).foregroundStyle(Flat.text2).padding(.leading, 12)
+                Text(L.t("lines.f.dur")).font(.system(size: 11)).foregroundStyle(Flat.text2).padding(.leading, 12).padding(.trailing, 3)
                 ForEach(Array(["< 2 s", "2-6 s", "> 6 s"].enumerated()), id: \.offset) { i, t in
                     Button { dur = dur == i + 1 ? 0 : i + 1 } label: { Chip(title: t, on: dur == i + 1) }.buttonStyle(.plain)
                 }
-                TextField(L.t("lines.f.char"), text: $speaker).flatField().frame(width: 200).padding(.leading, 12)
+                TextField(L.t("lines.f.char"), text: $speaker).flatField().frame(width: 200, height: Self.rowH - 2).padding(.leading, 12)
             }
         } }
     }
 
+    static let rowH: CGFloat = 28
     func row<C: View>(_ title: String, @ViewBuilder _ c: () -> C) -> some View {
         HStack(alignment: .top, spacing: 8) {
-            Text(title).font(.system(size: 11)).foregroundStyle(Flat.text2).frame(width: 74, alignment: .leading).padding(.top, 4)
-            Flow { c() }
+            Text(title).font(.system(size: 11)).foregroundStyle(Flat.text2).lineLimit(1)
+                .frame(width: 84, height: Self.rowH, alignment: .leading)
+            Flow(spacing: 5, rowHeight: Self.rowH) { c() }
         }
     }
 
     var list: some View {
-        ScrollView(showsIndicators: false) {
-            LazyVStack(spacing: 6) {
-                ForEach(results) { r in LineRow(r: r) { assigning = r } }
-                if total > results.count { Text(L.t("lines.more", results.count)).font(.system(size: 12)).foregroundStyle(Flat.text2).padding(8) }
+        VStack(spacing: 6) {
+            if !selected.isEmpty {
+                HStack(spacing: 8) {
+                    Tag(title: L.t("lines.sel", selected.count), color: Flat.brand)
+                    Button(L.t("lines.desel")) { selected = [] }.buttonStyle(FlatButton(small: true))
+                    Button(selected.count == 1 ? L.t("lines.del") : L.t("lines.del.many", selected.count)) { deleting = Array(selected) }.buttonStyle(FlatButton(small: true))
+                    Spacer()
+                }
+            } else if srcs.count == 1, let src = sources.first(where: { $0.id == srcs.first }) {
+                HStack { Spacer(); Button(L.t("lines.del.src")) { removing = src }.buttonStyle(FlatButton(small: true)) }
+            }
+            ScrollView(showsIndicators: false) {
+                LazyVStack(spacing: 6) {
+                    ForEach(results) { r in
+                        LineRow(r: r, selected: selected.contains(r.id)) { assigning = r }
+                            .contentShape(Rectangle())
+                            .onTapGesture { select(r) }
+                            .contextMenu {
+                                let ids = selected.contains(r.id) ? Array(selected) : [r.id]
+                                Button(ids.count > 1 ? L.t("lines.del.many", ids.count) : L.t("lines.del"), role: .destructive) { deleting = ids }
+                            }
+                    }
+                    if total > results.count { Text(L.t("lines.more", results.count)).font(.system(size: 12)).foregroundStyle(Flat.text2).padding(8) }
+                }
             }
         }
+        .focusable().focusEffectDisabled().focused($listFocus)
+        .onDeleteCommand { if !selected.isEmpty { deleting = Array(selected) } }
+        .onKeyPress(.escape) { selected = []; return .handled }
+    }
+
+    /// Clic : sélectionne seule ; ⌘ ajoute ou retire ; ⇧ étend depuis la dernière sélection.
+    func select(_ r: LineRecord) {
+        listFocus = true
+        let m = NSEvent.modifierFlags
+        if m.contains(.command) {
+            if selected.contains(r.id) { selected.remove(r.id) } else { selected.insert(r.id) }
+            anchor = r.id
+        } else if m.contains(.shift), let a = anchor, let i = results.firstIndex(where: { $0.id == a }), let j = results.firstIndex(where: { $0.id == r.id }) {
+            selected = Set(results[min(i, j)...max(i, j)].map(\.id))
+        } else if selected == [r.id] { selected = [] } else { selected = [r.id]; anchor = r.id }
     }
 
     func reloadSources() { sources = LinesStore.sources() }
@@ -128,7 +176,7 @@ struct LinesView: View {
 }
 
 struct LineRow: View {
-    let r: LineRecord; let assign: () -> Void
+    let r: LineRecord; var selected = false; let assign: () -> Void
     @ObservedObject var s = AppState.shared
     @State private var hover = false
     var body: some View {
@@ -148,7 +196,7 @@ struct LineRow: View {
             Spacer(minLength: 8)
             Button(L.t("lines.assign"), action: assign).buttonStyle(FlatButton(primary: hover, small: true))
         }
-        .tile(hovered: hover).onHover { hover = $0 }
+        .tile(selected: selected, hovered: hover).onHover { hover = $0 }
     }
 }
 

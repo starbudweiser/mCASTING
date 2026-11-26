@@ -210,6 +210,7 @@ struct Avatar: View {
 /// Rangée de puces qui passe à la ligne plutôt que de déborder.
 struct Flow: Layout {
     var spacing: CGFloat = 5
+    var rowHeight: CGFloat? = nil   // hauteur de ligne fixe : les éléments y sont centrés verticalement
     func sizeThatFits(proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) -> CGSize { layout(proposal.width ?? 300, subviews).size }
     func placeSubviews(in b: CGRect, proposal: ProposedViewSize, subviews: Subviews, cache: inout ()) {
         let r = layout(b.width, subviews)
@@ -220,8 +221,9 @@ struct Flow: Layout {
         for s in subs {
             let sz = s.sizeThatFits(.unspecified)
             if x > 0, x + sz.width > w { x = 0; y += rowH + spacing; rowH = 0 }
-            frames.append(CGRect(x: x, y: y, width: sz.width, height: sz.height))
-            x += sz.width + spacing; rowH = max(rowH, sz.height); maxW = max(maxW, x - spacing)
+            let h = max(rowHeight ?? 0, sz.height)
+            frames.append(CGRect(x: x, y: y + (h - sz.height) / 2, width: sz.width, height: sz.height))
+            x += sz.width + spacing; rowH = max(rowH, h); maxW = max(maxW, x - spacing)
         }
         return (CGSize(width: min(maxW, w), height: y + rowH), frames)
     }

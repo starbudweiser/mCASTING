@@ -120,6 +120,37 @@ public enum LinesStore {
         try? FileManager.default.removeItem(at: Paths.lines.appendingPathComponent(safe(id)))
     }
 
+    /// Retire des répliques précises (base + index plein texte) et efface leurs fichiers audio, sans toucher au reste.
+    /// Seuls les fichiers situés dans le dossier des répliques de l'appli sont effacés. Renvoie le nombre retiré.
+    @discardableResult
+    public static func remove(lines ids: [Int64]) throws -> Int {
+        guard !ids.isEmpty else { return 0 }
+        lock.lock(); defer { lock.unlock() }
+        guard let h = open() else { return 0 }
+        var audios: [String] = [], n = 0
+        exec(h, "BEGIN IMMEDIATE")
+        do {
+            let sel = try prepare(h, "SELECT audio FROM lines WHERE id=?"); defer { sqlite3_finalize(sel) }
+            let d1 = try prepare(h, "DELETE FROM lines_fts WHERE rowid=?"); defer { sqlite3_finalize(d1) }
+            let d2 = try prepare(h, "DELETE FROM lines WHERE id=?"); defer { sqlite3_finalize(d2) }
+            for id in ids {
+                sqlite3_reset(sel); sqlite3_clear_bindings(sel); bind(sel, [id])
+                if sqlite3_step(sel) == SQLITE_ROW { let a = col(sel, 0); if !a.isEmpty { audios.append(a) } }
+                for st in [d1, d2] { sqlite3_reset(st); sqlite3_clear_bindings(st); bind(st, [id]); guard sqlite3_step(st) == SQLITE_DONE else { throw err(h) } }
+                n += 1
+            }
+            // Une source sans réplique est retirée aussi (plus rien à afficher).
+            exec(h, "DELETE FROM sources WHERE id NOT IN (SELECT DISTINCT source FROM lines)")
+            exec(h, "COMMIT")
+        } catch { exec(h, "ROLLBACK"); throw error }
+        let root = Paths.lines.standardizedFileURL.path + "/"
+        for a in audios {
+            let u = (a.hasPrefix("/") ? URL(fileURLWithPath: a) : Paths.lines.appendingPathComponent(a)).standardizedFileURL
+            if u.path.hasPrefix(root) { try? FileManager.default.removeItem(at: u) }
+        }
+        return n
+    }
+
     /// Nom de dossier sûr pour une source.
     public static func safe(_ id: String) -> String {
         let s = id.lowercased().map { $0.isLetter || $0.isNumber || $0 == "-" ? $0 : "-" }
