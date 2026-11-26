@@ -115,16 +115,18 @@ extension View {
 }
 
 /// Bouton `.btn` de la maquette : fond contrôle, rayon 8, marges 6 × 12, graisse 500 ; `primary` = accent ; `small` = 3 × 9.
+/// `shrink` : le libellé se tronque (…) au lieu d'imposer sa largeur, pour un libellé variable dans une colonne étroite.
 struct FlatButton: ButtonStyle {
-    var primary = false, small = false, green = false, wide = false
-    func makeBody(configuration c: Configuration) -> some View { Inner(c: c, primary: primary, small: small, green: green, wide: wide) }
+    var primary = false, small = false, green = false, wide = false, shrink = false
+    func makeBody(configuration c: Configuration) -> some View { Inner(c: c, primary: primary, small: small, green: green, wide: wide, shrink: shrink) }
     private struct Inner: View {
-        let c: Configuration; let primary: Bool, small: Bool, green: Bool, wide: Bool
+        let c: Configuration; let primary: Bool, small: Bool, green: Bool, wide: Bool, shrink: Bool
         @State private var hover = false
         @Environment(\.isEnabled) private var enabled
         @Environment(\.onTint) private var onTint
         var body: some View {
-            c.label.font(.system(size: small ? 11.5 : (wide ? 14 : 13), weight: wide ? .semibold : .medium)).lineLimit(1).fixedSize()
+            c.label.font(.system(size: small ? 11.5 : (wide ? 14 : 13), weight: wide ? .semibold : .medium)).lineLimit(1).truncationMode(.tail)
+                .fixedSize(horizontal: !shrink, vertical: true)
                 .padding(.horizontal, small ? 9 : 12).padding(.vertical, small ? 3 : (wide ? 0 : 6))
                 .frame(maxWidth: wide ? .infinity : nil, minHeight: wide ? Flat.barH : nil)
                 .foregroundStyle(green ? Color.white : primary ? (onTint ? Flat.tSelText : Flat.onAcc) : (onTint ? Flat.tChipText : Flat.text))

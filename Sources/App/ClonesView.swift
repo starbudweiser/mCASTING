@@ -48,7 +48,7 @@ struct ClonesView: View {
                 HStack(alignment: .top, spacing: 12) {
                     ScrollView(showsIndicators: false) { filters }.frame(width: 220)
                     center.frame(minWidth: 0, maxWidth: .infinity)
-                    if let v = sel { ScrollView(showsIndicators: false) { CloneSheet(v: v, uses: used[v.id] ?? []) }.frame(width: 300) }
+                    if let v = sel { ScrollView(showsIndicators: false) { CloneSheet(v: v, uses: used[v.id] ?? []).frame(width: 300) }.frame(width: 300) }
                 }
             }
         }
@@ -281,12 +281,10 @@ struct CloneSheet: View {
             kv(L.t("lib.usedin"), uses.isEmpty ? "—" : uses.joined(separator: ", "))
             Header(title: L.t("lib.test")).padding(.top, 4)
             TextField("", text: $line, axis: .vertical).lineLimit(2...6).flatField()
-            HStack {
-                Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line, style: "", lang: v.timbreLang) }.buttonStyle(FlatButton()).disabled(line.isEmpty || s.busy || !s.engineInstalled)
-                Spacer(minLength: 6)
-                if let c = s.character {
-                    Button(L.t("clones.choose", c.name)) { s.choose(voice: v.id) }.buttonStyle(FlatButton(primary: true)).disabled(c.voiceID == v.id)
-                }
+            // Une ligne si les deux boutons tiennent, sinon l'un sous l'autre ; le nom du personnage se tronque plutôt que d'élargir la fiche.
+            ViewThatFits(in: .horizontal) {
+                HStack { tryButton(); Spacer(minLength: 6); chooseButton(shrink: false) }
+                VStack(alignment: .leading, spacing: 6) { tryButton(); chooseButton(shrink: true) }
             }
             Divider().padding(.vertical, 2)
             Button(role: .destructive) { askDelete = true } label: { Label(L.t("voice.delete"), systemImage: "trash") }.buttonStyle(FlatButton(small: true)).disabled(s.busy)
@@ -298,6 +296,14 @@ struct CloneSheet: View {
             Button(L.t("voice.delete"), role: .destructive) { s.deleteVoice(v.id) }
         } message: { Text(uses.isEmpty ? L.t("voice.delete.msg") : L.t("voice.delete.used", uses.joined(separator: ", ")) + " " + L.t("voice.delete.msg")) }
     }
+    func tryButton() -> some View {
+        Button("▶ " + L.t("lib.try")) { s.preview(voice: v, text: line, style: "", lang: v.timbreLang) }.buttonStyle(FlatButton()).disabled(line.isEmpty || s.busy || !s.engineInstalled)
+    }
+    @ViewBuilder func chooseButton(shrink: Bool) -> some View {
+        if let c = s.character {
+            Button(L.t("clones.choose", c.name)) { s.choose(voice: v.id) }.buttonStyle(FlatButton(primary: true, shrink: shrink)).disabled(c.voiceID == v.id).help(L.t("clones.choose", c.name))
+        }
+    }
     func load() { name = v.name; character = v.character ?? ""; title = v.originTitle ?? ""; line = Catalog.sample(for: v, lang: v.timbreLang) }
     /// Enregistre les champs texte modifiés (à la validation, au changement de voix ou en quittant l'écran).
     func save() {
@@ -307,5 +313,5 @@ struct CloneSheet: View {
     }
     func edit(_ f: @escaping (inout Voice) -> Void) { s.editVoice(v.id, f) }
     func label(_ t: String) -> some View { Text(t).font(.system(size: 11.5)).foregroundStyle(Flat.text2).padding(.top, 2) }
-    func kv(_ k: String, _ val: String) -> some View { HStack(alignment: .top) { Text(k).foregroundStyle(Flat.text2); Spacer(minLength: 8); Text(val).multilineTextAlignment(.trailing) }.font(.system(size: 12)) }
+    func kv(_ k: String, _ val: String) -> some View { HStack(alignment: .top) { Text(k).foregroundStyle(Flat.text2).fixedSize(); Spacer(minLength: 8); Text(val).multilineTextAlignment(.trailing).fixedSize(horizontal: false, vertical: true) }.font(.system(size: 12)) }
 }
