@@ -177,15 +177,17 @@ struct BrandName: View {
 /// Onde d'un extrait : elle remplit la largeur disponible, le nombre de barres suit la largeur (une barre tous les 4 pt).
 struct Wave: View {
     var seed: Double; var bars = 34; var playing = false
+    /// Dessinée d'un seul tenant (Canvas) : une vue au lieu d'une soixantaine de barres par carte.
     var body: some View {
-        GeometryReader { g in
-            let n = max(8, Int((g.size.width + 1.5) / 4))
-            HStack(spacing: 1.5) {
-                ForEach(0..<n, id: \.self) { i in
-                    let h = 0.2 + abs(sin(Double(i) * 0.7 + seed) * cos(Double(i) * 0.31 + seed * 2)) * 0.8
-                    RoundedRectangle(cornerRadius: 1.25).fill(playing ? Flat.acc : Flat.text2.opacity(0.65)).frame(width: 2.5, height: 22 * h)
-                }
-            }.frame(maxHeight: .infinity)
+        let color = playing ? Flat.acc : Flat.text2.opacity(0.65), seed = seed
+        Canvas { ctx, size in
+            let n = max(8, Int((size.width + 1.5) / 4))
+            var path = Path()
+            for i in 0..<n {
+                let h = (0.2 + abs(sin(Double(i) * 0.7 + seed) * cos(Double(i) * 0.31 + seed * 2)) * 0.8) * 22
+                path.addRoundedRect(in: CGRect(x: Double(i) * 4, y: (size.height - h) / 2, width: 2.5, height: h), cornerSize: CGSize(width: 1.25, height: 1.25))
+            }
+            ctx.fill(path, with: .color(color))
         }.frame(minWidth: CGFloat(min(bars, 20)) * 4, maxWidth: .infinity).frame(height: 22)
     }
 }

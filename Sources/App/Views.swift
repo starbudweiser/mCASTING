@@ -254,7 +254,8 @@ struct CharacterColumn: View {
                     Button(s.multi.count > 1 ? L.t("rand.many", s.multi.count) : L.t("rand.one")) { s.assignRandom(ordered(s.multi)) }.buttonStyle(FlatButton(green: true, wide: true))
                 }
             }
-            ScrollView(showsIndicators: false) { VStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c) } } }
+            let names = Dictionary(s.voices.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
+            ScrollView(showsIndicators: false) { LazyVStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c, names: names) } } }
             Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton(green: true, wide: true))
         }
     }
@@ -279,18 +280,25 @@ struct CharacterColumn: View {
         Button(L.t("rand.all")) { s.multi = Set(chars.map(\.id)) }
         if !s.multi.isEmpty { Button(L.t("rand.none")) { s.multi = [] } }
     }
-    func row(_ c: Character) -> some View {
-        let v = s.voices.first { $0.id == c.voiceID }
-        return Group {
-            HStack(spacing: 10) {
-                Avatar(letter: String(c.name.prefix(1)))
-                VStack(alignment: .leading, spacing: 1) {
-                    HStack(spacing: 6) { Text(c.name).fontWeight(.semibold).rowName(c.name); if let v { Tag(title: v.name, color: Flat.ok).contentShape(Rectangle()).onTapGesture { s.showVoice(of: c) }.help(L.t("char.showvoice")) } else { Tag(title: L.t("char.novoice")) } }
-                    Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(c.role)
-                }
-                Spacer(minLength: 0)
-            }.hoverTile(selected: s.characterID == c.id || s.multi.contains(c.id))
-        }.contentShape(Rectangle()).onTapGesture { click(c) }.contextMenu { menu(c) }.accessibilityAddTraits(.isButton)
+    func row(_ c: Character, names: [String: String]) -> some View {
+        CharRow(c: c, voiceName: c.voiceID.flatMap { names[$0] }, selected: s.characterID == c.id || s.multi.contains(c.id)).equatable()
+            .contentShape(Rectangle()).onTapGesture { click(c) }.contextMenu { menu(c) }.accessibilityAddTraits(.isButton)
+    }
+}
+
+/// Ligne d'un personnage : ne se redessine que si son nom, sa voix ou sa sélection changent.
+struct CharRow: View, Equatable {
+    let c: Character; let voiceName: String?; let selected: Bool
+    nonisolated static func == (a: CharRow, b: CharRow) -> Bool { a.c == b.c && a.voiceName == b.voiceName && a.selected == b.selected }
+    var body: some View {
+        HStack(spacing: 10) {
+            Avatar(letter: String(c.name.prefix(1)))
+            VStack(alignment: .leading, spacing: 1) {
+                HStack(spacing: 6) { Text(c.name).fontWeight(.semibold).rowName(c.name); if let n = voiceName { Tag(title: n, color: Flat.ok).contentShape(Rectangle()).onTapGesture { AppState.shared.showVoice(of: c) }.help(L.t("char.showvoice")) } else { Tag(title: L.t("char.novoice")) } }
+                Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(c.role)
+            }
+            Spacer(minLength: 0)
+        }.hoverTile(selected: selected)
     }
 }
 
@@ -481,7 +489,8 @@ struct VoicePane: View {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                        ForEach(shown) { v in VoiceCard(v: v, mode: .casting).id(v.id) }
+                        let cid = s.character?.voiceID
+                        ForEach(shown) { v in VoiceCard(v: v, mode: .casting, info: .of(v, mode: .casting, s, chosenID: cid)).equatable().id(v.id) }
                     }
                 }
                 .onAppear { reveal(proxy) }
@@ -541,23 +550,39 @@ struct FilterBox: View {
 enum CardMode { case casting, library }
 
 /// `.v` : nom + balises, ligne de description, lecteur avec forme d'onde, actions.
-struct VoiceCard: View {
+/// Ce qu'une carte de voix lit de l'état de l'appli, calculé par la liste : la carte ne se redessine que si ces valeurs changent
+/// (et non à chaque sélection, lecture ou avancement d'un calcul ailleurs dans l'appli).
+struct CardInfo: Equatable {
+    var chosen = false, isB = false, fav = false, canListen = false, hasCharacter = false
+    var playingPath: String?          // seulement si la lecture en cours concerne cette voix
+    var defaultLang: Lang = .fr
+    var projectLangs: [Lang] = []
+    @MainActor static func of(_ v: Voice, mode: CardMode, _ s: AppState, chosenID: String?) -> CardInfo {
+        CardInfo(chosen: mode == .casting && chosenID == v.id, isB: mode == .casting && s.abVoiceID == v.id, fav: s.favorites.contains(v.id),
+                 canListen: s.engineInstalled && !s.busy, hasCharacter: s.characterID != nil,
+                 playingPath: s.playingPath.flatMap { $0.contains(v.id) ? $0 : nil },
+                 defaultLang: mode == .casting ? s.activeLang : (s.fLang ?? s.project?.activeLang ?? .fr), projectLangs: s.project?.languages ?? [])
+    }
+}
+
+struct VoiceCard: View, Equatable {
     let v: Voice; let mode: CardMode
     var selected = false
+    let info: CardInfo
     var onSelect: (() -> Void)? = nil
-    @ObservedObject var s = AppState.shared
-    var chosen: Bool { mode == .casting && s.character?.voiceID == v.id }
-    var fav: Bool { s.favorites.contains(v.id) }
+    nonisolated static func == (a: VoiceCard, b: VoiceCard) -> Bool { a.v == b.v && a.mode == b.mode && a.selected == b.selected && a.info == b.info }
+    private var s: AppState { .shared }
+    var chosen: Bool { info.chosen }
+    var fav: Bool { info.fav }
     @State private var pick: Lang?
     @State private var free = false
-    @State private var ownLine = false
     @State private var hover = false
     /// Langue écoutée sur cette carte : celle choisie dans son menu, sinon la langue écoutée du projet (ou le filtre Langue).
-    var lang: Lang { pick ?? (mode == .casting ? s.activeLang : (s.fLang ?? s.project?.activeLang ?? .fr)) }
+    var lang: Lang { pick ?? info.defaultLang }
     var body: some View {
         let rel = v.samples[lang.rawValue]
-        let isA = chosen, isB = mode == .casting && s.abVoiceID == v.id
-        let playing = rel.map { s.playingPath?.hasSuffix($0) == true } ?? (s.playingPath?.contains("/cache/\(v.id).\(lang.rawValue).") == true)
+        let isA = chosen, isB = info.isB
+        let playing = rel.map { info.playingPath?.hasSuffix($0) == true } ?? (info.playingPath?.contains("/cache/\(v.id).\(lang.rawValue).") == true)
         VStack(alignment: .leading, spacing: 5) {
             HStack(spacing: 6) {
                 VStack(alignment: .leading, spacing: 1) {
@@ -574,18 +599,18 @@ struct VoiceCard: View {
                 }.buttonStyle(.plain).help(L.t(fav ? "fav.remove" : "fav.add"))
             }
             HStack(spacing: 8) {
-                PlayButton(playing: playing, enabled: rel != nil || (s.engineInstalled && !s.busy && !v.samples.isEmpty)) { if playing { s.play(rel: s.playingPath) } else { s.listen(voice: v, lang: lang) } }
+                PlayButton(playing: playing, enabled: rel != nil || (info.canListen && !v.samples.isEmpty)) { if playing { s.play(rel: s.playingPath) } else { s.listen(voice: v, lang: lang) } }
                 Wave(seed: Double(v.id.unicodeScalars.reduce(0) { ($0 + Int($1.value)) % 97 }) / 7, bars: mode == .casting ? 30 : 22, playing: playing)
                 ListenLangMenu(v: v, lang: Binding(get: { lang }, set: { pick = $0 }), onPick: { s.listen(voice: v, lang: $0) }, onFreeText: { free = true })
             }
             .popover(isPresented: $free) { FreeTextPopover(v: v, lang: lang, shown: $free) }
             if mode == .casting {
                 HStack(spacing: 6) {
-                    lineMenu
+                    LineMenu(v: v, lang: lang)
                     if isB { Button(L.t("ab.cancel")) { s.abVoiceID = nil }.buttonStyle(FlatButton(small: true)) }
                     else if !chosen { Button(L.t("lib.ab")) { s.abVoiceID = v.id }.buttonStyle(FlatButton(small: true)) }
                     Spacer(minLength: 0)
-                    Button(chosen ? L.t("lib.chosen") : L.t("lib.choose")) { s.choose(voice: v.id) }.buttonStyle(FlatButton(primary: chosen, small: true)).disabled(s.characterID == nil)
+                    Button(chosen ? L.t("lib.chosen") : L.t("lib.choose")) { s.choose(voice: v.id) }.buttonStyle(FlatButton(primary: chosen, small: true)).disabled(!info.hasCharacter)
                 }
             }
         }
@@ -594,10 +619,27 @@ struct VoiceCard: View {
         .contentShape(Rectangle()).onTapGesture { onSelect?() }
         .onHover { hover = $0 }
     }
-    /// Menu « Réplique du perso » : 3 premières répliques du personnage, puis un texte libre dit avec son jeu et son effet.
-    @ViewBuilder var lineMenu: some View {
-        let lines = s.character.map(s.shownLines) ?? []
-        let off = s.busy || !s.engineInstalled || s.character == nil
+    /// Langues prêtes de la voix pour le projet (« DE · EN »), en orange si une langue du projet reste à calculer.
+    @ViewBuilder var langTag: some View {
+        let proj = info.projectLangs
+        let ready = proj.filter { v.samples[$0.rawValue] != nil }, missing = proj.filter { v.samples[$0.rawValue] == nil }
+        if mode == .library { EmptyView() }      // bibliothèque : cartes étroites, langues dans le menu et la fiche
+        else if v.custom || proj.isEmpty { if !v.samples.isEmpty { Tag(title: v.samples.keys.compactMap(Lang.init(rawValue:)).sorted().map { $0.rawValue.uppercased() }.joined(separator: " · ")) } }
+        else if missing.isEmpty { Tag(title: ready.map { $0.rawValue.uppercased() }.joined(separator: " · "), color: Flat.ok) }
+        else { Tag(title: (ready + missing).map { $0.rawValue.uppercased() + (missing.contains($0) ? "…" : "") }.joined(separator: " · "), color: Flat.warn).help(L.t("lang.tag.missing")) }
+    }
+}
+
+/// Menu « Réplique du perso » : 3 premières répliques du personnage, puis un texte libre dit avec son jeu et son effet.
+/// Vue à part : elle suit le personnage sélectionné sans faire redessiner toute la carte.
+struct LineMenu: View {
+    let v: Voice; let lang: Lang
+    @ObservedObject var s = AppState.shared
+    @State private var ownLine = false
+    var body: some View {
+        let c = s.character
+        let lines = c.map(s.shownLines) ?? []
+        let off = s.busy || !s.engineInstalled || c == nil
         Menu {
             ForEach(Array(lines.prefix(3).enumerated()), id: \.offset) { i, t in
                 Button("\(i + 1). « \(t.count > 70 ? String(t.prefix(70)) + "…" : t) »") { tryLine(i) }
@@ -616,15 +658,6 @@ struct VoiceCard: View {
         }
     }
     func tryLine(_ i: Int) { if let c = s.character, !s.shownLines(c).isEmpty { s.preview(voice: v, text: s.spokenLine(c, i, voice: v, lang: lang), style: c.style, fx: CreatureFX.find(c.fx, for: c), lang: lang) } }
-    /// Langues prêtes de la voix pour le projet (« DE · EN »), en orange si une langue du projet reste à calculer.
-    @ViewBuilder var langTag: some View {
-        let proj = s.project?.languages ?? []
-        let ready = proj.filter { v.samples[$0.rawValue] != nil }, missing = proj.filter { v.samples[$0.rawValue] == nil }
-        if mode == .library { EmptyView() }      // bibliothèque : cartes étroites, langues dans le menu et la fiche
-        else if v.custom || proj.isEmpty { if !v.samples.isEmpty { Tag(title: v.samples.keys.compactMap(Lang.init(rawValue:)).sorted().map { $0.rawValue.uppercased() }.joined(separator: " · ")) } }
-        else if missing.isEmpty { Tag(title: ready.map { $0.rawValue.uppercased() }.joined(separator: " · "), color: Flat.ok) }
-        else { Tag(title: (ready + missing).map { $0.rawValue.uppercased() + (missing.contains($0) ? "…" : "") }.joined(separator: " · "), color: Flat.warn).help(L.t("lang.tag.missing")) }
-    }
 }
 
 /// Comparaison A / B : voix choisie (A) contre la voix mise de côté (B), même réplique.
@@ -770,7 +803,7 @@ struct LibraryView: View {
             HStack(alignment: .top, spacing: 12) {
                 ScrollView(showsIndicators: false) {
                     LazyVGrid(columns: Array(repeating: GridItem(.flexible(), spacing: 8), count: 3), spacing: 8) {
-                        ForEach(voices.prefix(150)) { v in VoiceCard(v: v, mode: .library, selected: sel?.id == v.id, onSelect: { selID = v.id }) }
+                        ForEach(voices.prefix(150)) { v in VoiceCard(v: v, mode: .library, selected: sel?.id == v.id, info: .of(v, mode: .library, s, chosenID: nil), onSelect: { selID = v.id }).equatable() }
                     }.frame(maxWidth: .infinity)
                 }.frame(maxWidth: .infinity)
                 if let v = sel { ScrollView(showsIndicators: false) { Sheet(v: v, line: $line, emo: $emo, uses: used[v.id] ?? 0) }.frame(width: 340) }
