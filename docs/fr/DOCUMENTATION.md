@@ -212,7 +212,7 @@ mCASTING contient un serveur MCP (`mcasting-mcp`). La commande exacte pour le d�
 claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
 ```
 
-Outils : `get_import_guide`, `import_project`, `export_project`, `list_projects`, `list_languages`, `create_project`, `set_project_languages`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`. Les appels reçus s'affichent dans le journal des Réglages. `list_languages` donne les langues possibles pour un projet et celles où toute voix peut être écoutée ; `preview_voice` accepte n'importe laquelle de ces langues.
+Outils : `get_import_guide`, `import_project`, `export_project`, `list_projects`, `list_languages`, `create_project`, `set_project_languages`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `unset_casting`, `preview_voice`, `write_casting`. Les appels reçus s'affichent dans le journal des Réglages. `list_languages` donne les langues possibles pour un projet et celles où toute voix peut être écoutée ; `preview_voice` accepte n'importe laquelle de ces langues.
 
 ## 13. Réglages et mises à jour
 

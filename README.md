@@ -52,7 +52,7 @@ them (`"lines": {"fr": [...], "en": [...]}`).
 claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
 ```
 
-Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices` (also by source, source kind, character and tags for cloned voices), `update_voice`, `set_casting`, `preview_voice`, `write_casting`, and for the line database `list_line_sources`, `search_lines`, `get_line`, `assign_line`, `unassign_line`.
+Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `create_project`, `add_characters`, `list_characters`, `search_voices` (also by source, source kind, character and tags for cloned voices), `update_voice`, `set_casting`, `unset_casting`, `preview_voice`, `write_casting`, and for the line database `list_line_sources`, `search_lines`, `get_line`, `assign_line`, `unassign_line`.
 
 ## Bring an existing project (any agent)
 

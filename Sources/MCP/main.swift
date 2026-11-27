@@ -33,6 +33,8 @@ let tools: [[String: Any]] = [
      "inputSchema": schema(["voice_id": "Voice id", "name": "", "character": "", "source_kind": "", "source": "", "gender": "", "tags": ""], required: ["voice_id"])],
     ["name": "set_casting", "description": "Assign a voice to a character (and an optional emotion style).",
      "inputSchema": schema(["project": "Project name or id", "character": "Character name or id", "voice_id": "Voice id", "style": "Emotion/delivery"], required: ["project", "character", "voice_id"])],
+    ["name": "unset_casting", "description": "Remove the voice cast for a character (and its emotion style): the character shows as uncast in the app.",
+     "inputSchema": schema(["project": "Project name or id", "character": "Character name or id"], required: ["project", "character"])],
     ["name": "preview_voice", "description": "Generate a preview of a voice for a line (slow: runs the local TTS). Returns the audio path.",
      "inputSchema": schema(["voice_id": "Voice id", "text": "Line to speak", "lang": "ISO 639-1 code of the language to speak (any code from list_languages: a voice can be heard in a language it has no sample in, by cloning its timbre; a slight accent may remain)", "style": "Emotion (only used when expressive is true)", "timbre_lang": "optional: language of the sample whose timbre is cloned (default: the sample of lang if it exists, else the project's main language)", "expressive": "true = apply the emotion (voice timbre approximate); default false = exact timbre of the library sample, no emotion"], required: ["voice_id", "text"])],
     ["name": "get_import_guide", "description": "START HERE to bring an existing project into mCASTING: returns the import format (mcasting-project/1) and how to build it from the project's files. Works with any agent.", "inputSchema": schema([:])],
@@ -144,6 +146,13 @@ func call(_ name: String, _ a: [String: Any]) throws -> String {
             else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project or character"]) }
             guard DataStore.voices().contains(where: { $0.id == s("voice_id") }) else { throw NSError(domain: "mcasting", code: 3, userInfo: [NSLocalizedDescriptionKey: "Unknown voice"]) }
             all[i].characters[j].voiceID = s("voice_id"); if !s("style").isEmpty { all[i].characters[j].style = s("style") }
+        }
+        return "OK"
+    case "unset_casting":
+        try DataStore.updateProjects { all in
+            guard let i = findProject(s("project"), in: all), let j = all[i].characters.firstIndex(where: { $0.id == s("character") || $0.name.lowercased() == s("character").lowercased() })
+            else { throw NSError(domain: "mcasting", code: 2, userInfo: [NSLocalizedDescriptionKey: "Unknown project or character"]) }
+            all[i].characters[j].voiceID = nil; all[i].characters[j].style = ""
         }
         return "OK"
     case "preview_voice":

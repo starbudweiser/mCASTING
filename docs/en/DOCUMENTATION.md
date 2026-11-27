@@ -212,7 +212,7 @@ mCASTING includes an MCP server (`mcasting-mcp`). The exact command to declare i
 claude mcp add mcasting -- "/Applications/mCASTING.app/Contents/MacOS/mcasting-mcp"
 ```
 
-Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `list_languages`, `create_project`, `set_project_languages`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `preview_voice`, `write_casting`. Incoming calls are listed in the Settings log. `list_languages` gives the languages a project can use and those any voice can be heard in; `preview_voice` accepts any of them.
+Tools: `get_import_guide`, `import_project`, `export_project`, `list_projects`, `list_languages`, `create_project`, `set_project_languages`, `add_characters`, `list_characters`, `search_voices`, `set_casting`, `unset_casting`, `preview_voice`, `write_casting`. Incoming calls are listed in the Settings log. `list_languages` gives the languages a project can use and those any voice can be heard in; `preview_voice` accepts any of them.
 
 ## 13. Settings and updates
 
