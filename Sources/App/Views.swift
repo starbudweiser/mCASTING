@@ -240,10 +240,18 @@ struct EmptyProject: View {
 struct CharacterColumn: View {
     @Binding var adding: Bool
     @ObservedObject var s = AppState.shared
+    /// N'afficher que les personnages sans voix (le personnage sélectionné reste visible tant qu'il l'est).
+    @AppStorage("onlyNoVoice") private var onlyNoVoice = false
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             // Même hauteur que le commutateur de la colonne de droite : les premières cartes des deux colonnes s'alignent.
-            Header(title: L.t("char.title")).frame(height: Flat.headRow, alignment: .leading)
+            HStack(spacing: 8) {
+                Header(title: L.t("char.title"))
+                Spacer(minLength: 6)
+                let n = chars.filter { $0.voiceID == nil }.count
+                Button { onlyNoVoice.toggle() } label: { Chip(title: L.t("char.onlynovoice", n), on: onlyNoVoice) }
+                    .buttonStyle(.plain).help(L.t(onlyNoVoice ? "char.onlynovoice.off" : "char.onlynovoice.on"))
+            }.frame(height: Flat.headRow)
             if !s.multi.isEmpty {
                 VStack(spacing: 6) {
                     HStack(spacing: 6) {
@@ -255,7 +263,13 @@ struct CharacterColumn: View {
                 }
             }
             let names = Dictionary(s.voices.map { ($0.id, $0.name) }, uniquingKeysWith: { a, _ in a })
-            ScrollView(showsIndicators: false) { LazyVStack(spacing: 8) { ForEach(s.project?.characters ?? []) { c in row(c, names: names) } } }
+            let shown = onlyNoVoice ? chars.filter { $0.voiceID == nil || $0.id == s.characterID } : chars
+            ScrollView(showsIndicators: false) { LazyVStack(spacing: 8) {
+                ForEach(shown) { c in row(c, names: names) }
+                if onlyNoVoice, !chars.isEmpty, !chars.contains(where: { $0.voiceID == nil }) {
+                    Text(L.t("char.allvoiced")).font(.system(size: 12)).foregroundStyle(Flat.text2).frame(maxWidth: .infinity, alignment: .leading).padding(.top, 4)
+                }
+            } }
             Button("＋ " + L.t("char.add")) { adding = true }.buttonStyle(FlatButton(green: true, wide: true))
         }
     }
