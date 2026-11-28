@@ -1134,7 +1134,14 @@ struct SettingsView: View {
     @ObservedObject var updater = Updater.shared
     @ObservedObject var s = AppState.shared
     @AppStorage("autoUpdate") private var auto = true
-    var mcp: String { "claude mcp add mcasting -- \"\(Bundle.main.bundlePath)/Contents/MacOS/mcasting-mcp\"" }
+    /// Serveur déclaré pour tous les projets de l'agent (`--scope user`), au chemin de l'appli lancée.
+    static let mcpHead = "claude mcp add --scope user mcasting --"
+    var mcpPath: String { Bundle.main.bundleURL.appendingPathComponent("Contents/MacOS/mcasting-mcp").path }
+    var mcp: String { Self.mcpHead + " \"" + mcpPath + "\"" }
+    /// Outils exposés par `mcasting-mcp` (Sources/MCP/main.swift), affichés dans les réglages.
+    static let mcpTools = ["list_projects", "create_project", "list_languages", "set_project_languages", "add_characters", "list_characters",
+                           "search_voices", "preview_voice", "update_voice", "set_casting", "unset_casting", "write_casting",
+                           "import_project", "export_project", "get_import_guide", "list_line_sources", "search_lines", "get_line", "assign_line", "unassign_line"]
     var body: some View {
         Page {
             Title(text: L.t("nav.settings"))
@@ -1153,7 +1160,7 @@ struct SettingsView: View {
                         Divider().overlay(Flat.line)
                         line(L.t("upd.version", updater.currentVersion)) { Button(L.t("upd.check")) { Task { await updater.check() } }.buttonStyle(FlatButton(small: true)).disabled(updater.state == .checking || updater.state == .downloading) }
                         if case .available(let v) = updater.state { Button(L.t("upd.install", v)) { Task { await updater.install() } }.buttonStyle(FlatButton(primary: true, small: true)) }
-                        Text(status).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
+                        if !status.isEmpty { Text(status).font(.system(size: 11.5)).foregroundStyle(Flat.text2) }
                     } }
                 }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .top)
                 VStack(spacing: 10) {
@@ -1161,9 +1168,13 @@ struct SettingsView: View {
                         Header(title: L.t("set.mcp"))
                         line(L.t("set.transport")) { Tag(title: "stdio", color: Flat.ok) }
                         Text(L.t("set.mcp.help")).font(.system(size: 11.5)).foregroundStyle(Flat.text2)
-                        Text(mcp).font(.system(size: 11.5, design: .monospaced)).textSelection(.enabled).fixedSize(horizontal: false, vertical: true).padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
+                        // Commande sur deux lignes, le chemin jamais coupé en son milieu (raccourci au centre si la place manque).
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(Self.mcpHead).lineLimit(1)
+                            Text("\"" + mcpPath + "\"").lineLimit(1).truncationMode(.middle).help(mcpPath)
+                        }.font(.system(size: 11.5, design: .monospaced)).textSelection(.enabled).padding(10).frame(maxWidth: .infinity, alignment: .leading).background(Flat.ctl, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous))
                         Button(L.t("set.copy")) { NSPasteboard.general.clearContents(); NSPasteboard.general.setString(mcp, forType: .string) }.buttonStyle(FlatButton(small: true))
-                        Text(L.t("set.tools")).font(.system(size: 11.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
+                        Text(L.t("set.tools", Self.mcpTools.count, Self.mcpTools.joined(separator: ", "))).font(.system(size: 11.5)).foregroundStyle(Flat.text2).fixedSize(horizontal: false, vertical: true)
                     } }
                     Card { VStack(alignment: .leading, spacing: 6) {
                         Header(title: L.t("set.agentlog"))
@@ -1177,7 +1188,7 @@ struct SettingsView: View {
     func line<C: View>(_ t: String, @ViewBuilder _ c: () -> C) -> some View { HStack { Text(t).lineLimit(1); Spacer(minLength: 8); c() }.frame(minHeight: 30) }
     var status: String {
         switch updater.state {
-        case .idle: return L.t("upd.version", updater.currentVersion)
+        case .idle: return ""          // la version est déjà sur la ligne au-dessus
         case .checking: return L.t("upd.checking")
         case .upToDate: return L.t("upd.uptodate", updater.currentVersion)
         case .available(let v): return L.t("upd.available", v)
