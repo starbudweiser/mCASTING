@@ -22,7 +22,8 @@ enum Flat {
     static let bg = Color(nsColor: bgNS)
     static let card = dyn(0xffffff, 0x232327)
     static let ctl = dyn(0xebe6de, 0x2c2c31)
-    static let text = dyn(0x26231e, 0xf5f5f7), text2 = dyn(0x7b756a, 0x98989f)
+    static let text = dyn(0x26231e, 0xe4e4e8), text2 = dyn(0x7b756a, 0x98989f)   // sombre : gris clair plutôt que blanc pur (moins fatigant)
+    static let text3 = dyn(0x9a9488, 0x6c6c73)          // tertiaire : descriptions, rôles
     static let line = dyn(0xe3ddd2, 0x303035)
     static let acc = dyn(0x26231e, 0x0a84ff), onAcc = dyn(0xf4f1ec, 0xffffff)
     static let brand = dyn(0xd9622b, 0xf08a52)

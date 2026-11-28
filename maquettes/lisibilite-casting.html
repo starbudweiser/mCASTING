@@ -1,0 +1,200 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>mCASTING — Casting plus lisible</title>
+<style>
+:root{
+  --bg:#131316; --card:#1c1c20; --card2:#202025; --ctl:#2a2a2f; --line:#2b2b30;
+  --t1:#e4e4e8;            /* texte principal : jamais blanc pur */
+  --t2:rgba(255,255,255,.52); /* secondaire */
+  --t3:rgba(255,255,255,.34); /* tertiaire */
+  --acc:#0a84ff; --ok:#30d158; --okd:rgba(48,209,88,.14); --warn:#ff9f0a; --brand:#f08a52;
+  --sky:#1a2c45; --prune:#3a2236;
+  --rb:12px; --rc:8px;
+  font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue",sans-serif;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:#0c0c0e;color:var(--t1);font-size:13px;-webkit-font-smoothing:antialiased;padding:20px 16px 40px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;margin:0 auto 12px;max-width:1400px}
+.tab{background:var(--ctl);color:var(--t2);border:0;border-radius:999px;padding:7px 14px;font:500 13px inherit;font-family:inherit;cursor:pointer}
+.tab.on{background:#f0f0f2;color:#15151a}
+.intro{max-width:1400px;margin:0 auto 14px;color:var(--t2);line-height:1.5;font-size:13px}
+.intro b{color:var(--t1);font-weight:600}
+.win{max-width:1400px;margin:0 auto;background:var(--bg);border-radius:14px;border:1px solid #26262b;overflow:hidden}
+.bar{height:44px;display:flex;align-items:center;gap:16px;padding:0 16px;border-bottom:1px solid var(--line)}
+.dots{display:flex;gap:7px}.dots i{width:11px;height:11px;border-radius:50%;background:#3a3a40}
+.brand{font-weight:700;font-size:14px}.brand em{font-style:normal;color:var(--brand)}
+.bar .st{margin-left:auto;display:flex;gap:14px;color:var(--t3);font-size:12px;align-items:center}
+.dot{width:6px;height:6px;border-radius:50%;background:var(--ok);display:inline-block;margin-right:5px;vertical-align:1px;opacity:.8}
+.main{display:grid;grid-template-columns:190px 1fr;min-height:760px}
+.nav{border-right:1px solid var(--line);padding:16px 10px;color:var(--t2);font-size:13px}
+.nav h6{font-size:10.5px;letter-spacing:.06em;color:var(--t3);font-weight:600;margin:0 8px 8px}
+.nav a{display:block;padding:7px 8px;border-radius:7px}
+.nav a.on{background:var(--ctl);color:var(--t1);font-weight:600}
+.page{padding:14px 16px;display:flex;flex-direction:column;gap:12px;min-width:0}
+.ph{display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+.ph h1{font-size:16px;font-weight:650}
+.pill{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--ctl);color:var(--t2)}
+.pill.ok{background:var(--okd);color:var(--ok)}
+.btn{background:var(--ctl);color:var(--t1);border:0;border-radius:var(--rc);padding:6px 12px;font:500 12.5px inherit;font-family:inherit}
+.btn.p{background:var(--acc);color:#fff}
+.ph .r{margin-left:auto;display:flex;gap:8px}
+.cols{display:grid;grid-template-columns:270px 1fr;gap:12px;min-height:0}
+.h{font-size:10.5px;letter-spacing:.06em;color:var(--t3);font-weight:600;text-transform:uppercase}
+
+/* ---------- personnages ---------- */
+.chars{display:flex;flex-direction:column;gap:2px}
+.chead{display:flex;align-items:center;justify-content:space-between;height:30px;margin-bottom:4px}
+.chip{font-size:11.5px;padding:3px 9px;border-radius:999px;background:var(--ctl);color:var(--t2)}
+.crow{display:grid;grid-template-columns:26px 1fr;gap:10px;align-items:center;padding:7px 10px;border-radius:9px;position:relative}
+.crow:hover{background:#1b1b1f}
+.crow.sel{background:var(--sky)}
+.crow.sel::before{content:"";position:absolute;left:0;top:8px;bottom:8px;width:3px;border-radius:2px;background:var(--acc)}
+.av{width:26px;height:26px;border-radius:7px;background:var(--ctl);display:grid;place-items:center;font-size:11px;font-weight:700;color:var(--t2)}
+.cn{display:flex;gap:6px;align-items:baseline;min-width:0}
+.cn b{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cn span{font-size:11.5px;color:var(--ok);opacity:.85;white-space:nowrap}
+.cn span.no{color:var(--warn)}
+.cr{font-size:11.5px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:1px}
+
+/* ---------- droite ---------- */
+.right{display:flex;flex-direction:column;gap:10px;min-width:0}
+.seg{display:inline-flex;background:var(--ctl);border-radius:999px;padding:3px;gap:2px;align-self:flex-start}
+.seg b{font-weight:500;font-size:12.5px;padding:4px 12px;border-radius:999px;color:var(--t2)}
+.seg b.on{background:var(--acc);color:#fff}
+/* fiche du personnage : une seule bande compacte */
+.who{background:var(--sky);border-radius:var(--rb);padding:10px 14px;display:flex;gap:18px;align-items:center;flex-wrap:wrap}
+.who .id{display:flex;gap:10px;align-items:center;min-width:220px;flex:1}
+.who .id b{font-size:14px;font-weight:650}
+.who .id p{font-size:12px;color:var(--t2)}
+.who .grp{display:flex;gap:6px;align-items:center}
+.who .grp .h{margin-right:4px}
+.mini{font-size:11.5px;padding:3px 9px;border-radius:999px;background:rgba(255,255,255,.07);color:var(--t2)}
+.mini.on{background:rgba(255,255,255,.88);color:#15151a;font-weight:600}
+/* barre de filtres sur une ligne */
+.fbar{display:flex;gap:6px;align-items:center;flex-wrap:wrap;background:var(--card);border:1px solid var(--line);border-radius:var(--rb);padding:7px 8px}
+.search{flex:1;min-width:200px;background:#141417;border-radius:var(--rc);padding:6px 10px;color:var(--t3);font-size:12.5px}
+.dd{font-size:12px;padding:5px 10px;border-radius:var(--rc);background:var(--ctl);color:var(--t2);white-space:nowrap}
+.dd b{color:var(--t1);font-weight:500}
+.dd.on{background:rgba(10,132,255,.18);color:#7cb8ff}
+.count{font-size:11.5px;color:var(--t3);margin-left:4px;white-space:nowrap}
+
+/* ---------- A : liste calme ---------- */
+.list{background:var(--card);border:1px solid var(--line);border-radius:var(--rb);overflow:hidden}
+.gh{display:flex;justify-content:space-between;align-items:center;padding:8px 14px 6px;background:#18181c;border-bottom:1px solid var(--line);position:sticky;top:0}
+.gh .n{font-size:11px;color:var(--t3)}
+.vr{display:grid;grid-template-columns:28px minmax(110px,150px) 124px 1fr auto;gap:12px;align-items:center;padding:0 12px;height:42px;border-bottom:1px solid #26262b;position:relative}
+.vr:last-child{border-bottom:0}
+.vr:hover{background:#222227}
+.vr.chosen{background:rgba(48,209,88,.07)}
+.vr.chosen::before{content:"";position:absolute;left:0;top:9px;bottom:9px;width:3px;border-radius:2px;background:var(--ok)}
+.play{width:24px;height:24px;border-radius:50%;border:1.5px solid rgba(10,132,255,.75);display:grid;place-items:center}
+.play::after{content:"";border-left:7px solid #4aa3ff;border-top:4.5px solid transparent;border-bottom:4.5px solid transparent;margin-left:2px}
+.vr.playing .play{background:var(--acc);border-color:var(--acc)}
+.vr.playing .play::after{border:0;width:7px;height:7px;background:#fff;margin:0;border-radius:1px}
+.vn{font-weight:600;font-size:13px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.vn .tag{font-size:10.5px;font-weight:600;color:var(--ok);margin-left:6px}
+.vd{font-size:12px;color:var(--t3);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.wave{height:18px;display:flex;align-items:center;gap:1.5px;opacity:.28}
+.wave i{display:block;width:2px;border-radius:1px;background:#fff}
+.vr.playing .wave{opacity:1}.vr.playing .wave i{background:var(--acc)}
+.acts{display:flex;gap:6px;align-items:center;justify-content:flex-end;min-width:210px}
+.acts .ghost{font-size:11.5px;padding:3px 9px;border-radius:7px;background:var(--ctl);color:var(--t1);opacity:0;transition:opacity .12s}
+.vr:hover .acts .ghost,.vr.hov .acts .ghost{opacity:1}
+.acts .choose{font-size:11.5px;padding:3px 10px;border-radius:7px;color:var(--t2);border:1px solid #34343a}
+.vr:hover .choose,.vr.hov .choose{background:var(--acc);color:#fff;border-color:var(--acc)}
+.vr.chosen .choose{background:var(--okd);color:var(--ok);border-color:transparent}
+.miss{font-size:10.5px;color:var(--warn);font-weight:600}
+.star{color:var(--t3);font-size:13px}.star.on{color:var(--brand)}
+
+/* ---------- B : cartes allégées ---------- */
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.gtitle{grid-column:1/-1;display:flex;justify-content:space-between;align-items:baseline;padding:6px 2px 0}
+.vc{background:var(--card);border:1px solid var(--line);border-radius:10px;padding:9px 11px;display:grid;grid-template-columns:24px 1fr auto;gap:10px;align-items:center;position:relative}
+.vc:hover,.vc.hov{background:var(--card2);border-color:#38383e}
+.vc.chosen{border-color:rgba(48,209,88,.45);background:rgba(48,209,88,.06)}
+.vc .top{display:flex;align-items:baseline;gap:8px;min-width:0}
+.vc .wave{margin-top:5px;opacity:.22}
+.vc .side{display:flex;flex-direction:row;align-items:center;gap:6px}
+.vc .ghosts{display:none;gap:5px}
+.vc:hover .ghosts,.vc.hov .ghosts{display:flex}.vc .top .vn{flex-shrink:0}
+.vc .ghosts span{font-size:11px;padding:2px 8px;border-radius:6px;background:var(--ctl)}
+
+/* ---------- notes ---------- */
+.notes{max-width:1400px;margin:14px auto 0;display:grid;grid-template-columns:repeat(auto-fit,minmax(250px,1fr));gap:10px}
+.note{background:#18181b;border:1px solid #26262b;border-radius:10px;padding:12px 14px;font-size:12.5px;line-height:1.5;color:var(--t2)}
+.note b{display:block;color:var(--t1);font-weight:600;margin-bottom:3px}
+[hidden]{display:none!important}
+@media (max-width:900px){.main{grid-template-columns:1fr}.nav{display:none}.cols{grid-template-columns:1fr}.grid{grid-template-columns:1fr}.vr{grid-template-columns:28px 1fr auto}.vr .vd,.vr .wave{display:none}}
+</style>
+</head>
+<body>
+<div class="tabs">
+  <button class="tab on" data-v="a">A · Liste calme</button>
+  <button class="tab" data-v="b">B · Cartes allégées</button>
+</div>
+<p class="intro" id="intro-a"><b>A · Liste calme.</b> Les voix deviennent des lignes de 42 px au lieu de cartes de 105 px : 2,5 fois plus de voix visibles, et l'œil suit une seule colonne. Les boutons n'apparaissent qu'au survol (ligne « Elf 4 » ci-dessous, survolée). Les filtres tiennent sur une ligne.</p>
+<p class="intro" id="intro-b" hidden><b>B · Cartes allégées.</b> On garde les deux colonnes de cartes, mais chaque carte perd ce qui se répète : le type devient un titre de groupe, les langues ne s'affichent que si l'une manque, les boutons n'apparaissent qu'au survol. Cartes de 58 px au lieu de 105.</p>
+
+<div class="win">
+  <div class="bar"><div class="dots"><i></i><i></i><i></i></div><span class="brand"><em>m</em>CASTING</span>
+    <div class="st"><span><i class="dot"></i>Calcul : libre</span><span><i class="dot"></i>Serveur MCP prêt</span><span>Qwen3-TTS · installé</span><span class="btn">Réglages</span></div></div>
+  <div class="main">
+    <nav class="nav"><h6>NAVIGATION</h6><a>Projets</a><a class="on">Casting</a><a>Bibliothèque de voix</a><a>Voix clonées</a><a>Répliques</a><a>Modèles TTS</a></nav>
+    <div class="page">
+      <div class="ph"><h1>Jeu point &amp; click — wSHOWCASE</h1><span class="pill">57 personnages</span><span class="pill ok">57 castés</span>
+        <div class="r"><button class="btn">Dossier</button><button class="btn">Importer…</button><button class="btn p">Écrire casting.json</button></div></div>
+      <div class="cols">
+        <div>
+          <div class="chead"><span class="h">Personnages</span><span class="chip">Sans voix · 0</span></div>
+          <div class="chars" id="chars"></div>
+        </div>
+        <div class="right">
+          <div class="seg"><b class="on">Choisir une voix</b><b>Fiche du personnage</b></div>
+          <div class="who">
+            <div class="id"><div class="av">H</div><div><b>Héros</b><p>dry sarcastic young adventurer, deadpan humor, natural pace</p></div></div>
+            <div class="grp"><span class="h">Voix</span><span class="mini">▶ Extrait 1</span><span class="mini">▶ Extrait 2</span></div>
+            <div class="grp"><span class="h">Jeu</span><span class="mini">Neutre</span><span class="mini">Fatigué</span><span class="mini on">Joyeux</span><span class="mini">Colère</span><span class="mini">+</span></div>
+            <div class="grp"><span class="mini">Fidèle</span><span class="mini on">Expressive</span></div>
+          </div>
+          <div class="fbar">
+            <div class="search">⌕ Rechercher une voix…</div>
+            <span class="dd">Genre <b>Tous</b> ▾</span><span class="dd">Âge ▾</span><span class="dd">Ton ▾</span><span class="dd">Langue <b>Toutes</b> ▾</span><span class="dd">★</span><span class="dd">Clonées</span>
+            <span class="count">670 voix</span>
+          </div>
+          <div id="va"></div>
+          <div id="vb" hidden></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="notes">
+  <div class="note"><b>Moins de blanc</b>Le texte principal passe de blanc pur à gris clair (#e4e4e8) ; descriptions et rôles à 35 % d'opacité. Seuls les noms restent bien contrastés.</div>
+  <div class="note"><b>Rien ne se répète</b>« Créature » est dit une fois, en titre de groupe. « FR · EN » n'apparaît que si une langue manque (en orange). Les boutons « Réplique / Comparer » n'apparaissent qu'au survol.</div>
+  <div class="note"><b>Formes d'onde en retrait</b>À 25 % d'opacité, elles ne font plus de bruit visuel ; elles s'allument en bleu pendant la lecture (ligne « Elf 2 »).</div>
+  <div class="note"><b>Filtres sur une ligne</b>Le grand bloc violet de 20 pastilles devient une barre de menus déroulants ; un filtre actif se colore en bleu.</div>
+  <div class="note"><b>Personnages plus calmes</b>Le nom de la voix est écrit en vert simple, sans pastille ; le rôle est atténué. La sélection : bande bleue à gauche.</div>
+</div>
+
+<script>
+const chars=[["H","Héros","Michael J. Fox","dry sarcastic young adventurer, deadpan humor"],["A","Aveugle","Lucien 41","confused grumbling man"],["F","Fermière","Juliette 286","cheerful hearty farm woman, loud and warm"],["G","Garde de la ville","Felix 11","gruff tired city guard, flat monotone"],["C","Cavalier fantôme","Bastien 135","hollow ghostly melancholy voice, slow"],["N","Narrateur","Gregory House","Narrateur théâtral : voix off sarcastique"],["S","Suivante","Zoe 174","stern dutiful warrior woman, deadpan"],["M","Marchand (fête)","Noah 107","grumpy suspicious old shopkeeper"],["G","Garde (fête)","Louis 93","gruff tired city guard, flat monotone"],["C","Cavalier fantôme (fête)","Bastien 135","hollow ghostly melancholy voice"],["G","Géant (fête)","Louis 33","extremely deep booming slow giant"],["D","Dormeur","Lucien 21","groggy half-asleep confused man"],["W","wk_ex","Lucien 101","breathless adventurous man running"],["W","wk_bu","Oscar 132","excited nerdy ghost hunter shouting"],["W","wk_te","Roman 50","squeaky villainous cartoon voice"],["W","wk_ki","Eva 24","excited child shouting"]];
+document.getElementById('chars').innerHTML=chars.map((c,i)=>`<div class="crow${i==0?' sel':''}"><div class="av">${c[0]}</div><div style="min-width:0"><div class="cn"><b>${c[1]}</b><span>· ${c[2]}</span></div><div class="cr">${c[3]}</div></div></div>`).join('');
+const voices=[["Golem 6","booming and proud"],["Elf 1","gentle and curious"],["Elf 2","grumpy and sarcastic"],["Elf 3","wise and slow"],["Elf 4","shrill and excitable"],["Elf 5","sly and whispering"],["Elf 6","booming and proud"],["Orc 1","gentle and curious"],["Orc 2","grumpy and sarcastic"],["Orc 3","wise and slow"],["Orc 4","shrill and excitable"],["Orc 5","sly and whispering"],["Orc 6","booming and proud"],["Alien 1","gentle and curious"]];
+function wave(seed,n){let s='';for(let i=0;i<n;i++){const h=.2+Math.abs(Math.sin(i*.7+seed)*Math.cos(i*.31+seed*2))*.8;s+=`<i style="height:${(h*18).toFixed(1)}px"></i>`}return `<div class="wave">${s}</div>`}
+const state=i=>({chosen:i==5,playing:i==2,hov:i==4,miss:i==9,fav:i==1});
+let a=`<div class="list"><div class="gh"><span class="h">Créatures</span><span class="n">42 voix</span></div>`;
+voices.forEach((v,i)=>{const s=state(i);a+=`<div class="vr${s.chosen?' chosen':''}${s.playing?' playing':''}${s.hov?' hov':''}"><div class="play"></div><div class="vn">${v[0]}${s.chosen?'<span class="tag">CHOISIE</span>':''}</div>${wave(i*1.3,34)}<div class="vd">${v[1]}${s.miss?' · <span class="miss">EN…</span>':''}</div><div class="acts"><span class="ghost">Réplique ▾</span><span class="ghost">Comparer</span><span class="star${s.fav?' on':''}">${s.fav?'★':'☆'}</span><span class="choose">${s.chosen?'Choisie ✓':'Choisir'}</span></div></div>`});
+document.getElementById('va').innerHTML=a+'</div>';
+let b=`<div class="grid"><div class="gtitle"><span class="h">Créatures</span><span class="count">42 voix</span></div>`;
+voices.forEach((v,i)=>{const s=state(i);b+=`<div class="vc${s.chosen?' chosen':''}${s.playing?' playing':''}${s.hov?' hov':''}"><div class="play"></div><div style="min-width:0"><div class="top"><span class="vn">${v[0]}${s.chosen?'<span class="tag">CHOISIE</span>':''}</span><span class="vd">${v[1]}${s.miss?' · <span class="miss">EN…</span>':''}</span></div>${wave(i*1.3,46)}</div><div class="side"><span class="star${s.fav?' on':''}">${s.fav?'★':'☆'}</span><div class="ghosts"><span>Réplique ▾</span><span>Comparer</span></div><span class="choose acts" style="min-width:0;padding:0"><span class="choose">${s.chosen?'Choisie ✓':'Choisir'}</span></span></div></div>`});
+document.getElementById('vb').innerHTML=b+'</div>';
+document.querySelectorAll('.vc.playing .wave').forEach(w=>{w.style.opacity=1;w.querySelectorAll('i').forEach(i=>i.style.background='var(--acc)')});
+document.querySelectorAll('.tab').forEach(t=>t.onclick=()=>{document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('on',x==t));const v=t.dataset.v;
+  document.getElementById('va').hidden=v!='a';document.getElementById('vb').hidden=v!='b';document.getElementById('intro-a').hidden=v!='a';document.getElementById('intro-b').hidden=v!='b'});
+</script>
+</body>
+</html>

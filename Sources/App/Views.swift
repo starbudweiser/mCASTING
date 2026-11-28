@@ -308,11 +308,17 @@ struct CharRow: View, Equatable {
         HStack(spacing: 10) {
             Avatar(letter: String(c.name.prefix(1)))
             VStack(alignment: .leading, spacing: 1) {
-                HStack(spacing: 6) { Text(c.name).fontWeight(.semibold).rowName(c.name); if let n = voiceName { Tag(title: n, color: Flat.ok).contentShape(Rectangle()).onTapGesture { AppState.shared.showVoice(of: c) }.help(L.t("char.showvoice")) } else { Tag(title: L.t("char.novoice")) } }
-                Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text2).rowName(c.role)
+                HStack(spacing: 6) {
+                    Text(c.name).fontWeight(.semibold).rowName(c.name)
+                    // Voix écrite en vert simple (sans pastille), « sans voix » en orange.
+                    if let n = voiceName { Text("· " + n).font(.system(size: 11.5)).foregroundStyle(Flat.ok.opacity(0.85)).lineLimit(1).fixedSize().contentShape(Rectangle()).onTapGesture { AppState.shared.showVoice(of: c) }.help(L.t("char.showvoice")) }
+                    else { Text("· " + L.t("char.novoice")).font(.system(size: 11.5)).foregroundStyle(Flat.warn).lineLimit(1).fixedSize() }
+                }
+                Text(c.role).font(.system(size: 11.5)).foregroundStyle(Flat.text3).rowName(c.role)
             }
             Spacer(minLength: 0)
         }.hoverTile(selected: selected)
+        .overlay(alignment: .leading) { if selected { RoundedRectangle(cornerRadius: 1.5).fill(Flat.acc).frame(width: 3).padding(.vertical, 9) } }
     }
 }
 
@@ -336,60 +342,19 @@ struct Seg: View {
 /// Partie droite de l'écran Casting : un commutateur « Choisir une voix » / « Fiche du personnage ».
 struct CastingRight: View {
     @ObservedObject var s = AppState.shared
+    /// Présentation des voix : « list » (liste calme) ou « cards » (cartes allégées).
+    @AppStorage("voiceLayout") private var layout = "list"
     var body: some View {
         VStack(alignment: .leading, spacing: 10) {
             Seg(items: [L.t("char.tab.voices"), L.t("char.tab.sheet")], selection: $s.castTab).frame(height: Flat.headRow)
             if let c = s.character {
                 if s.castTab == 0 {
-                    HStack(alignment: .top, spacing: 10) {
-                        CharacterStrip(c: c).frame(maxWidth: .infinity, alignment: .topLeading)
-                        FilterBox(search: true, stretch: true).frame(maxWidth: .infinity, alignment: .topLeading)
-                    }.fixedSize(horizontal: false, vertical: true)
-                    VoicePane()
+                    CompactStrip(c: c)
+                    FilterBar(layout: $layout)
+                    VoicePane(layout: VoiceLayout(rawValue: layout) ?? .list)
                 } else { CharacterSheet(c: c).id(c.id) }
             } else { Text(L.t("char.none")).foregroundStyle(Flat.text2); Spacer() }
         }.frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .topLeading)
-    }
-}
-
-/// Bandeau du personnage affiché pendant le choix d'une voix : qui, voix actuelle, interprétation.
-struct CharacterStrip: View {
-    let c: Character
-    @ObservedObject var s = AppState.shared
-    var body: some View {
-        Card(pad: 12, stretch: true, tint: Flat.sky) { VStack(alignment: .leading, spacing: 10) {
-            HStack(alignment: .top, spacing: 12) {
-                Avatar(letter: String(c.name.prefix(1)), size: 40)
-                VStack(alignment: .leading, spacing: 3) {
-                    Text(c.name).font(.system(size: 15, weight: .semibold)).rowName(c.name)
-                    Text(c.role.isEmpty ? "—" : c.role).font(.system(size: 12)).foregroundStyle(Flat.sub).lineLimit(2).fixedSize(horizontal: false, vertical: true)
-                }
-                Spacer(minLength: 0)
-            }
-            if let cur = c.current, !cur.samples.isEmpty {
-                HStack(spacing: 8) {
-                    Header(title: L.t("char.current")).fixedSize()
-                    ForEach(Array(cur.samples.prefix(3).enumerated()), id: \.offset) { i, smp in
-                        Button { s.play(rel: smp.file) } label: { HStack(spacing: 5) { Image(systemName: s.playingPath == smp.file ? "stop.fill" : "play.fill").font(.system(size: 10)); Text(L.t("char.extract", i + 1)) } }
-                            .buttonStyle(FlatButton(primary: true, small: true)).disabled(!FileManager.default.fileExists(atPath: smp.file)).help(smp.text ?? "")
-                    }
-                    Spacer(minLength: 0)
-                }
-            }
-            Divider().overlay(Flat.sep)
-            VStack(alignment: .leading, spacing: 5) {
-                Header(title: L.t("char.interp"))
-                EmotionPicker(c: c).opacity(s.expressive ? 1 : 0.45)
-            }
-            VStack(alignment: .leading, spacing: 5) {
-                Header(title: L.t("rep.title"))
-                HStack(spacing: 6) {
-                    Button { s.expressive = false } label: { Chip(title: L.t("rep.faithful"), on: !s.expressive) }.buttonStyle(.plain)
-                    Button { s.expressive = true } label: { Chip(title: L.t("rep.expressive"), on: s.expressive) }.buttonStyle(.plain)
-                }
-                Text(L.t(s.expressive ? "rep.hint.e" : "rep.hint.f")).font(.system(size: 11)).foregroundStyle(Flat.sub).fixedSize(horizontal: false, vertical: true)
-            }
-        } }
     }
 }
 
@@ -487,11 +452,18 @@ struct CharacterSheet: View {
 /// Colonne droite : recherche, filtres (`.box`), voix en deux colonnes, comparaison A / B.
 struct VoicePane: View {
     @ObservedObject var s = AppState.shared
+    let layout: VoiceLayout
     /// Voix affichées : les 120 premières, ou une fenêtre autour de la voix choisie si elle est plus loin.
     var shown: [Voice] {
         let all = s.filteredVoices
         guard let id = s.character?.voiceID, let i = all.firstIndex(where: { $0.id == id }), i >= 100 else { return Array(all.prefix(120)) }
         return Array(all[max(0, i - 50)..<min(all.count, i + 70)])
+    }
+    /// Voix regroupées par genre (dans l'ordre d'apparition) : le genre n'est plus répété sur chaque voix.
+    func groups(_ list: [Voice]) -> [(Gender, [Voice])] {
+        var order: [Gender] = [], d: [Gender: [Voice]] = [:]
+        for v in list { if d[v.gender] == nil { order.append(v.gender) }; d[v.gender, default: []].append(v) }
+        return order.map { ($0, d[$0] ?? []) }
     }
     /// Au changement de personnage, amène sa voix choisie au centre de la liste pour essayer les voisines.
     func reveal(_ proxy: ScrollViewProxy) {
@@ -499,12 +471,37 @@ struct VoicePane: View {
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { withAnimation(.easeInOut(duration: 0.25)) { proxy.scrollTo(id, anchor: .center) } }
     }
     var body: some View {
+        let list = shown, cid = s.character?.voiceID
+        let totals = Dictionary(grouping: s.filteredVoices, by: \.gender).mapValues(\.count)
         VStack(alignment: .leading, spacing: 8) {
             ScrollViewReader { proxy in
                 ScrollView(showsIndicators: false) {
-                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
-                        let cid = s.character?.voiceID
-                        ForEach(shown) { v in VoiceCard(v: v, mode: .casting, info: .of(v, mode: .casting, s, chosenID: cid)).equatable().id(v.id) }
+                    LazyVStack(alignment: .leading, spacing: 8, pinnedViews: [.sectionHeaders]) {
+                        ForEach(groups(list), id: \.0) { g, vs in
+                            Section {
+                                if layout == .list {
+                                    VStack(spacing: 0) {
+                                        ForEach(Array(vs.enumerated()), id: \.element.id) { i, v in
+                                            if i > 0 { Rectangle().fill(Flat.line).frame(height: 1) }
+                                            item(v, cid).id(v.id)
+                                        }
+                                    }
+                                    .background(Flat.card, in: RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+                                    .clipShape(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous))
+                                    .overlay(RoundedRectangle(cornerRadius: Flat.rb, style: .continuous).strokeBorder(Flat.line, lineWidth: 1))
+                                } else {
+                                    LazyVGrid(columns: [GridItem(.flexible(), spacing: 8), GridItem(.flexible(), spacing: 8)], spacing: 8) {
+                                        ForEach(vs) { v in item(v, cid).id(v.id) }
+                                    }
+                                }
+                            } header: {
+                                HStack {
+                                    Header(title: L.t("grp.\(g.rawValue)"))
+                                    Spacer(minLength: 6)
+                                    Text(L.t("lib.count", totals[g] ?? vs.count)).font(.system(size: 11)).foregroundStyle(Flat.text3).monospacedDigit()
+                                }.padding(.horizontal, 4).padding(.vertical, 5).background(Flat.bg)
+                            }
+                        }
                     }
                 }
                 .onAppear { reveal(proxy) }
@@ -514,56 +511,13 @@ struct VoicePane: View {
             ABBox()
         }.frame(maxWidth: .infinity)
     }
-}
-
-struct FilterBox: View {
-    @ObservedObject var s = AppState.shared
-    var showAgeTone = true
-    var search = false
-    var stretch = false
-    var body: some View {
-        Card(pad: 12, stretch: stretch, tint: Flat.prune) { VStack(alignment: .leading, spacing: 8) {
-            if search {
-                HStack { Image(systemName: "magnifyingglass").foregroundStyle(Flat.sub); TextField(L.t("lib.search.short"), text: $s.fText).textFieldStyle(.plain) }
-                    .padding(.horizontal, 11).padding(.vertical, 7).background(Flat.field, in: RoundedRectangle(cornerRadius: Flat.rc, style: .continuous)).overlay(RoundedRectangle(cornerRadius: Flat.rc, style: .continuous).strokeBorder(Flat.fieldEdge, lineWidth: 1))
-            }
-            row(L.t("f.gender")) {
-                chip(L.t("lib.all"), s.fGender == nil) { s.fGender = nil }
-                ForEach(Gender.allCases, id: \.self) { g in chip(L.t("g.\(g.rawValue)"), s.fGender == g) { s.fGender = g } }
-            }
-            if showAgeTone {
-                row(L.t("f.age")) {
-                    ForEach([("young", "age.young"), ("adult", "age.adult"), ("senior", "age.senior")], id: \.0) { a in chip(L.t(a.1), s.fAge == a.0) { s.fAge = s.fAge == a.0 ? nil : a.0 } }
-                }
-                row(L.t("f.tone")) {
-                    ForEach([("low", "tone.low"), ("high", "tone.high"), ("warm", "tone.warm"), ("dry", "tone.dry"), ("mischievous", "tone.dark")], id: \.0) { t in chip(L.t(t.1), s.fTone == t.0) { s.fTone = s.fTone == t.0 ? nil : t.0 } }
-                }
-            }
-            row(L.t("f.lang")) {
-                ForEach(s.project?.languages ?? []) { l in chip(l.rawValue.uppercased(), s.fLang == l) { s.fLang = s.fLang == l ? nil : l } }
-                chip(L.t("lang.all"), s.fLang == nil) { s.fLang = nil }
-                chip("★ " + L.t("f.fav"), s.fFav) { s.fFav.toggle() }
-                chip(L.t("f.clone"), s.fClone) { s.fClone.toggle(); if !s.fClone { s.fSource = nil } }
-            }
-            let srcs = Array(Set(s.voices.filter(\.isClone).compactMap(\.originTitle))).sorted()
-            if s.fClone, !srcs.isEmpty {
-                row(L.t("clones.source")) {
-                    chip(L.t("clones.all.f"), s.fSource == nil) { s.fSource = nil }
-                    ForEach(srcs, id: \.self) { t in chip(t, s.fSource == t) { s.fSource = s.fSource == t ? nil : t } }
-                }
-            }
-            Spacer(minLength: 0)
-            HStack { Spacer(minLength: 0); Tag(title: L.t("voices.found", s.voices.count, s.filteredVoices.count)) }
-        } }
+    func item(_ v: Voice, _ cid: String?) -> some View {
+        CastingVoiceItem(v: v, info: .of(v, mode: .casting, s, chosenID: cid), layout: layout).equatable()
     }
-    func label(_ t: String) -> some View { Text(t).font(.system(size: 11)).foregroundStyle(Flat.sub).frame(width: 44, alignment: .leading) }
-    func chip(_ t: String, _ on: Bool, _ a: @escaping () -> Void) -> some View { Button(action: a) { Chip(title: t, on: on) }.buttonStyle(.plain) }
-    func row<C: View>(_ t: String, @ViewBuilder _ c: () -> C) -> some View { HStack(alignment: .top, spacing: 8) { label(t).padding(.top, 5); Flow(spacing: 6) { c() }; Spacer(minLength: 0) } }
 }
 
 enum CardMode { case casting, library }
 
-/// `.v` : nom + balises, ligne de description, lecteur avec forme d'onde, actions.
 /// Ce qu'une carte de voix lit de l'état de l'appli, calculé par la liste : la carte ne se redessine que si ces valeurs changent
 /// (et non à chaque sélection, lecture ou avancement d'un calcul ailleurs dans l'appli).
 struct CardInfo: Equatable {
